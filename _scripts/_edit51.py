@@ -1,20 +1,13 @@
-import type { Metadata } from "next";
-import { Fredoka, Nunito } from "next/font/google";
-import "./globals.css";
-import { CartProvider } from "@/lib/cart-context";
+path = "src/app/layout.tsx"
+with open(path, "r") as f:
+    content = f.read()
 
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
+old = '''export const metadata: Metadata = {
+  title: "Bebitos | Lo mejor para tu bebé",
+  description: "Articulos y accesorios para bebe en Bolivia. Alimentacion, cuidado y mas, con envios a nivel departamental.",
+};'''
 
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-});
-
-const SITE_URL = "https://bebitos-sable.vercel.app";
+new = '''const SITE_URL = "https://bebitos-sable.vercel.app";
 const OG_IMAGE = "https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png";
 
 export const metadata: Metadata = {
@@ -36,17 +29,11 @@ export const metadata: Metadata = {
     description: "Articulos y accesorios para bebe en Bolivia.",
     images: [OG_IMAGE],
   },
-};
+};'''
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
-  return (
-    <html
-      lang="es"
-      className={`${fredoka.variable} ${nunito.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-sans">
-        <CartProvider>{children}</CartProvider>
-      </body>
-    </html>
-  );
-}
+count = content.count(old)
+assert count == 1, f"Encontrado {count} veces, se esperaba 1"
+content = content.replace(old, new)
+with open(path, "w") as f:
+    f.write(content)
+print("OK: layout.tsx con Open Graph general")

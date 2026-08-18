@@ -6,6 +6,7 @@ import Image from "next/image";
 import Header from "@/components/Header";
 import RelatedProducts from "@/components/RelatedProducts";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import ShareButton from "@/components/ShareButton";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
 
@@ -51,20 +52,23 @@ export default function ProductDetail({
         categories={categories}
       />
       <main className="max-w-6xl w-full mx-auto px-4 py-8 pb-24 sm:pb-8">
-        <nav className="text-sm text-brown-dark/60 mb-6 flex items-center gap-1.5 flex-wrap">
-          <Link href="/" className="hover:text-brown-dark transition-colors">
-            Inicio
-          </Link>
-          <span>/</span>
-          <Link
-            href={`/?categoria=${encodeURIComponent(product.category)}`}
-            className="hover:text-brown-dark transition-colors"
-          >
-            {product.category}
-          </Link>
-          <span>/</span>
-          <span className="text-brown-dark font-medium">{product.name}</span>
-        </nav>
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          <nav className="text-sm text-brown-dark/60 flex items-center gap-1.5 flex-wrap">
+            <Link href="/" className="hover:text-brown-dark transition-colors">
+              Inicio
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/?categoria=${encodeURIComponent(product.category)}`}
+              className="hover:text-brown-dark transition-colors"
+            >
+              {product.category}
+            </Link>
+            <span>/</span>
+            <span className="text-brown-dark font-medium">{product.name}</span>
+          </nav>
+          <ShareButton title={product.name} text={`Mira este producto en Bebitos: ${product.name}`} />
+        </div>
 
         <div className="grid sm:grid-cols-2 gap-8">
           <div className="aspect-square bg-cream rounded-2xl relative overflow-hidden">
