@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Instagram, Facebook, Music2, Truck } from "lucide-react";
+import { MessageCircle, MapPin, Truck, AtSign } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 
 type SettingsData = {
@@ -109,7 +109,7 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <SectionCard icon={Instagram} title="Instagram">
+        <SectionCard icon={AtSign} title="Instagram">
           <input
             value={form.instagramUrl}
             onChange={(e) => setForm((f) => f && { ...f, instagramUrl: e.target.value })}
@@ -117,7 +117,7 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <SectionCard icon={Facebook} title="Facebook">
+        <SectionCard icon={AtSign} title="Facebook">
           <input
             value={form.facebookUrl}
             onChange={(e) => setForm((f) => f && { ...f, facebookUrl: e.target.value })}
@@ -125,7 +125,7 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <SectionCard icon={Music2} title="TikTok">
+        <SectionCard icon={AtSign} title="TikTok">
           <input
             value={form.tiktokUrl}
             onChange={(e) => setForm((f) => f && { ...f, tiktokUrl: e.target.value })}
