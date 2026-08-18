@@ -38,9 +38,9 @@ export default function MobileMenu({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[70] sm:hidden">
+        <div className="fixed inset-0 z-[70] sm:hidden h-dvh">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative w-72 max-w-[80%] h-full bg-cream flex flex-col">
+          <div className="relative w-72 max-w-[80%] h-dvh bg-cream flex flex-col shadow-xl">
             <div className="flex items-center justify-between px-4 py-4 border-b border-brown/10">
               <span className="font-display font-semibold text-brown-dark">Menú</span>
               <button onClick={() => setOpen(false)}>
