@@ -1,11 +1,24 @@
-import { createHmac } from "crypto";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "bebitos_admin_session";
 
-function sign(value: string) {
+async function sign(value: string) {
   const secret = process.env.ADMIN_SECRET || "";
-  return createHmac("sha256", secret).update(value).digest("hex");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(value)
+  );
+  return Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export function checkCredentials(user: string, password: string) {
@@ -17,7 +30,7 @@ export function checkCredentials(user: string, password: string) {
 
 export async function createSession() {
   const value = "authenticated";
-  const signature = sign(value);
+  const signature = await sign(value);
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, `${value}.${signature}`, {
     httpOnly: true,
@@ -26,15 +39,6 @@ export async function createSession() {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-}
-
-export async function isAuthenticated() {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(COOKIE_NAME);
-  if (!cookie) return false;
-  const [value, signature] = cookie.value.split(".");
-  if (!value || !signature) return false;
-  return sign(value) === signature;
 }
 
 export async function destroySession() {
