@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import { Product } from "@/lib/types";
+import { useCart } from "@/lib/cart-context";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { addItem } = useCart();
+
+  function handleAdd(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(product, product.colors[0]?.name);
+  }
   return (
     <Link
       href={`/producto/${product.slug}`}
@@ -31,9 +41,12 @@ export default function ProductCard({ product }: { product: Product }) {
           <span className="font-display font-semibold text-brown-dark text-lg">
             BOB {product.price}
           </span>
-          <span className="bg-green text-white text-sm font-semibold px-3 py-1.5 rounded-full">
-            Ver más
-          </span>
+          <button
+            onClick={handleAdd}
+            className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full transition-colors"
+          >
+            Agregar
+          </button>
         </div>
       </div>
     </Link>

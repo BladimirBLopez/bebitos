@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import CartDrawer from "./CartDrawer";
 
 const SOCIALS = [
   { name: "Instagram", url: "https://www.instagram.com/bebitos.bo" },
@@ -49,6 +50,7 @@ export default function Header() {
           >
             WhatsApp
           </a>
+          <CartDrawer />
         </div>
       </div>
     </header>
