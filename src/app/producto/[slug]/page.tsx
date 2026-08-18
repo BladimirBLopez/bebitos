@@ -100,9 +100,11 @@ export default async function ProductPage({
       related={related}
       settings={{
         whatsapp: settings?.whatsapp,
+        mapsUrl: settings?.mapsUrl,
         instagramUrl: settings?.instagramUrl,
         facebookUrl: settings?.facebookUrl,
         tiktokUrl: settings?.tiktokUrl,
+        businessHours: settings?.businessHours,
       }}
       categories={categories}
     />

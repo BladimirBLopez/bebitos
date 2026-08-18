@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import RelatedProducts from "@/components/RelatedProducts";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import ShareButton from "@/components/ShareButton";
+import Footer from "@/components/Footer";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
 
@@ -14,9 +15,11 @@ const CLOUD_NAME = "dkq95jus0";
 
 type Settings = {
   whatsapp?: string;
+  mapsUrl?: string;
   instagramUrl?: string;
   facebookUrl?: string;
   tiktokUrl?: string;
+  businessHours?: string;
 };
 
 type Category = { id: string; name: string };
@@ -170,6 +173,16 @@ export default function ProductDetail({
       </main>
 
       <RelatedProducts products={related} />
+
+      <Footer
+        whatsapp={settings?.whatsapp}
+        mapsUrl={settings?.mapsUrl}
+        instagramUrl={settings?.instagramUrl}
+        facebookUrl={settings?.facebookUrl}
+        tiktokUrl={settings?.tiktokUrl}
+        businessHours={settings?.businessHours}
+        categories={categories}
+      />
 
       {/* Barra sticky solo en móvil */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown/10 px-4 py-3 flex items-center justify-between gap-3 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">

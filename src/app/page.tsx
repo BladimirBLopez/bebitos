@@ -4,6 +4,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import TrustBar from "@/components/TrustBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import Testimonials from "@/components/Testimonials";
+import Footer from "@/components/Footer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +73,15 @@ export default async function Home({
         )}
       </main>
       <Testimonials />
+      <Footer
+        whatsapp={settings?.whatsapp}
+        mapsUrl={settings?.mapsUrl}
+        instagramUrl={settings?.instagramUrl}
+        facebookUrl={settings?.facebookUrl}
+        tiktokUrl={settings?.tiktokUrl}
+        businessHours={settings?.businessHours}
+        categories={categories}
+      />
       <WhatsAppFloat whatsapp={settings?.whatsapp} />
     </div>
   );
