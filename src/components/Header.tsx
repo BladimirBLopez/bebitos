@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
 import CartDrawer from "./CartDrawer";
 import SearchBar from "./SearchBar";
 import MobileMenu from "./MobileMenu";
@@ -16,7 +15,6 @@ type HeaderProps = {
 };
 
 export default function Header({
-  whatsapp = "59169501208",
   instagramUrl = "https://www.instagram.com/bebitos.bo",
   facebookUrl = "https://www.facebook.com/share/1LfNHku3nT/?mibextid=wwXIfr",
   tiktokUrl = "https://www.tiktok.com/@bebitos_bo",
@@ -53,15 +51,6 @@ export default function Header({
 
         <div className="flex items-center gap-1.5 sm:gap-3">
           <SearchBar />
-          <a
-            href={`https://wa.me/${whatsapp}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-green hover:bg-green-dark text-white font-semibold text-sm p-2.5 sm:px-4 sm:py-2 rounded-full transition-colors flex items-center"
-          >
-            <MessageCircle className="w-4 h-4 sm:hidden" />
-            <span className="hidden sm:inline">WhatsApp</span>
-          </a>
           <CartDrawer />
         </div>
       </div>

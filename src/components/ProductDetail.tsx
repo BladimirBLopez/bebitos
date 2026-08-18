@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Header from "@/components/Header";
 import RelatedProducts from "@/components/RelatedProducts";
+import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
 
@@ -155,6 +156,8 @@ export default function ProductDetail({
           {added ? "¡Agregado! ✓" : "Agregar al carrito"}
         </button>
       </div>
+
+      <WhatsAppFloat whatsapp={settings?.whatsapp} />
     </div>
   );
 }

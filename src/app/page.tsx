@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import WhatsAppFloat from "@/components/WhatsAppFloat";
 import TrustBar from "@/components/TrustBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import Testimonials from "@/components/Testimonials";
@@ -71,6 +72,7 @@ export default async function Home({
         )}
       </main>
       <Testimonials />
+      <WhatsAppFloat whatsapp={settings?.whatsapp} />
     </div>
   );
 }
