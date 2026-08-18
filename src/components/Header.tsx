@@ -33,9 +33,13 @@ export default function Header({
             className="rounded-full"
             priority
           />
-          <span className="font-display font-semibold text-xl text-brown-dark hidden sm:block">
-            Bebitos
-          </span>
+          <Image
+            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
+            alt="Bebitos"
+            width={110}
+            height={35}
+            className="hidden sm:block object-contain"
+          />
         </Link>
 
         <div className="flex items-center gap-3">
