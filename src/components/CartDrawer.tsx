@@ -33,12 +33,12 @@ export default function CartDrawer() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[60] flex justify-end">
+        <div className="fixed inset-0 z-[60] flex justify-end h-dvh">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}
           />
-          <div className="relative w-full max-w-sm bg-cream h-full flex flex-col shadow-xl">
+          <div className="relative w-full max-w-sm bg-cream h-dvh flex flex-col shadow-xl">
             <div className="flex items-center justify-between p-4 border-b border-brown/15">
               <h2 className="font-display font-semibold text-lg text-brown-dark">
                 Tu carrito
