@@ -10,9 +10,10 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [p, settings] = await Promise.all([
+  const [p, settings, categories] = await Promise.all([
     prisma.product.findUnique({ where: { slug } }),
     prisma.settings.findUnique({ where: { id: "singleton" } }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!p || !p.inStock) {
@@ -62,6 +63,7 @@ export default async function ProductPage({
         facebookUrl: settings?.facebookUrl,
         tiktokUrl: settings?.tiktokUrl,
       }}
+      categories={categories}
     />
   );
 }

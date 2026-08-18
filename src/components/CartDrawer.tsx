@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
 const WHATSAPP_NUMBER = "59169501208";
@@ -22,9 +23,10 @@ export default function CartDrawer() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="relative flex items-center gap-1.5 bg-brown-dark hover:bg-ink text-cream font-semibold text-sm px-3.5 py-2 rounded-full transition-colors"
+        className="relative flex items-center gap-1.5 bg-brown-dark hover:bg-ink text-cream font-semibold text-sm p-2.5 sm:px-3.5 sm:py-2 rounded-full transition-colors"
       >
-        Carrito
+        <ShoppingBag className="w-4 h-4 sm:hidden" />
+        <span className="hidden sm:inline">Carrito</span>
         {totalItems > 0 && (
           <span className="bg-green text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
             {totalItems}

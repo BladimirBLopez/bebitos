@@ -17,14 +17,18 @@ type Settings = {
   tiktokUrl?: string;
 };
 
+type Category = { id: string; name: string };
+
 export default function ProductDetail({
   product,
   settings,
   related = [],
+  categories = [],
 }: {
   product: Product;
   settings?: Settings;
   related?: Product[];
+  categories?: Category[];
 }) {
   const { addItem } = useCart();
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name);
@@ -43,14 +47,23 @@ export default function ProductDetail({
         instagramUrl={settings?.instagramUrl}
         facebookUrl={settings?.facebookUrl}
         tiktokUrl={settings?.tiktokUrl}
+        categories={categories}
       />
       <main className="max-w-6xl w-full mx-auto px-4 py-8 pb-24 sm:pb-8">
-        <Link
-          href="/"
-          className="text-sm text-brown-dark/70 hover:text-brown-dark inline-block mb-6"
-        >
-          ← Volver al catálogo
-        </Link>
+        <nav className="text-sm text-brown-dark/60 mb-6 flex items-center gap-1.5 flex-wrap">
+          <Link href="/" className="hover:text-brown-dark transition-colors">
+            Inicio
+          </Link>
+          <span>/</span>
+          <Link
+            href={`/?categoria=${encodeURIComponent(product.category)}`}
+            className="hover:text-brown-dark transition-colors"
+          >
+            {product.category}
+          </Link>
+          <span>/</span>
+          <span className="text-brown-dark font-medium">{product.name}</span>
+        </nav>
 
         <div className="grid sm:grid-cols-2 gap-8">
           <div className="aspect-square bg-cream rounded-2xl relative overflow-hidden">

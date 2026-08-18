@@ -4,8 +4,14 @@ import { useState } from "react";
 import ProductCard from "./ProductCard";
 import { Product } from "@/lib/types";
 
-export default function CategoryFilter({ products }: { products: Product[] }) {
-  const [active, setActive] = useState("Todas");
+export default function CategoryFilter({
+  products,
+  initialCategory,
+}: {
+  products: Product[];
+  initialCategory?: string;
+}) {
+  const [active, setActive] = useState(initialCategory || "Todas");
   const categories = ["Todas", ...Array.from(new Set(products.map((p) => p.category)))];
   const filtered = active === "Todas" ? products : products.filter((p) => p.category === active);
 
