@@ -6,7 +6,20 @@ import Header from "@/components/Header";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
 
-export default function ProductDetail({ product }: { product: Product }) {
+type Settings = {
+  whatsapp?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
+};
+
+export default function ProductDetail({
+  product,
+  settings,
+}: {
+  product: Product;
+  settings?: Settings;
+}) {
   const { addItem } = useCart();
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name);
   const [added, setAdded] = useState(false);
@@ -19,7 +32,12 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   return (
     <div className="flex flex-col flex-1">
-      <Header />
+      <Header
+        whatsapp={settings?.whatsapp}
+        instagramUrl={settings?.instagramUrl}
+        facebookUrl={settings?.facebookUrl}
+        tiktokUrl={settings?.tiktokUrl}
+      />
       <main className="max-w-6xl w-full mx-auto px-4 py-8">
         <Link
           href="/"

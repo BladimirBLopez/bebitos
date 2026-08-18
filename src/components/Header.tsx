@@ -2,15 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import CartDrawer from "./CartDrawer";
 
-const SOCIALS = [
-  { name: "Instagram", url: "https://www.instagram.com/bebitos.bo" },
-  { name: "Facebook", url: "https://www.facebook.com/share/1LfNHku3nT/?mibextid=wwXIfr" },
-  { name: "TikTok", url: "https://www.tiktok.com/@bebitos_bo" },
-];
+type HeaderProps = {
+  whatsapp?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
+};
 
-const WHATSAPP_NUMBER = "59169501208";
+export default function Header({
+  whatsapp = "59169501208",
+  instagramUrl = "https://www.instagram.com/bebitos.bo",
+  facebookUrl = "https://www.facebook.com/share/1LfNHku3nT/?mibextid=wwXIfr",
+  tiktokUrl = "https://www.tiktok.com/@bebitos_bo",
+}: HeaderProps) {
+  const socials = [
+    { name: "Instagram", url: instagramUrl },
+    { name: "Facebook", url: facebookUrl },
+    { name: "TikTok", url: tiktokUrl },
+  ];
 
-export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b border-brown/15">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -30,7 +40,7 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           <nav className="flex items-center gap-3">
-            {SOCIALS.map((s) => (
+            {socials.map((s) => (
               <a
                 key={s.name}
                 href={s.url}
@@ -43,7 +53,7 @@ export default function Header() {
             ))}
           </nav>
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}`}
+            href={`https://wa.me/${whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2 rounded-full transition-colors"

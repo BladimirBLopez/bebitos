@@ -10,7 +10,10 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = await prisma.product.findUnique({ where: { slug } });
+  const [p, settings] = await Promise.all([
+    prisma.product.findUnique({ where: { slug } }),
+    prisma.settings.findUnique({ where: { id: "singleton" } }),
+  ]);
 
   if (!p || !p.inStock) {
     notFound();
@@ -29,5 +32,15 @@ export default async function ProductPage({
     images: p.images,
   };
 
-  return <ProductDetail product={product} />;
+  return (
+    <ProductDetail
+      product={product}
+      settings={{
+        whatsapp: settings?.whatsapp,
+        instagramUrl: settings?.instagramUrl,
+        facebookUrl: settings?.facebookUrl,
+        tiktokUrl: settings?.tiktokUrl,
+      }}
+    />
+  );
 }
