@@ -3,7 +3,6 @@ import Hero from "@/components/Hero";
 import TrustBar from "@/components/TrustBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import Testimonials from "@/components/Testimonials";
-import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -48,15 +47,7 @@ export default async function Home() {
         {products.length === 0 ? (
           <p className="text-ink/50 text-sm">Pronto vas a ver productos aqui.</p>
         ) : (
-          <CategoryFilter products={products}>
-            {(filtered) => (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filtered.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </CategoryFilter>
+          <CategoryFilter products={products} />
         )}
       </main>
       <Testimonials />

@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import ProductCard from "./ProductCard";
+import { Product } from "@/lib/types";
 
-type Product = { category: string };
-
-export default function CategoryFilter<T extends Product>({
-  products,
-  children,
-}: {
-  products: T[];
-  children: (filtered: T[]) => React.ReactNode;
-}) {
+export default function CategoryFilter({ products }: { products: Product[] }) {
   const [active, setActive] = useState("Todas");
   const categories = ["Todas", ...Array.from(new Set(products.map((p) => p.category)))];
   const filtered = active === "Todas" ? products : products.filter((p) => p.category === active);
@@ -32,7 +26,11 @@ export default function CategoryFilter<T extends Product>({
           </button>
         ))}
       </div>
-      {children(filtered)}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filtered.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
     </div>
   );
 }
