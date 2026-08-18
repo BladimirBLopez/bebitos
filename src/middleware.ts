@@ -32,14 +32,20 @@ async function isValidSession(cookieValue: string | undefined) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/admin/login" || pathname === "/api/admin/login") {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/admin")) {
+  const isApiAdmin = pathname.startsWith("/api/admin");
+  const isPanelAdmin = pathname.startsWith("/admin");
+
+  if (isApiAdmin || isPanelAdmin) {
     const cookie = req.cookies.get(COOKIE_NAME)?.value;
     const valid = await isValidSession(cookie);
     if (!valid) {
+      if (isApiAdmin) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      }
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
   }
@@ -48,5 +54,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };

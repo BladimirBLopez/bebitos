@@ -21,6 +21,7 @@ export async function PUT(
       images: data.images,
       inStock: data.inStock,
       isPromo: data.isPromo,
+      isNew: data.isNew || false,
       promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
     },
   });
