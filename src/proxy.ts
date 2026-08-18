@@ -29,7 +29,7 @@ async function isValidSession(cookieValue: string | undefined) {
   return expected === signature;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname === "/admin/login" || pathname === "/api/admin/login") {
