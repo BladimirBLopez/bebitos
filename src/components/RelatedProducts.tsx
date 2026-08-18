@@ -5,7 +5,7 @@ export default function RelatedProducts({ products }: { products: Product[] }) {
   if (products.length === 0) return null;
 
   return (
-    <section className="max-w-6xl mx-auto px-4 py-10">
+    <section className="max-w-6xl mx-auto px-4 pt-10 pb-24 sm:pb-10">
       <h2 className="font-display text-xl font-semibold text-brown-dark mb-5">
         También te puede interesar
       </h2>
