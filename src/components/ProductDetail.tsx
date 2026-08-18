@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Header from "@/components/Header";
+import RelatedProducts from "@/components/RelatedProducts";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
+
+const CLOUD_NAME = "dkq95jus0";
 
 type Settings = {
   whatsapp?: string;
@@ -16,9 +20,11 @@ type Settings = {
 export default function ProductDetail({
   product,
   settings,
+  related = [],
 }: {
   product: Product;
   settings?: Settings;
+  related?: Product[];
 }) {
   const { addItem } = useCart();
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name);
@@ -38,7 +44,7 @@ export default function ProductDetail({
         facebookUrl={settings?.facebookUrl}
         tiktokUrl={settings?.tiktokUrl}
       />
-      <main className="max-w-6xl w-full mx-auto px-4 py-8">
+      <main className="max-w-6xl w-full mx-auto px-4 py-8 pb-24 sm:pb-8">
         <Link
           href="/"
           className="text-sm text-brown-dark/70 hover:text-brown-dark inline-block mb-6"
@@ -47,8 +53,20 @@ export default function ProductDetail({
         </Link>
 
         <div className="grid sm:grid-cols-2 gap-8">
-          <div className="aspect-square bg-white rounded-2xl border border-brown/10 flex items-center justify-center text-brown/30">
-            Foto pendiente
+          <div className="aspect-square bg-cream rounded-2xl relative overflow-hidden">
+            {product.images && product.images.length > 0 ? (
+              <Image
+                src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_800,h_800,c_fill/${product.images[0]}`}
+                alt={product.name}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-brown/30">
+                Foto pendiente
+              </div>
+            )}
           </div>
 
           <div>
@@ -94,7 +112,8 @@ export default function ProductDetail({
               </div>
             )}
 
-            <div className="flex items-center justify-between border-t border-brown/10 pt-5">
+            {/* Botón normal en desktop, se oculta en móvil (ahí usamos el sticky de abajo) */}
+            <div className="hidden sm:flex items-center justify-between border-t border-brown/10 pt-5">
               <span className="font-display font-semibold text-brown-dark text-2xl">
                 BOB {product.price}
               </span>
@@ -108,6 +127,21 @@ export default function ProductDetail({
           </div>
         </div>
       </main>
+
+      <RelatedProducts products={related} />
+
+      {/* Barra sticky solo en móvil */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown/10 px-4 py-3 flex items-center justify-between gap-3 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <span className="font-display font-semibold text-brown-dark text-xl shrink-0">
+          BOB {product.price}
+        </span>
+        <button
+          onClick={handleAdd}
+          className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+        >
+          {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+        </button>
+      </div>
     </div>
   );
 }

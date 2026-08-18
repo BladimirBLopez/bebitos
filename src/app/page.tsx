@@ -1,5 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import TrustBar from "@/components/TrustBar";
+import CategoryFilter from "@/components/CategoryFilter";
+import Testimonials from "@/components/Testimonials";
 import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 
@@ -36,6 +39,7 @@ export default async function Home() {
         facebookUrl={settings?.facebookUrl}
         tiktokUrl={settings?.tiktokUrl}
       />
+      <TrustBar shippingText={settings?.shippingText} />
       <Hero />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-10">
         <h2 className="font-display text-2xl font-semibold text-brown-dark mb-6">
@@ -44,13 +48,18 @@ export default async function Home() {
         {products.length === 0 ? (
           <p className="text-ink/50 text-sm">Pronto vas a ver productos aqui.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <CategoryFilter products={products}>
+            {(filtered) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filtered.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </CategoryFilter>
         )}
       </main>
+      <Testimonials />
     </div>
   );
 }
