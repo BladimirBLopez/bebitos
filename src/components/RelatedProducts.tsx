@@ -1,7 +1,13 @@
 import ProductCard from "./ProductCard";
 import { Product } from "@/lib/types";
 
-export default function RelatedProducts({ products }: { products: Product[] }) {
+export default function RelatedProducts({
+  products,
+  showPrices = true,
+}: {
+  products: Product[];
+  showPrices?: boolean;
+}) {
   if (products.length === 0) return null;
 
   return (
@@ -11,7 +17,7 @@ export default function RelatedProducts({ products }: { products: Product[] }) {
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map((p) => (
-          <ProductCard key={p.id} product={p} />
+          <ProductCard key={p.id} product={p} showPrices={showPrices} />
         ))}
       </div>
     </section>

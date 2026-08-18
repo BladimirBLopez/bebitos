@@ -29,11 +29,13 @@ export default function ProductDetail({
   settings,
   related = [],
   categories = [],
+  showPrices = true,
 }: {
   product: Product;
   settings?: Settings;
   related?: Product[];
   categories?: Category[];
+  showPrices?: boolean;
 }) {
   const { addItem } = useCart();
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name);
@@ -157,22 +159,45 @@ export default function ProductDetail({
             )}
 
             {/* Botón normal en desktop, se oculta en móvil (ahí usamos el sticky de abajo) */}
-            <div className="hidden sm:flex items-center justify-between border-t border-brown/10 pt-5">
-              <span className="font-display font-semibold text-brown-dark text-2xl">
-                BOB {product.price}
-              </span>
-              <button
-                onClick={handleAdd}
-                className="bg-green hover:bg-green-dark text-white font-semibold px-5 py-2.5 rounded-full transition-colors"
-              >
-                {added ? "¡Agregado! ✓" : "Agregar al carrito"}
-              </button>
+            <div className="hidden sm:block border-t border-brown/10 pt-5">
+              {showPrices ? (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-display font-semibold text-brown-dark text-2xl">
+                      BOB {product.price}
+                    </span>
+                    <button
+                      onClick={handleAdd}
+                      className="bg-green hover:bg-green-dark text-white font-semibold px-5 py-2.5 rounded-full transition-colors"
+                    >
+                      {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+                    </button>
+                  </div>
+                  <a
+                    href={`https://wa.me/${settings?.whatsapp || "59169501208"}?text=${encodeURIComponent(`Hola! Tengo una consulta sobre: ${product.name}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center text-sm text-brown-dark/70 hover:text-brown-dark border border-brown/15 hover:border-brown/30 py-2 rounded-full transition-colors"
+                  >
+                    ¿Tienes dudas? Consulta por WhatsApp
+                  </a>
+                </>
+              ) : (
+                <a
+                  href={`https://wa.me/${settings?.whatsapp || "59169501208"}?text=${encodeURIComponent(`Hola! Quiero consultar el precio de: ${product.name}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+                >
+                  Consultar precio por WhatsApp
+                </a>
+              )}
             </div>
           </div>
         </div>
       </main>
 
-      <RelatedProducts products={related} />
+      <RelatedProducts products={related} showPrices={showPrices} />
 
       <Footer
         whatsapp={settings?.whatsapp}
@@ -186,15 +211,28 @@ export default function ProductDetail({
 
       {/* Barra sticky solo en móvil */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown/10 px-4 py-3 flex items-center justify-between gap-3 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-        <span className="font-display font-semibold text-brown-dark text-xl shrink-0">
-          BOB {product.price}
-        </span>
-        <button
-          onClick={handleAdd}
-          className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
-        >
-          {added ? "¡Agregado! ✓" : "Agregar al carrito"}
-        </button>
+        {showPrices ? (
+          <>
+            <span className="font-display font-semibold text-brown-dark text-xl shrink-0">
+              BOB {product.price}
+            </span>
+            <button
+              onClick={handleAdd}
+              className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+            >
+              {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+            </button>
+          </>
+        ) : (
+          <a
+            href={`https://wa.me/${settings?.whatsapp || "59169501208"}?text=${encodeURIComponent(`Hola! Quiero consultar el precio de: ${product.name}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 text-center bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+          >
+            Consultar precio por WhatsApp
+          </a>
+        )}
       </div>
 
       <WhatsAppFloat whatsapp={settings?.whatsapp} />

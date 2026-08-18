@@ -7,7 +7,13 @@ import { useCart } from "@/lib/cart-context";
 
 const CLOUD_NAME = "dkq95jus0";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  showPrices = true,
+}: {
+  product: Product;
+  showPrices?: boolean;
+}) {
   const { addItem } = useCart();
 
   function handleAdd(e: React.MouseEvent) {
@@ -64,22 +70,30 @@ export default function ProductCard({ product }: { product: Product }) {
           ))}
         </div>
         <div className="flex items-center justify-between">
-          <div>
-            {product.originalPrice && (
-              <span className="text-xs text-red-400 line-through block">
-                BOB {product.originalPrice}
-              </span>
-            )}
-            <span className="font-display font-semibold text-brown-dark text-lg">
-              BOB {product.price}
+          {showPrices ? (
+            <>
+              <div>
+                {product.originalPrice && (
+                  <span className="text-xs text-red-400 line-through block">
+                    BOB {product.originalPrice}
+                  </span>
+                )}
+                <span className="font-display font-semibold text-brown-dark text-lg">
+                  BOB {product.price}
+                </span>
+              </div>
+              <button
+                onClick={handleAdd}
+                className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full transition-colors"
+              >
+                Agregar
+              </button>
+            </>
+          ) : (
+            <span className="bg-brown-dark text-cream text-sm font-semibold px-3 py-1.5 rounded-full w-full text-center">
+              Consultar precio
             </span>
-          </div>
-          <button
-            onClick={handleAdd}
-            className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full transition-colors"
-          >
-            Agregar
-          </button>
+          )}
         </div>
       </div>
     </Link>

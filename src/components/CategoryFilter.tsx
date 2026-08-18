@@ -7,9 +7,11 @@ import { Product } from "@/lib/types";
 export default function CategoryFilter({
   products,
   initialCategory,
+  showPrices = true,
 }: {
   products: Product[];
   initialCategory?: string;
+  showPrices?: boolean;
 }) {
   const [active, setActive] = useState(initialCategory || "Todas");
   const categories = ["Todas", ...Array.from(new Set(products.map((p) => p.category)))];
@@ -34,7 +36,7 @@ export default function CategoryFilter({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {filtered.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} showPrices={showPrices} />
         ))}
       </div>
     </div>

@@ -69,7 +69,7 @@ export default async function Home({
             {q ? "No encontramos productos con ese nombre." : "Pronto vas a ver productos aqui."}
           </p>
         ) : (
-          <CategoryFilter products={products} initialCategory={categoria} />
+          <CategoryFilter products={products} initialCategory={categoria} showPrices={settings?.showPrices ?? true} />
         )}
       </main>
       <Testimonials />

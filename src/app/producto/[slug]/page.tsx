@@ -107,6 +107,7 @@ export default async function ProductPage({
         businessHours: settings?.businessHours,
       }}
       categories={categories}
+      showPrices={settings?.showPrices ?? true}
     />
   );
 }

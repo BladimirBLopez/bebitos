@@ -24,6 +24,8 @@ export async function PUT(req: NextRequest) {
       facebookUrl: data.facebookUrl,
       tiktokUrl: data.tiktokUrl,
       shippingText: data.shippingText,
+      businessHours: data.businessHours,
+      showPrices: data.showPrices,
     },
   });
 
