@@ -36,9 +36,9 @@ export default function Header({
           <Image
             src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
             alt="Bebitos"
-            width={110}
-            height={35}
-            className="hidden sm:block object-contain"
+            width={90}
+            height={28}
+            className="object-contain w-[90px] sm:w-[110px] h-auto"
           />
         </Link>
 
