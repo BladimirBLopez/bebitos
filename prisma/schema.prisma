@@ -21,6 +21,7 @@ model Product {
   inStock     Boolean  @default(true)
   isPromo     Boolean  @default(false)
   promoPrice  Float?
+  isNew       Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -34,5 +35,12 @@ model Settings {
   facebookUrl   String
   tiktokUrl     String
   shippingText  String  @default("Envios a nivel nacional")
+  businessHours String  @default("")
   updatedAt     DateTime @updatedAt
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
 }

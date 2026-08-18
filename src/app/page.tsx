@@ -22,6 +22,7 @@ export default async function Home() {
     features: p.features,
     price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
     originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
+    isNew: p.isNew,
     category: p.category,
     colors: p.colors as { name: string; hex: string }[],
     images: p.images,

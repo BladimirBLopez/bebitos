@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Info,
@@ -8,20 +8,19 @@ import {
   Palette,
   Camera,
   DollarSign,
-  Sparkles,
   Plus,
   X,
   Trash2,
 } from "lucide-react";
-import ToggleSwitch from "./ToggleSwitch";
 import ConfirmModal from "./ConfirmModal";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
 const UPLOAD_PRESET = "bebitos_admin";
-const CATEGORIES = ["Alimentacion", "Cuidado", "Accesorios", "Otros"];
 
 type ColorInput = { name: string; hex: string };
+type Category = { id: string; name: string };
+type StatusOption = "normal" | "nuevo" | "agotado" | "oferta";
 
 type ProductFormData = {
   id?: string;
@@ -35,6 +34,7 @@ type ProductFormData = {
   images: string[];
   inStock: boolean;
   isPromo: boolean;
+  isNew: boolean;
   promoPrice: string;
 };
 
@@ -44,13 +44,21 @@ const empty: ProductFormData = {
   description: "",
   features: [],
   price: "",
-  category: CATEGORIES[0],
+  category: "",
   colors: [],
   images: [],
   inStock: true,
   isPromo: false,
+  isNew: false,
   promoPrice: "",
 };
+
+function getStatus(f: ProductFormData): StatusOption {
+  if (!f.inStock) return "agotado";
+  if (f.isPromo) return "oferta";
+  if (f.isNew) return "nuevo";
+  return "normal";
+}
 
 function SectionCard({
   icon: Icon,
@@ -76,6 +84,13 @@ function SectionCard({
   );
 }
 
+const STATUS_OPTIONS: { value: StatusOption; label: string; emoji: string }[] = [
+  { value: "normal", label: "Normal", emoji: "" },
+  { value: "nuevo", label: "Nuevo", emoji: "🆕" },
+  { value: "agotado", label: "Agotado", emoji: "😔" },
+  { value: "oferta", label: "Oferta", emoji: "🔥" },
+];
+
 export default function ProductForm({
   initial,
 }: {
@@ -84,12 +99,42 @@ export default function ProductForm({
   const router = useRouter();
   const { showToast } = useToast();
   const [form, setForm] = useState<ProductFormData>({ ...empty, ...initial });
+  const [categories, setCategories] = useState<Category[]>([]);
   const [featureInput, setFeatureInput] = useState("");
   const [colorName, setColorName] = useState("");
   const [colorHex, setColorHex] = useState("#85BF35");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [unsavedWarning, setUnsavedWarning] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((res) => res.json())
+      .then((data: Category[]) => {
+        setCategories(data);
+        if (!form.category && data.length > 0) {
+          setForm((f) => ({ ...f, category: data[0].name }));
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (dirty) {
+        e.preventDefault();
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [dirty]);
+
+  function update(patch: Partial<ProductFormData>) {
+    setForm((f) => ({ ...f, ...patch }));
+    setDirty(true);
+  }
 
   function slugify(text: string) {
     return text
@@ -101,30 +146,35 @@ export default function ProductForm({
   }
 
   function handleNameChange(name: string) {
-    setForm((f) => ({ ...f, name, slug: f.id ? f.slug : slugify(name) }));
+    update({ name, slug: form.id ? form.slug : slugify(name) });
+  }
+
+  function setStatus(status: StatusOption) {
+    update({
+      inStock: status !== "agotado",
+      isPromo: status === "oferta",
+      isNew: status === "nuevo",
+    });
   }
 
   function addFeature() {
     if (!featureInput.trim()) return;
-    setForm((f) => ({ ...f, features: [...f.features, featureInput.trim()] }));
+    update({ features: [...form.features, featureInput.trim()] });
     setFeatureInput("");
   }
 
   function removeFeature(i: number) {
-    setForm((f) => ({ ...f, features: f.features.filter((_, idx) => idx !== i) }));
+    update({ features: form.features.filter((_, idx) => idx !== i) });
   }
 
   function addColor() {
     if (!colorName.trim()) return;
-    setForm((f) => ({
-      ...f,
-      colors: [...f.colors, { name: colorName.trim(), hex: colorHex }],
-    }));
+    update({ colors: [...form.colors, { name: colorName.trim(), hex: colorHex }] });
     setColorName("");
   }
 
   function removeColor(i: number) {
-    setForm((f) => ({ ...f, colors: f.colors.filter((_, idx) => idx !== i) }));
+    update({ colors: form.colors.filter((_, idx) => idx !== i) });
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -146,7 +196,7 @@ export default function ProductForm({
       if (!res.ok) throw new Error("Error al subir la imagen");
 
       const data = await res.json();
-      setForm((f) => ({ ...f, images: [...f.images, data.public_id] }));
+      update({ images: [...form.images, data.public_id] });
       showToast("Foto subida correctamente", "success");
     } catch {
       showToast("No se pudo subir la imagen. Intenta de nuevo.", "error");
@@ -156,7 +206,7 @@ export default function ProductForm({
   }
 
   function removeImage(i: number) {
-    setForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }));
+    update({ images: form.images.filter((_, idx) => idx !== i) });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -181,6 +231,7 @@ export default function ProductForm({
       return;
     }
 
+    setDirty(false);
     showToast(form.id ? "Producto actualizado" : "Producto creado", "success");
     router.push("/admin/productos");
     router.refresh();
@@ -190,13 +241,32 @@ export default function ProductForm({
     if (!form.id) return;
     setConfirmDelete(false);
     await fetch(`/api/admin/products/${form.id}`, { method: "DELETE" });
+    setDirty(false);
     showToast("Producto borrado", "success");
     router.push("/admin/productos");
     router.refresh();
   }
 
+  function handleBack() {
+    if (dirty) {
+      setUnsavedWarning(true);
+    } else {
+      router.push("/admin/productos");
+    }
+  }
+
+  const status = getStatus(form);
+
   return (
     <>
+      <button
+        type="button"
+        onClick={handleBack}
+        className="text-sm text-brown-dark/60 hover:text-brown-dark mb-4"
+      >
+        ← Volver a productos
+      </button>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
         <SectionCard icon={Info} title="Información básica">
           <div className="flex flex-col gap-3">
@@ -217,7 +287,7 @@ export default function ProductForm({
               </label>
               <textarea
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={(e) => update({ description: e.target.value })}
                 className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
                 rows={3}
                 required
@@ -229,13 +299,17 @@ export default function ProductForm({
               </label>
               <select
                 value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                onChange={(e) => update({ category: e.target.value })}
                 className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {categories.length === 0 && <option value="">Sin categorías</option>}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
+              <p className="text-[11px] text-ink/40 mt-1">
+                ¿Falta una categoría? Créala en Configuración
+              </p>
             </div>
           </div>
         </SectionCard>
@@ -309,6 +383,9 @@ export default function ProductForm({
             {uploading ? "Subiendo..." : "Toca para subir una foto"}
             <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
           </label>
+          <p className="text-[11px] text-ink/40 mt-2">
+            📐 Para mejor apariencia sube fotos cuadradas (1:1) — evita fotos horizontales.
+          </p>
           <div className="flex gap-2 flex-wrap mt-3">
             {form.images.map((img, i) => (
               <div key={i} className="relative">
@@ -329,45 +406,49 @@ export default function ProductForm({
           </div>
         </SectionCard>
 
-        <SectionCard icon={DollarSign} title="Precio y stock">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-ink/60 block mb-1">
-                Precio (BOB)
-              </label>
-              <input
-                type="number"
-                value={form.price}
-                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                required
-              />
-            </div>
+        <SectionCard icon={DollarSign} title="Precio">
+          <div className="mb-4">
+            <label className="text-xs font-medium text-ink/60 block mb-1">
+              Precio (BOB)
+            </label>
+            <input
+              type="number"
+              value={form.price}
+              onChange={(e) => update({ price: e.target.value })}
+              className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+              required
+            />
           </div>
-          <ToggleSwitch
-            checked={form.inStock}
-            onChange={(v) => setForm((f) => ({ ...f, inStock: v }))}
-            label="Hay stock"
-            description="Se muestra en la tienda si está activo"
-          />
-        </SectionCard>
 
-        <SectionCard icon={Sparkles} title="Promoción">
-          <ToggleSwitch
-            checked={form.isPromo}
-            onChange={(v) => setForm((f) => ({ ...f, isPromo: v }))}
-            label="Poner en promoción"
-            description="Se destaca con un sello de oferta en la tienda"
-          />
-          {form.isPromo && (
-            <div className="mt-3">
+          <label className="text-xs font-medium text-ink/60 block mb-2">
+            Estado del producto
+          </label>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatus(opt.value)}
+                className={`text-sm font-medium py-2.5 rounded-xl border transition-colors ${
+                  status === opt.value
+                    ? "bg-brown-dark text-white border-brown-dark"
+                    : "bg-cream text-ink/70 border-brown/15 hover:border-brown/30"
+                }`}
+              >
+                {opt.emoji} {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {status === "oferta" && (
+            <div>
               <label className="text-xs font-medium text-ink/60 block mb-1">
                 Precio de oferta (BOB)
               </label>
               <input
                 type="number"
                 value={form.promoPrice}
-                onChange={(e) => setForm((f) => ({ ...f, promoPrice: e.target.value }))}
+                onChange={(e) => update({ promoPrice: e.target.value })}
                 className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
               />
             </div>
@@ -401,6 +482,16 @@ export default function ProductForm({
         message="Esta acción no se puede deshacer."
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmModal
+        open={unsavedWarning}
+        title="Cambios sin guardar"
+        message="Tienes cambios sin guardar. Si sales ahora, se perderán."
+        confirmLabel="Salir sin guardar"
+        danger={false}
+        onConfirm={() => router.push("/admin/productos")}
+        onCancel={() => setUnsavedWarning(false)}
       />
     </>
   );

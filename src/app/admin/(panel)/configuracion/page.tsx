@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Truck, AtSign } from "lucide-react";
+import { MessageCircle, MapPin, Truck, AtSign, Clock, Tag, Plus, X } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
+import ConfirmModal from "@/components/ConfirmModal";
 
 type SettingsData = {
   whatsapp: string;
@@ -11,7 +12,10 @@ type SettingsData = {
   facebookUrl: string;
   tiktokUrl: string;
   shippingText: string;
+  businessHours: string;
 };
+
+type Category = { id: string; name: string };
 
 function SectionCard({
   icon: Icon,
@@ -34,6 +38,87 @@ function SectionCard({
       </div>
       {children}
     </div>
+  );
+}
+
+function CategoriesManager() {
+  const { showToast } = useToast();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newName, setNewName] = useState("");
+  const [toDelete, setToDelete] = useState<Category | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+        setLoading(false);
+      });
+  }, []);
+
+  async function addCategory() {
+    if (!newName.trim()) return;
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName.trim() }),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setCategories((c) => [...c, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewName("");
+      showToast("Categoría creada", "success");
+    } else {
+      showToast("Esa categoría ya existe", "error");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    await fetch(`/api/admin/categories/${toDelete.id}`, { method: "DELETE" });
+    setCategories((c) => c.filter((cat) => cat.id !== toDelete.id));
+    showToast("Categoría borrada", "success");
+    setToDelete(null);
+  }
+
+  return (
+    <SectionCard icon={Tag} title="Categorías">
+      <div className="flex gap-2 mb-3">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Nueva categoría"
+          className="flex-1 border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+        />
+        <button
+          type="button"
+          onClick={addCategory}
+          className="bg-brown-dark text-white w-10 rounded-xl flex items-center justify-center shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+      {!loading && (
+        <div className="flex gap-2 flex-wrap">
+          {categories.map((c) => (
+            <div key={c.id} className="flex items-center gap-1.5 bg-cream rounded-full pl-3 pr-2 py-1.5 text-sm">
+              {c.name}
+              <button onClick={() => setToDelete(c)} className="text-ink/30 hover:text-red-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <ConfirmModal
+        open={!!toDelete}
+        title="¿Borrar categoría?"
+        message={toDelete ? `Los productos con la categoría "${toDelete.name}" no se borrarán, pero quedarán sin categoría asignada.` : ""}
+        onConfirm={confirmDelete}
+        onCancel={() => setToDelete(null)}
+      />
+    </SectionCard>
   );
 }
 
@@ -85,7 +170,9 @@ export default function ConfiguracionPage() {
         Estos datos se usan en tu tienda y página de links
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
+      <CategoriesManager />
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl mt-4">
         <SectionCard icon={MessageCircle} title="WhatsApp">
           <label className="text-xs font-medium text-ink/60 block mb-1">
             Número (con código de país, sin espacios ni +)
@@ -106,6 +193,15 @@ export default function ConfiguracionPage() {
             value={form.mapsUrl}
             onChange={(e) => setForm((f) => f && { ...f, mapsUrl: e.target.value })}
             className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+          />
+        </SectionCard>
+
+        <SectionCard icon={Clock} title="Horario de atención">
+          <input
+            value={form.businessHours}
+            onChange={(e) => setForm((f) => f && { ...f, businessHours: e.target.value })}
+            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+            placeholder="Lun a Sáb, 9:00 - 19:00"
           />
         </SectionCard>
 

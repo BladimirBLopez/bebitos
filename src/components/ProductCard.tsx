@@ -33,11 +33,18 @@ export default function ProductCard({ product }: { product: Product }) {
             Foto pendiente
           </div>
         )}
-        {product.originalPrice && (
-          <span className="absolute top-2 left-2 bg-green text-white text-xs font-bold px-2 py-1 rounded-full">
-            Oferta
-          </span>
-        )}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {product.originalPrice && (
+            <span className="bg-green text-white text-xs font-bold px-2 py-1 rounded-full w-fit">
+              Oferta
+            </span>
+          )}
+          {product.isNew && !product.originalPrice && (
+            <span className="bg-brown-dark text-cream text-xs font-bold px-2 py-1 rounded-full w-fit">
+              Nuevo
+            </span>
+          )}
+        </div>
       </div>
       <div className="p-4">
         <h3 className="font-display font-medium text-ink text-base mb-1">

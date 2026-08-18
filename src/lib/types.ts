@@ -11,6 +11,7 @@ export type Product = {
   features: string[];
   price: number;
   originalPrice?: number;
+  isNew?: boolean;
   category: string;
   colors: ProductColor[];
   images: string[]; // Cloudinary public_ids
