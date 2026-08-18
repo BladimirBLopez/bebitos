@@ -2,6 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Info,
+  Tag,
+  Palette,
+  Camera,
+  DollarSign,
+  Sparkles,
+  Plus,
+  X,
+  Trash2,
+} from "lucide-react";
+import ToggleSwitch from "./ToggleSwitch";
+import ConfirmModal from "./ConfirmModal";
+import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
 const UPLOAD_PRESET = "bebitos_admin";
@@ -38,19 +52,44 @@ const empty: ProductFormData = {
   promoPrice: "",
 };
 
+function SectionCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-brown/10 shadow-sm p-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="w-8 h-8 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+          <Icon className="w-4 h-4 text-brown-dark" />
+        </span>
+        <h3 className="font-display font-semibold text-brown-dark text-sm">
+          {title}
+        </h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function ProductForm({
   initial,
 }: {
   initial?: Partial<ProductFormData>;
 }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [form, setForm] = useState<ProductFormData>({ ...empty, ...initial });
   const [featureInput, setFeatureInput] = useState("");
   const [colorName, setColorName] = useState("");
   const [colorHex, setColorHex] = useState("#85BF35");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   function slugify(text: string) {
     return text
@@ -92,7 +131,6 @@ export default function ProductForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    setError("");
 
     try {
       const formData = new FormData();
@@ -109,8 +147,9 @@ export default function ProductForm({
 
       const data = await res.json();
       setForm((f) => ({ ...f, images: [...f.images, data.public_id] }));
+      showToast("Foto subida correctamente", "success");
     } catch {
-      setError("No se pudo subir la imagen. Intenta de nuevo.");
+      showToast("No se pudo subir la imagen. Intenta de nuevo.", "error");
     } finally {
       setUploading(false);
     }
@@ -123,7 +162,6 @@ export default function ProductForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setError("");
 
     const url = form.id
       ? `/api/admin/products/${form.id}`
@@ -139,235 +177,231 @@ export default function ProductForm({
     setSaving(false);
 
     if (!res.ok) {
-      setError("No se pudo guardar. Revisa los datos.");
+      showToast("No se pudo guardar. Revisa los datos.", "error");
       return;
     }
 
+    showToast(form.id ? "Producto actualizado" : "Producto creado", "success");
     router.push("/admin/productos");
     router.refresh();
   }
 
   async function handleDelete() {
     if (!form.id) return;
-    if (!confirm("¿Seguro que quieres borrar este producto?")) return;
+    setConfirmDelete(false);
     await fetch(`/api/admin/products/${form.id}`, { method: "DELETE" });
+    showToast("Producto borrado", "success");
     router.push("/admin/productos");
     router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5 max-w-lg">
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Nombre del producto
-        </label>
-        <input
-          value={form.name}
-          onChange={(e) => handleNameChange(e.target.value)}
-          className="w-full border border-brown/20 rounded-lg px-3 py-2"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Descripción
-        </label>
-        <textarea
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          className="w-full border border-brown/20 rounded-lg px-3 py-2"
-          rows={3}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Categoría
-        </label>
-        <select
-          value={form.category}
-          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-          className="w-full border border-brown/20 rounded-lg px-3 py-2"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Características
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            value={featureInput}
-            onChange={(e) => setFeatureInput(e.target.value)}
-            className="flex-1 border border-brown/20 rounded-lg px-3 py-2"
-            placeholder="Ej: Silicona 100% segura"
-          />
-          <button
-            type="button"
-            onClick={addFeature}
-            className="bg-brown-dark text-white px-3 rounded-lg"
-          >
-            +
-          </button>
-        </div>
-        <div className="flex flex-col gap-1">
-          {form.features.map((f, i) => (
-            <div key={i} className="flex items-center justify-between bg-white rounded px-3 py-1.5 text-sm">
-              {f}
-              <button type="button" onClick={() => removeFeature(i)} className="text-red-400">
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Colores disponibles
-        </label>
-        <div className="flex gap-2 mb-2 items-center">
-          <input
-            value={colorName}
-            onChange={(e) => setColorName(e.target.value)}
-            className="flex-1 border border-brown/20 rounded-lg px-3 py-2"
-            placeholder="Ej: Verde"
-          />
-          <input
-            type="color"
-            value={colorHex}
-            onChange={(e) => setColorHex(e.target.value)}
-            className="w-10 h-10 rounded"
-          />
-          <button
-            type="button"
-            onClick={addColor}
-            className="bg-brown-dark text-white px-3 py-2 rounded-lg"
-          >
-            +
-          </button>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {form.colors.map((c, i) => (
-            <div key={i} className="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-1 text-sm">
-              <span
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: c.hex }}
+    <>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
+        <SectionCard icon={Info} title="Información básica">
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="text-xs font-medium text-ink/60 block mb-1">
+                Nombre del producto
+              </label>
+              <input
+                value={form.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                required
               />
-              {c.name}
-              <button type="button" onClick={() => removeColor(i)} className="text-red-400 ml-1">
-                ✕
-              </button>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-ink block mb-1">
-          Fotos
-        </label>
-        <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-        {uploading && <p className="text-sm text-ink/50 mt-1">Subiendo...</p>}
-        <div className="flex gap-2 flex-wrap mt-2">
-          {form.images.map((img, i) => (
-            <div key={i} className="relative">
-              <img
-                src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill/${img}`}
-                alt=""
-                className="w-16 h-16 object-cover rounded-lg"
+            <div>
+              <label className="text-xs font-medium text-ink/60 block mb-1">
+                Descripción
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                rows={3}
+                required
               />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                className="absolute -top-1 -right-1 bg-red-400 text-white w-5 h-5 rounded-full text-xs"
+            </div>
+            <div>
+              <label className="text-xs font-medium text-ink/60 block mb-1">
+                Categoría
+              </label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
               >
-                ✕
-              </button>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="text-sm font-semibold text-ink block mb-1">
-            Precio (BOB)
-          </label>
-          <input
-            type="number"
-            value={form.price}
-            onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-            className="w-full border border-brown/20 rounded-lg px-3 py-2"
-            required
-          />
-        </div>
-        <div className="flex items-center gap-2 pt-6">
-          <input
-            type="checkbox"
-            checked={form.inStock}
-            onChange={(e) => setForm((f) => ({ ...f, inStock: e.target.checked }))}
-            id="inStock"
-          />
-          <label htmlFor="inStock" className="text-sm">Hay stock</label>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <input
-            type="checkbox"
-            checked={form.isPromo}
-            onChange={(e) => setForm((f) => ({ ...f, isPromo: e.target.checked }))}
-            id="isPromo"
-          />
-          <label htmlFor="isPromo" className="text-sm font-semibold">
-            Poner en promoción
-          </label>
-        </div>
-        {form.isPromo && (
-          <div>
-            <label className="text-sm text-ink/70 block mb-1">
-              Precio de oferta (BOB)
-            </label>
-            <input
-              type="number"
-              value={form.promoPrice}
-              onChange={(e) => setForm((f) => ({ ...f, promoPrice: e.target.value }))}
-              className="w-full border border-brown/20 rounded-lg px-3 py-2"
-            />
           </div>
-        )}
-      </div>
+        </SectionCard>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+        <SectionCard icon={Tag} title="Características">
+          <div className="flex gap-2 mb-3">
+            <input
+              value={featureInput}
+              onChange={(e) => setFeatureInput(e.target.value)}
+              className="flex-1 border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+              placeholder="Ej: Silicona 100% segura"
+            />
+            <button
+              type="button"
+              onClick={addFeature}
+              className="bg-brown-dark text-white w-10 rounded-xl flex items-center justify-center shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {form.features.map((f, i) => (
+              <div key={i} className="flex items-center justify-between bg-cream rounded-lg px-3 py-2 text-sm">
+                {f}
+                <button type="button" onClick={() => removeFeature(i)} className="text-ink/30 hover:text-red-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={saving || uploading}
-          className="bg-green hover:bg-green-dark text-white font-semibold px-5 py-2.5 rounded-full transition-colors disabled:opacity-60"
-        >
-          {saving ? "Guardando..." : "Guardar"}
-        </button>
-        {form.id && (
+        <SectionCard icon={Palette} title="Colores disponibles">
+          <div className="flex gap-2 mb-3 items-center">
+            <input
+              value={colorName}
+              onChange={(e) => setColorName(e.target.value)}
+              className="flex-1 border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+              placeholder="Ej: Verde"
+            />
+            <input
+              type="color"
+              value={colorHex}
+              onChange={(e) => setColorHex(e.target.value)}
+              className="w-11 h-11 rounded-xl shrink-0"
+            />
+            <button
+              type="button"
+              onClick={addColor}
+              className="bg-brown-dark text-white w-10 h-11 rounded-xl flex items-center justify-center shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {form.colors.map((c, i) => (
+              <div key={i} className="flex items-center gap-1.5 bg-cream rounded-full pl-1 pr-2.5 py-1 text-sm">
+                <span className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
+                {c.name}
+                <button type="button" onClick={() => removeColor(i)} className="text-ink/30 hover:text-red-400 ml-1">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={Camera} title="Fotos">
+          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-brown/20 rounded-xl py-4 text-sm text-ink/50 cursor-pointer hover:border-brown/40 transition-colors">
+            <Camera className="w-4 h-4" />
+            {uploading ? "Subiendo..." : "Toca para subir una foto"}
+            <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+          </label>
+          <div className="flex gap-2 flex-wrap mt-3">
+            {form.images.map((img, i) => (
+              <div key={i} className="relative">
+                <img
+                  src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill/${img}`}
+                  alt=""
+                  className="w-16 h-16 object-cover rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute -top-1.5 -right-1.5 bg-red-400 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={DollarSign} title="Precio y stock">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-ink/60 block mb-1">
+                Precio (BOB)
+              </label>
+              <input
+                type="number"
+                value={form.price}
+                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                required
+              />
+            </div>
+          </div>
+          <ToggleSwitch
+            checked={form.inStock}
+            onChange={(v) => setForm((f) => ({ ...f, inStock: v }))}
+            label="Hay stock"
+            description="Se muestra en la tienda si está activo"
+          />
+        </SectionCard>
+
+        <SectionCard icon={Sparkles} title="Promoción">
+          <ToggleSwitch
+            checked={form.isPromo}
+            onChange={(v) => setForm((f) => ({ ...f, isPromo: v }))}
+            label="Poner en promoción"
+            description="Se destaca con un sello de oferta en la tienda"
+          />
+          {form.isPromo && (
+            <div className="mt-3">
+              <label className="text-xs font-medium text-ink/60 block mb-1">
+                Precio de oferta (BOB)
+              </label>
+              <input
+                type="number"
+                value={form.promoPrice}
+                onChange={(e) => setForm((f) => ({ ...f, promoPrice: e.target.value }))}
+                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+              />
+            </div>
+          )}
+        </SectionCard>
+
+        <div className="flex items-center gap-3 sticky bottom-4">
           <button
-            type="button"
-            onClick={handleDelete}
-            className="text-red-400 text-sm"
+            type="submit"
+            disabled={saving || uploading}
+            className="flex-1 sm:flex-none bg-green hover:bg-green-dark text-white font-semibold px-6 py-3 rounded-full transition-colors disabled:opacity-60 shadow-lg"
           >
-            Borrar producto
+            {saving ? "Guardando..." : "Guardar producto"}
           </button>
-        )}
-      </div>
-    </form>
+          {form.id && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 text-red-400 hover:text-red-500 text-sm font-medium"
+            >
+              <Trash2 className="w-4 h-4" />
+              Borrar
+            </button>
+          )}
+        </div>
+      </form>
+
+      <ConfirmModal
+        open={confirmDelete}
+        title="¿Borrar este producto?"
+        message="Esta acción no se puede deshacer."
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    </>
   );
 }
