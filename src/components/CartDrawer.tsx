@@ -35,7 +35,7 @@ export default function CartDrawer() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[60] flex justify-end h-dvh">
+        <div className="fixed inset-0 z-[95] flex justify-end h-dvh">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}
