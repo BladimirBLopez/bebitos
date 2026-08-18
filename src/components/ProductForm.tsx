@@ -227,7 +227,8 @@ export default function ProductForm({
     setSaving(false);
 
     if (!res.ok) {
-      showToast("No se pudo guardar. Revisa los datos.", "error");
+      const errorData = await res.json().catch(() => ({}));
+      showToast(errorData.error || "No se pudo guardar. Revisa los datos.", "error");
       return;
     }
 

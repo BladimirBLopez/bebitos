@@ -153,7 +153,8 @@ export default function ConfiguracionPage() {
     if (res.ok) {
       showToast("Configuración guardada", "success");
     } else {
-      showToast("No se pudo guardar", "error");
+      const errorData = await res.json().catch(() => ({}));
+      showToast(errorData.error || "No se pudo guardar", "error");
     }
   }
 

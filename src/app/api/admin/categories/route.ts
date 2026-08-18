@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateCategoryName } from "@/lib/validation";
 
 export async function GET() {
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
@@ -9,8 +10,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const { name } = await req.json();
 
-  if (!name || !name.trim()) {
-    return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
+  const validation = validateCategoryName(name);
+  if (!validation.valid) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
   try {
