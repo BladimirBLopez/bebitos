@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { Product } from "@/lib/types";
 
 export default function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="bg-white rounded-2xl border border-brown/10 overflow-hidden hover:shadow-lg transition-shadow">
+    <Link
+      href={`/producto/${product.slug}`}
+      className="block bg-white rounded-2xl border border-brown/10 overflow-hidden hover:shadow-lg transition-shadow"
+    >
       <div className="aspect-square bg-cream flex items-center justify-center text-brown/30 text-sm">
         Foto pendiente
       </div>
@@ -27,11 +31,11 @@ export default function ProductCard({ product }: { product: Product }) {
           <span className="font-display font-semibold text-brown-dark text-lg">
             BOB {product.price}
           </span>
-          <button className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full transition-colors">
-            Agregar
-          </button>
+          <span className="bg-green text-white text-sm font-semibold px-3 py-1.5 rounded-full">
+            Ver más
+          </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
