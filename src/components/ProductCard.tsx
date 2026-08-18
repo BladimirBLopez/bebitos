@@ -1,8 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
+
+const CLOUD_NAME = "dkq95jus0";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -17,8 +20,24 @@ export default function ProductCard({ product }: { product: Product }) {
       href={`/producto/${product.slug}`}
       className="block bg-white rounded-2xl border border-brown/10 overflow-hidden hover:shadow-lg transition-shadow"
     >
-      <div className="aspect-square bg-cream flex items-center justify-center text-brown/30 text-sm">
-        Foto pendiente
+      <div className="aspect-square bg-cream relative overflow-hidden">
+        {product.images && product.images.length > 0 ? (
+          <Image
+            src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_400,c_fill/${product.images[0]}`}
+            alt={product.name}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-brown/30 text-sm">
+            Foto pendiente
+          </div>
+        )}
+        {product.originalPrice && (
+          <span className="absolute top-2 left-2 bg-green text-white text-xs font-bold px-2 py-1 rounded-full">
+            Oferta
+          </span>
+        )}
       </div>
       <div className="p-4">
         <h3 className="font-display font-medium text-ink text-base mb-1">
@@ -38,9 +57,16 @@ export default function ProductCard({ product }: { product: Product }) {
           ))}
         </div>
         <div className="flex items-center justify-between">
-          <span className="font-display font-semibold text-brown-dark text-lg">
-            BOB {product.price}
-          </span>
+          <div>
+            {product.originalPrice && (
+              <span className="text-xs text-red-400 line-through block">
+                BOB {product.originalPrice}
+              </span>
+            )}
+            <span className="font-display font-semibold text-brown-dark text-lg">
+              BOB {product.price}
+            </span>
+          </div>
           <button
             onClick={handleAdd}
             className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full transition-colors"

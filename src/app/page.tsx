@@ -1,9 +1,29 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/lib/products";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const dbProducts = await prisma.product.findMany({
+    where: { inStock: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const products = dbProducts.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    description: p.description,
+    features: p.features,
+    price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
+    originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
+    category: p.category,
+    colors: p.colors as { name: string; hex: string }[],
+    images: p.images,
+  }));
+
   return (
     <div className="flex flex-col flex-1">
       <Header />
@@ -12,11 +32,15 @@ export default function Home() {
         <h2 className="font-display text-2xl font-semibold text-brown-dark mb-6">
           Nuestros productos
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {products.length === 0 ? (
+          <p className="text-ink/50 text-sm">Pronto vas a ver productos aqui.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

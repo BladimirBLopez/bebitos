@@ -3,6 +3,8 @@ import AdminHeader from "@/components/AdminHeader";
 import ProductForm from "@/components/ProductForm";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditarProductoPage({
   params,
 }: {
