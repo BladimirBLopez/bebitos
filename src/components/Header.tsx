@@ -24,21 +24,14 @@ export default function Header({
   return (
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b border-brown/15">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <Image
-            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
-            alt="Bebitos"
-            width={44}
-            height={44}
-            className="rounded-full"
-            priority
-          />
+        <Link href="/" className="flex items-center shrink-0">
           <Image
             src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
             alt="Bebitos"
-            width={90}
-            height={28}
-            className="object-contain w-[90px] sm:w-[110px] h-auto"
+            width={150}
+            height={47}
+            className="object-contain w-[140px] sm:w-[170px] h-auto"
+            priority
           />
         </Link>
 
