@@ -70,7 +70,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-brown/10 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-brown/10 p-5" style={{ boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center gap-2.5 mb-4">
         <span className="w-8 h-8 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-brown-dark" />

@@ -159,9 +159,10 @@ export default function ProductsListClient({
             return (
               <div
                 key={p.id}
-                className={`bg-white rounded-xl p-3 flex items-center gap-3 hover:shadow-sm transition-shadow group ${
+                className={`bg-white rounded-xl p-3 flex items-center gap-3 transition-shadow group hover:[box-shadow:var(--shadow-card-hover)] ${
                   isSelected ? "ring-2 ring-brown-dark/30" : ""
                 }`}
+                style={{ boxShadow: "var(--shadow-card)" }}
               >
                 <button
                   type="button"

@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="bg-white rounded-2xl p-5">
+            <div key={s.label} className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--shadow-card)" }}>
               <div className={`w-9 h-9 rounded-xl ${s.color} flex items-center justify-center mb-3`}>
                 <Icon className="w-4.5 h-4.5 text-white" />
               </div>
@@ -39,7 +39,7 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
-      <div className="bg-white rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-white rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3" style={{ boxShadow: "var(--shadow-card)" }}>
         <div>
           <p className="font-medium text-ink text-sm">¿Quieres ver cómo luce tu tienda?</p>
           <p className="text-ink/50 text-xs">Se abre en una pestaña nueva</p>
