@@ -55,6 +55,9 @@ export default function MobileMenu({
               <Link href="/links" onClick={() => setOpen(false)} className="py-2.5 text-ink font-medium">
                 Nuestros enlaces
               </Link>
+              <Link href="/calidad" onClick={() => setOpen(false)} className="py-2.5 text-ink font-medium">
+                Calidad y seguridad
+              </Link>
 
               {categories.length > 0 && (
                 <>

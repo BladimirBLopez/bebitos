@@ -5,7 +5,7 @@ import TrustBar from "@/components/TrustBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import PromoCarousel from "@/components/PromoCarousel";
 import Testimonials from "@/components/Testimonials";
-import QualitySection from "@/components/QualitySection";
+import QualityBadgeBar from "@/components/QualityBadgeBar";
 import Footer from "@/components/Footer";
 import { prisma } from "@/lib/prisma";
 
@@ -80,7 +80,7 @@ export default async function Home({
           <CategoryFilter products={products} initialCategory={categoria} showPrices={settings?.showPrices ?? true} />
         )}
       </main>
-      <QualitySection reportUrl={settings?.qualityReportUrl} />
+      <QualityBadgeBar />
       <Testimonials />
       <Footer
         whatsapp={settings?.whatsapp}

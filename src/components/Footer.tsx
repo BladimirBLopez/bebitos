@@ -105,6 +105,11 @@ export default function Footer({
                 Nuestros enlaces
               </Link>
             </li>
+            <li>
+              <Link href="/calidad" className="text-cream/60 hover:text-cream text-sm transition-colors">
+                Calidad y seguridad
+              </Link>
+            </li>
           </ul>
         </div>
 
