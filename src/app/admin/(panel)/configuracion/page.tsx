@@ -224,7 +224,17 @@ function SocialGrid({
   }
 
   return (
-    <SectionCard icon={AtSign} title="Redes sociales">
+    <SectionCard icon={MessageCircle} title="Contacto y redes">
+      <label className="text-xs font-medium text-ink/60 block mb-1">
+        WhatsApp (con código de país, sin espacios ni +)
+      </label>
+      <input
+        value={form.whatsapp}
+        onChange={(e) => setForm((f) => f && { ...f, whatsapp: e.target.value })}
+        className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40 mb-4"
+        placeholder="59169501208"
+      />
+      <p className="text-xs font-medium text-ink/60 mb-2">Redes sociales</p>
       <div className="grid grid-cols-3 gap-3">
         {platforms.map((p) => {
           const hasValue = !!(form[p.field] as string)?.trim();
@@ -323,18 +333,6 @@ export default function ConfiguracionPage() {
         <p className="text-xs font-semibold text-brown-dark/50 uppercase tracking-wide mt-2">
           Contacto y redes
         </p>
-        <SectionCard icon={MessageCircle} title="WhatsApp">
-          <label className="text-xs font-medium text-ink/60 block mb-1">
-            Número (con código de país, sin espacios ni +)
-          </label>
-          <input
-            value={form.whatsapp}
-            onChange={(e) => setForm((f) => f && { ...f, whatsapp: e.target.value })}
-            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-            placeholder="59169501208"
-          />
-        </SectionCard>
-
         <SectionCard icon={MapPin} title="Ubicación">
           <label className="text-xs font-medium text-ink/60 block mb-1">
             Link de Google Maps
