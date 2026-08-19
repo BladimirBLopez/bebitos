@@ -358,7 +358,6 @@ export default function ConfiguracionPage() {
         <p className="text-xs font-semibold text-brown-dark/50 uppercase tracking-wide mt-3">
           Configuración de la tienda
         </p>
-        <CategoriesManager />
         <SectionCard icon={Truck} title="Texto de envíos">
           <input
             value={form.shippingText}
