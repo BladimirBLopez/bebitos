@@ -1,7 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import TrustBar from "@/components/TrustBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import PromoCarousel from "@/components/PromoCarousel";
 import Testimonials from "@/components/Testimonials";
@@ -63,7 +62,6 @@ export default async function Home({
         tiktokUrl={settings?.tiktokUrl}
         categories={categories}
       />
-      <TrustBar shippingText={settings?.shippingText} />
       <Hero shippingText={settings?.shippingText} backgroundImage={heroImage} />
       {!q && !categoria && (settings?.showPrices ?? true) && (
         <PromoCarousel products={promoProducts} />
