@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Info,
   Tag,
@@ -110,6 +111,7 @@ export default function ProductForm({
   const [unsavedWarning, setUnsavedWarning] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [showPrices, setShowPrices] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -120,6 +122,9 @@ export default function ProductForm({
           setForm((f) => ({ ...f, category: data[0].name }));
         }
       });
+    fetch("/api/admin/settings")
+      .then((res) => res.json())
+      .then((data) => setShowPrices(data?.showPrices ?? true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -423,8 +428,17 @@ export default function ProductForm({
               value={form.price}
               onChange={(e) => update({ price: e.target.value })}
               className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              required
+              required={showPrices}
             />
+            {!showPrices && (
+              <p className="text-[11px] text-ink/40 mt-1">
+                Los precios no se muestran en tu tienda. Actívalos en{" "}
+                <Link href="/admin/configuracion" className="underline">
+                  Configuración → Precios
+                </Link>{" "}
+                para que sean visibles.
+              </p>
+            )}
           </div>
 
           <label className="text-xs font-medium text-ink/60 block mb-2">
