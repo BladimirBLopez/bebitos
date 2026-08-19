@@ -14,7 +14,7 @@ const nunito = Nunito({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://bebitos-sable.vercel.app";
+const SITE_URL = "https://bebitos.online";
 const OG_IMAGE = "https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png";
 
 export const metadata: Metadata = {
