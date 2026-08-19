@@ -72,8 +72,8 @@ export default async function LinksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="fixed inset-0 -z-10">
+    <div className="relative min-h-screen">
+      <div className="absolute inset-0">
         {backgroundImage ? (
           <Image
             src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,h_2400,c_fill,e_blur:400/${backgroundImage}`}
@@ -88,7 +88,7 @@ export default async function LinksPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/40 via-brown-dark/60 to-cream/95" />
       </div>
 
-      <div className="flex flex-col items-center px-6 pt-14">
+      <div className="relative flex flex-col items-center px-6 pt-14">
         <div className="w-28 h-28 rounded-full border-4 border-cream shadow-lg overflow-hidden relative bg-white">
           <Image
             src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
