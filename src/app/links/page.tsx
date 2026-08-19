@@ -190,7 +190,7 @@ export default async function LinksPage() {
           ))}
         </div>
 
-        <p className="text-ink/30 text-xs mt-8 mb-6">Bebitos © 2026</p>
+        <p className="text-ink/30 text-xs mt-8 mb-6">Bebitos © 2024</p>
       </div>
     </div>
   );
