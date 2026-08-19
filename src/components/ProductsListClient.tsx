@@ -26,9 +26,11 @@ type Category = { id: string; name: string };
 export default function ProductsListClient({
   products,
   allCategories = [],
+  showPrices = true,
 }: {
   products: ProductRow[];
   allCategories?: Category[];
+  showPrices?: boolean;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -208,22 +210,24 @@ export default function ProductsListClient({
                   </div>
                 </Link>
 
-                <div className="text-right shrink-0">
-                  {p.isPromo && p.promoPrice ? (
-                    <div>
-                      <span className="text-xs text-red-400 line-through block">
+                {showPrices && (
+                  <div className="text-right shrink-0">
+                    {p.isPromo && p.promoPrice ? (
+                      <div>
+                        <span className="text-xs text-red-400 line-through block">
+                          BOB {p.price}
+                        </span>
+                        <span className="font-semibold text-green">
+                          BOB {p.promoPrice}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-brown-dark">
                         BOB {p.price}
                       </span>
-                      <span className="font-semibold text-green">
-                        BOB {p.promoPrice}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="font-semibold text-brown-dark">
-                      BOB {p.price}
-                    </span>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 <button
                   onClick={() => setToDelete(p)}
