@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Package, Settings, LogOut, ExternalLink, Link2 } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Inicio", icon: LayoutDashboard },
@@ -34,8 +34,11 @@ export default function AdminSidebar() {
           />
         </div>
         <div className="flex items-center gap-3 sm:hidden">
-          <Link href="/" target="_blank" className="text-cream/70">
+          <Link href="/" target="_blank" className="text-cream/70" title="Ver tienda">
             <ExternalLink className="w-4.5 h-4.5" />
+          </Link>
+          <Link href="/links" target="_blank" className="text-cream/70" title="Ver links">
+            <Link2 className="w-4.5 h-4.5" />
           </Link>
           <button onClick={handleLogout} className="text-cream/70">
             <LogOut className="w-4.5 h-4.5" />
@@ -71,7 +74,15 @@ export default function AdminSidebar() {
           className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-cream/70 hover:bg-cream/10 hover:text-cream transition-colors"
         >
           <ExternalLink className="w-4 h-4 shrink-0" />
-          Ver página web
+          Ver tienda
+        </Link>
+        <Link
+          href="/links"
+          target="_blank"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-cream/70 hover:bg-cream/10 hover:text-cream transition-colors"
+        >
+          <Link2 className="w-4 h-4 shrink-0" />
+          Ver links
         </Link>
         <button
           onClick={handleLogout}
