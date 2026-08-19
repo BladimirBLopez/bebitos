@@ -285,7 +285,7 @@ export default function ProductsListClient({
 
                 <button
                   onClick={() => setToDelete(p)}
-                  className="opacity-0 group-hover:opacity-100 sm:opacity-100 text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
+                  className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
                   title="Borrar"
                 >
                   <Trash2 className="w-4 h-4" />
