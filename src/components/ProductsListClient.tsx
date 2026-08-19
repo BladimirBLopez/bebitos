@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Plus, ImageOff, Trash2, Check } from "lucide-react";
+import { Search, Plus, ImageOff, Trash2, Check, ChevronUp, ChevronDown } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
+import ToggleSwitch from "./ToggleSwitch";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -24,7 +25,7 @@ type ProductRow = {
 type Category = { id: string; name: string };
 
 export default function ProductsListClient({
-  products,
+  products: initialProducts,
   allCategories = [],
   showPrices = true,
 }: {
@@ -34,6 +35,7 @@ export default function ProductsListClient({
 }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
@@ -41,6 +43,7 @@ export default function ProductsListClient({
   const [bulkAction, setBulkAction] = useState<"eliminar" | null>(null);
 
   const categories = ["Todas", ...allCategories.map((c) => c.name)];
+  const filtersActive = search.trim() !== "" || category !== "Todas";
 
   const filtered = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -88,6 +91,35 @@ export default function ProductsListClient({
     }
   }
 
+  async function toggleActive(product: ProductRow) {
+    const newValue = !product.inStock;
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, inStock: newValue } : p))
+    );
+
+    await fetch("/api/admin/products/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [product.id], action: newValue ? "activar" : "desactivar" }),
+    });
+  }
+
+  async function move(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= products.length) return;
+
+    const reordered = [...products];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    setProducts(reordered);
+
+    const items = reordered.map((p, i) => ({ id: p.id, order: i }));
+    await fetch("/api/admin/products/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -124,6 +156,12 @@ export default function ProductsListClient({
         </select>
       </div>
 
+      {filtersActive && (
+        <p className="text-[11px] text-ink/40 mb-2">
+          Reordenar con flechas solo funciona sin filtros activos
+        </p>
+      )}
+
       {selected.size > 0 && (
         <div className="flex items-center gap-2 bg-brown-dark rounded-xl px-4 py-2.5 mb-3 flex-wrap">
           <span className="text-cream text-sm font-medium mr-1">
@@ -158,14 +196,34 @@ export default function ProductsListClient({
         <div className="flex flex-col gap-2">
           {filtered.map((p) => {
             const isSelected = selected.has(p.id);
+            const realIndex = products.findIndex((prod) => prod.id === p.id);
             return (
               <div
                 key={p.id}
-                className={`bg-white rounded-xl p-3 flex items-center gap-3 transition-shadow group hover:[box-shadow:var(--shadow-card-hover)] ${
+                className={`bg-white rounded-xl p-3 flex items-center gap-2 transition-shadow group hover:[box-shadow:var(--shadow-card-hover)] ${
                   isSelected ? "ring-2 ring-brown-dark/30" : ""
                 }`}
                 style={{ boxShadow: "var(--shadow-card)" }}
               >
+                {!filtersActive && (
+                  <div className="hidden sm:flex flex-col gap-0.5 shrink-0">
+                    <button
+                      onClick={() => move(realIndex, -1)}
+                      disabled={realIndex === 0}
+                      className="w-6 h-5 rounded bg-cream flex items-center justify-center text-brown-dark disabled:opacity-30"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => move(realIndex, 1)}
+                      disabled={realIndex === products.length - 1}
+                      className="w-6 h-5 rounded bg-cream flex items-center justify-center text-brown-dark disabled:opacity-30"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => toggleSelect(p.id)}
@@ -202,32 +260,28 @@ export default function ProductsListClient({
                         🔥 Oferta
                       </span>
                     )}
-                    {!p.inStock && (
-                      <span className="text-[10px] font-semibold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full">
-                        😔 Agotado
-                      </span>
-                    )}
                   </div>
+                  {showPrices && (
+                    <div className="mt-1">
+                      {p.isPromo && p.promoPrice ? (
+                        <span className="text-xs">
+                          <span className="text-red-400 line-through mr-1">BOB {p.price}</span>
+                          <span className="font-semibold text-green">BOB {p.promoPrice}</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-brown-dark">BOB {p.price}</span>
+                      )}
+                    </div>
+                  )}
                 </Link>
 
-                {showPrices && (
-                  <div className="text-right shrink-0">
-                    {p.isPromo && p.promoPrice ? (
-                      <div>
-                        <span className="text-xs text-red-400 line-through block">
-                          BOB {p.price}
-                        </span>
-                        <span className="font-semibold text-green">
-                          BOB {p.promoPrice}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-brown-dark">
-                        BOB {p.price}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <ToggleSwitch
+                    checked={p.inStock}
+                    onChange={() => toggleActive(p)}
+                    label=""
+                  />
+                </div>
 
                 <button
                   onClick={() => setToDelete(p)}

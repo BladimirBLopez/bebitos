@@ -22,6 +22,7 @@ model Product {
   isPromo     Boolean  @default(false)
   promoPrice  Float?
   isNew       Boolean  @default(false)
+  order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
