@@ -1,7 +1,19 @@
+"use client";
+
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Truck, ShieldCheck, MessageCircle } from "lucide-react";
 
 const CLOUD_NAME = "dkq95jus0";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.12, duration: 0.5, ease: "easeOut" },
+  }),
+};
 
 export default function Hero({
   shippingText,
@@ -22,21 +34,44 @@ export default function Hero({
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/60 to-brown-dark/90" />
-      <div className="relative max-w-6xl mx-auto px-4 py-12 sm:py-16 text-center">
-        <h1 className="font-display text-4xl sm:text-5xl font-semibold mb-4">
+      <div className="relative max-w-6xl mx-auto px-4 py-14 sm:py-20 text-center">
+        <motion.h1
+          className="font-display text-5xl sm:text-6xl font-semibold mb-4"
+          initial="hidden"
+          animate="visible"
+          custom={0}
+          variants={fadeUp}
+        >
           Lo mejor para tu bebé
-        </h1>
-        <p className="text-cream/80 max-w-xl mx-auto text-base sm:text-lg mb-7">
+        </motion.h1>
+        <motion.p
+          className="text-cream/80 max-w-xl mx-auto text-base sm:text-lg mb-8"
+          initial="hidden"
+          animate="visible"
+          custom={1}
+          variants={fadeUp}
+        >
           Articulos y accesorios pensados para el cuidado y la alimentacion de tu bebe, con la calidad que se merece.
-        </p>
-        <a
+        </motion.p>
+        <motion.a
           href="#catalogo"
-          className="inline-block bg-green hover:bg-green-dark text-white font-semibold px-6 py-3 rounded-full transition-colors mb-8"
+          className="inline-block bg-green hover:bg-green-dark text-white font-semibold px-7 py-3.5 rounded-full transition-colors mb-8 shadow-lg shadow-green/20"
+          initial="hidden"
+          animate="visible"
+          custom={2}
+          variants={fadeUp}
+          whileTap={{ scale: 0.97 }}
         >
           Ver productos
-        </a>
+        </motion.a>
 
-        <div className="flex items-center justify-center gap-5 sm:gap-8 flex-wrap text-cream/85">
+        <motion.div
+          className="flex items-center justify-center gap-5 sm:gap-8 flex-wrap text-cream/85"
+          initial="hidden"
+          animate="visible"
+          custom={3}
+          variants={fadeUp}
+        >
           <div className="flex items-center gap-1.5">
             <Truck className="w-4 h-4 shrink-0" />
             <span className="text-xs sm:text-sm">{shippingText || "Envíos a nivel nacional"}</span>
@@ -49,7 +84,7 @@ export default function Hero({
             <MessageCircle className="w-4 h-4 shrink-0" />
             <span className="text-xs sm:text-sm">Atención por WhatsApp</span>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
