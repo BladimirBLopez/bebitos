@@ -1,9 +1,29 @@
-export default function Hero() {
+import Image from "next/image";
+
+const CLOUD_NAME = "dkq95jus0";
+
+export default function Hero({
+  shippingText,
+  backgroundImage,
+}: {
+  shippingText?: string;
+  backgroundImage?: string;
+}) {
   return (
-    <section className="bg-brown-dark text-cream">
-      <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 text-center">
+    <section className="relative bg-brown-dark text-cream overflow-hidden">
+      {backgroundImage && (
+        <Image
+          src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,h_700,c_fill,e_blur:200/${backgroundImage}`}
+          alt=""
+          fill
+          className="object-cover opacity-40"
+          priority
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/60 to-brown-dark/90" />
+      <div className="relative max-w-6xl mx-auto px-4 py-12 sm:py-16 text-center">
         <p className="font-sans text-green font-semibold tracking-wide uppercase text-sm mb-3">
-          Envios a nivel departamental
+          {shippingText || "Envios a nivel departamental"}
         </p>
         <h1 className="font-display text-4xl sm:text-5xl font-semibold mb-4">
           Lo mejor para tu bebé
