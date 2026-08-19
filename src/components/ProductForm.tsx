@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
-import QuickCategoryModal from "./QuickCategoryModal";
+import CategoryManagerModal from "./CategoryManagerModal";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -122,24 +122,6 @@ export default function ProductForm({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function handleCreateCategory(name: string) {
-    const res = await fetch("/api/admin/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-
-    if (res.ok) {
-      const created: Category = await res.json();
-      setCategories((c) => [...c, created].sort((a, b) => a.name.localeCompare(b.name)));
-      update({ category: created.name });
-      setCategoryModalOpen(false);
-      showToast("Categoría creada", "success");
-    } else {
-      showToast("Esa categoría ya existe", "error");
-    }
-  }
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -333,7 +315,7 @@ export default function ProductForm({
                 onClick={() => setCategoryModalOpen(true)}
                 className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
               >
-                ¿Falta una categoría? Créala aquí
+                Gestionar categorías
               </button>
             </div>
           </div>
@@ -512,9 +494,14 @@ export default function ProductForm({
         onCancel={() => setConfirmDelete(false)}
       />
 
-      <QuickCategoryModal
+      <CategoryManagerModal
         open={categoryModalOpen}
-        onSave={handleCreateCategory}
+        categories={categories}
+        setCategories={setCategories}
+        onSelect={(name) => {
+          update({ category: name });
+          setCategoryModalOpen(false);
+        }}
         onClose={() => setCategoryModalOpen(false)}
       />
 
