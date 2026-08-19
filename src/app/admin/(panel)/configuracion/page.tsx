@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Truck, AtSign, Clock, Tag, Plus, X, DollarSign, FileCheck, Save, Check } from "lucide-react";
+import { MessageCircle, MapPin, Truck, AtSign, Clock, Tag, Plus, X, DollarSign, FileCheck, Save, Check, Pencil } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
 import ToggleSwitch from "@/components/ToggleSwitch";
@@ -246,6 +246,11 @@ function SocialGrid({
               >
                 {hasValue ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
               </span>
+              {hasValue && (
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white border border-brown/15 flex items-center justify-center text-brown-dark/50">
+                  <Pencil className="w-2.5 h-2.5" />
+                </span>
+              )}
             </button>
           );
         })}
