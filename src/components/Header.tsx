@@ -22,7 +22,7 @@ export default function Header({
   categories = [],
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b border-brown/15">
+    <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b border-brown/15 relative">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <MobileMenu instagramUrl={instagramUrl} facebookUrl={facebookUrl} tiktokUrl={tiktokUrl} />
