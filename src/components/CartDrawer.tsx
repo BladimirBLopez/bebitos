@@ -4,9 +4,8 @@ import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
-const WHATSAPP_NUMBER = "59169501208";
-
-export default function CartDrawer() {
+export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
+  const WHATSAPP_NUMBER = whatsapp || "59169501208";
   const [open, setOpen] = useState(false);
   const { items, removeItem, updateQty, totalItems, totalPrice, clearCart } = useCart();
 

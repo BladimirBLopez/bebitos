@@ -15,6 +15,7 @@ type HeaderProps = {
 };
 
 export default function Header({
+  whatsapp,
   instagramUrl = "https://www.instagram.com/bebitos.bo",
   facebookUrl = "https://www.facebook.com/share/1LfNHku3nT/?mibextid=wwXIfr",
   tiktokUrl = "https://www.tiktok.com/@bebitos_bo",
@@ -51,7 +52,7 @@ export default function Header({
 
         <div className="flex items-center gap-1.5 sm:gap-3">
           <SearchBar />
-          <CartDrawer />
+          <CartDrawer whatsapp={whatsapp} />
         </div>
       </div>
     </header>
