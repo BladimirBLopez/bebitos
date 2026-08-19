@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Truck, AtSign, Clock, Tag, Plus, X, DollarSign } from "lucide-react";
+import { MessageCircle, MapPin, Truck, AtSign, Clock, Tag, Plus, X, DollarSign, FileCheck } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
 import ToggleSwitch from "@/components/ToggleSwitch";
@@ -15,6 +15,7 @@ type SettingsData = {
   shippingText: string;
   businessHours: string;
   showPrices: boolean;
+  qualityReportUrl: string;
 };
 
 type Category = { id: string; name: string };
@@ -247,6 +248,18 @@ export default function ConfiguracionPage() {
             onChange={(v) => setForm((f) => f && { ...f, showPrices: v })}
             label="Mostrar precios en la tienda"
             description="Si lo apagas, los clientes tendran que consultar el precio por WhatsApp"
+          />
+        </SectionCard>
+
+        <SectionCard icon={FileCheck} title="Informe de calidad">
+          <label className="text-xs font-medium text-ink/60 block mb-1">
+            Link del informe (subelo a Cloudinary y pega el link aqui)
+          </label>
+          <input
+            value={form.qualityReportUrl}
+            onChange={(e) => setForm((f) => f && { ...f, qualityReportUrl: e.target.value })}
+            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+            placeholder="https://..."
           />
         </SectionCard>
 

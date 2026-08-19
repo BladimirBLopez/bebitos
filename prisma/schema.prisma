@@ -37,6 +37,7 @@ model Settings {
   shippingText  String  @default("Envios a nivel nacional")
   businessHours String  @default("")
   showPrices    Boolean  @default(true)
+  qualityReportUrl String @default("")
   updatedAt     DateTime @updatedAt
 }
 
