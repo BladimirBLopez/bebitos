@@ -225,10 +225,12 @@ export default function ProductForm({
       : "/api/admin/products";
     const method = form.id ? "PUT" : "POST";
 
+    const payload = showPrices ? form : { ...form, price: form.price || "1" };
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
 
     setSaving(false);
@@ -420,23 +422,26 @@ export default function ProductForm({
 
         <SectionCard icon={DollarSign} title="Precio">
           <div className="mb-4">
-            <label className="text-xs font-medium text-ink/60 block mb-1">
-              Precio (BOB)
-            </label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) => update({ price: e.target.value })}
-              className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              required={showPrices}
-            />
-            {!showPrices && (
-              <p className="text-[11px] text-ink/40 mt-1">
+            {showPrices ? (
+              <>
+                <label className="text-xs font-medium text-ink/60 block mb-1">
+                  Precio (BOB)
+                </label>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => update({ price: e.target.value })}
+                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                  required
+                />
+              </>
+            ) : (
+              <p className="text-[11px] text-ink/40">
                 Los precios no se muestran en tu tienda. Actívalos en{" "}
                 <Link href="/admin/configuracion" className="underline">
                   Configuración → Precios
                 </Link>{" "}
-                para que sean visibles.
+                para poder asignarle uno a este producto.
               </p>
             )}
           </div>
