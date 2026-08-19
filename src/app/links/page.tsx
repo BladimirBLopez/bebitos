@@ -72,25 +72,21 @@ export default async function LinksPage() {
   ];
 
   return (
-    <div className="relative min-h-screen">
-      <div className="absolute inset-0">
-        {backgroundImage ? (
+    <div className="min-h-screen bg-cream">
+      <div className="relative h-40 sm:h-48 bg-brown-dark overflow-hidden">
+        {backgroundImage && (
           <Image
-            src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,h_2400,c_fill,e_blur:400/${backgroundImage}`}
+            src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,h_500,c_fill/${backgroundImage}`}
             alt=""
             fill
-            className="object-cover"
-            priority
+            className="object-cover opacity-45"
           />
-        ) : (
-          <div className="w-full h-full bg-brown-dark" />
         )}
-        <div className="absolute inset-0 bg-brown-dark/70 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/30 via-brown-dark/70 to-cream" />
+        <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/20 to-brown-dark" />
       </div>
 
-      <div className="relative flex flex-col items-center px-6 pt-16">
-        <div className="w-36 h-36 rounded-full border-[5px] border-cream shadow-2xl overflow-hidden relative">
+      <div className="flex flex-col items-center px-6 -mt-16">
+        <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-[5px] border-cream shadow-xl overflow-hidden relative">
           <Image
             src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
             alt="Bebitos"
@@ -108,7 +104,7 @@ export default async function LinksPage() {
           🍼 Bebitos | Todo para la alimentación de tu bebé. Encuentra platos, cucharas
           y accesorios seguros, prácticos y de alta calidad. ✨
         </p>
-        <p className="text-green text-xs font-semibold tracking-wide mt-1 mb-4">
+        <p className="text-green-dark text-xs font-bold tracking-wide mt-2 mb-4">
           {shippingText} 🇧🇴
         </p>
 
@@ -119,7 +115,7 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-white border border-brown/15 flex items-center justify-center text-brown-dark hover:bg-brown-dark hover:text-cream transition-colors"
+              className="w-10 h-10 rounded-full bg-white border border-brown/15 shadow-sm flex items-center justify-center text-brown-dark hover:bg-brown-dark hover:text-cream transition-colors"
             >
               {ICONS[s.name]}
             </a>
@@ -129,7 +125,7 @@ export default async function LinksPage() {
         <div className="w-full max-w-sm flex flex-col gap-3">
           <a
             href="/"
-            className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 transition-colors"
+            className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 shadow-md transition-colors"
           >
             <span className="w-10 h-10 rounded-full bg-cream/15 flex items-center justify-center shrink-0">
               <BagIcon />
@@ -144,7 +140,7 @@ export default async function LinksPage() {
             href={`https://wa.me/${whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 bg-green hover:bg-green-dark text-white rounded-2xl px-4 py-3.5 transition-colors"
+            className="flex items-center gap-3 bg-green hover:bg-green-dark text-white rounded-2xl px-4 py-3.5 shadow-md transition-colors"
           >
             <span className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
               <ChatIcon />
@@ -159,7 +155,7 @@ export default async function LinksPage() {
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 transition-colors"
+            className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 shadow-sm transition-colors"
           >
             <span className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
               <PinIcon />
@@ -176,7 +172,7 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 transition-colors"
+              className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 shadow-sm transition-colors"
             >
               <span className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
                 {ICONS[s.name]}
