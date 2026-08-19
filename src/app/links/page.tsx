@@ -89,12 +89,13 @@ export default async function LinksPage() {
       </div>
 
       <div className="relative flex flex-col items-center px-6 pt-14">
-        <div className="w-28 h-28 rounded-full border-4 border-cream shadow-lg overflow-hidden relative bg-white">
+        <div className="w-28 h-28 rounded-full border-4 border-cream shadow-lg overflow-hidden relative bg-white flex items-center justify-center">
           <Image
-            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
+            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
             alt="Bebitos"
-            fill
-            className="object-contain p-1"
+            width={80}
+            height={25}
+            className="object-contain w-[76px] h-auto"
             priority
           />
         </div>
