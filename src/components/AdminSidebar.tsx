@@ -34,14 +34,24 @@ export default function AdminSidebar() {
             className="object-contain w-[100px] h-auto brightness-0 invert opacity-90"
           />
         </div>
-        <div className="flex items-center gap-3 sm:hidden">
-          <Link href="/" target="_blank" className="text-cream/70" title="Ver tienda">
-            <ExternalLink className="w-4.5 h-4.5" />
+        <div className="flex items-center gap-1.5 sm:hidden">
+          <Link
+            href="/"
+            target="_blank"
+            className="flex items-center gap-1 bg-cream/10 hover:bg-cream/20 text-cream/90 text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Tienda
           </Link>
-          <Link href="/links" target="_blank" className="text-cream/70" title="Ver links">
-            <Link2 className="w-4.5 h-4.5" />
+          <Link
+            href="/links"
+            target="_blank"
+            className="flex items-center gap-1 bg-cream/10 hover:bg-cream/20 text-cream/90 text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Links
           </Link>
-          <button onClick={handleLogout} className="text-cream/70">
+          <button onClick={handleLogout} className="text-cream/70 p-1.5">
             <LogOut className="w-4.5 h-4.5" />
           </button>
         </div>
