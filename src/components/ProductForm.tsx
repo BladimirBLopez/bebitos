@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
+import QuickCategoryModal from "./QuickCategoryModal";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -108,6 +109,7 @@ export default function ProductForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [unsavedWarning, setUnsavedWarning] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/categories")
@@ -120,6 +122,24 @@ export default function ProductForm({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleCreateCategory(name: string) {
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (res.ok) {
+      const created: Category = await res.json();
+      setCategories((c) => [...c, created].sort((a, b) => a.name.localeCompare(b.name)));
+      update({ category: created.name });
+      setCategoryModalOpen(false);
+      showToast("Categoría creada", "success");
+    } else {
+      showToast("Esa categoría ya existe", "error");
+    }
+  }
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -308,9 +328,13 @@ export default function ProductForm({
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
-              <p className="text-[11px] text-ink/40 mt-1">
-                ¿Falta una categoría? Créala en Configuración
-              </p>
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(true)}
+                className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
+              >
+                ¿Falta una categoría? Créala aquí
+              </button>
             </div>
           </div>
         </SectionCard>
@@ -486,6 +510,12 @@ export default function ProductForm({
         message="Esta acción no se puede deshacer."
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <QuickCategoryModal
+        open={categoryModalOpen}
+        onSave={handleCreateCategory}
+        onClose={() => setCategoryModalOpen(false)}
       />
 
       <ConfirmModal
