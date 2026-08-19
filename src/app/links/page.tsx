@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const CLOUD_NAME = "dkq95jus0";
+
 const ICONS: Record<string, React.ReactNode> = {
   Instagram: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
@@ -50,11 +52,18 @@ function ChatIcon() {
 }
 
 export default async function LinksPage() {
-  const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
+  const [settings, productWithImage] = await Promise.all([
+    prisma.settings.findUnique({ where: { id: "singleton" } }),
+    prisma.product.findFirst({
+      where: { images: { isEmpty: false } },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const whatsapp = settings?.whatsapp || "59169501208";
   const mapsUrl = settings?.mapsUrl || "https://maps.app.goo.gl/JrdPzWFLudsLRbFD7";
   const shippingText = settings?.shippingText || "Envios a nivel nacional";
+  const backgroundImage = productWithImage?.images[0];
 
   const socials = [
     { name: "Instagram", url: settings?.instagramUrl || "https://www.instagram.com/bebitos.bo", desc: "Novedades y promos" },
@@ -63,16 +72,32 @@ export default async function LinksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brown/15 via-cream to-cream">
-      <div className="flex flex-col items-center px-6 pt-14">
-        <Image
-          src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
-          alt="Bebitos"
-          width={96}
-          height={96}
-          className="rounded-full shadow-md"
-          priority
-        />
+    <div className="min-h-screen bg-cream">
+      <div className="relative h-56 sm:h-64 overflow-hidden">
+        {backgroundImage ? (
+          <Image
+            src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,h_500,c_fill,e_blur:300/${backgroundImage}`}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="w-full h-full bg-brown-dark" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/50 via-brown-dark/70 to-cream" />
+      </div>
+
+      <div className="flex flex-col items-center px-6 -mt-16">
+        <div className="w-28 h-28 rounded-full border-4 border-cream shadow-lg overflow-hidden relative bg-white">
+          <Image
+            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
+            alt="Bebitos"
+            fill
+            className="object-cover scale-110"
+            priority
+          />
+        </div>
 
         <h1 className="font-display text-2xl font-semibold text-brown-dark mt-3">
           Bebitos
