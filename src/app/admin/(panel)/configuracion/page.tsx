@@ -231,9 +231,10 @@ export default function ConfiguracionPage() {
         Estos datos se usan en tu tienda y página de links
       </p>
 
-      <CategoriesManager />
-
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl mt-4">
+        <p className="text-xs font-semibold text-brown-dark/50 uppercase tracking-wide mt-2">
+          Contacto y redes
+        </p>
         <SectionCard icon={MessageCircle} title="WhatsApp">
           <label className="text-xs font-medium text-ink/60 block mb-1">
             Número (con código de país, sin espacios ni +)
@@ -290,6 +291,10 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
+        <p className="text-xs font-semibold text-brown-dark/50 uppercase tracking-wide mt-3">
+          Configuración de la tienda
+        </p>
+        <CategoriesManager />
         <SectionCard icon={Truck} title="Texto de envíos">
           <input
             value={form.shippingText}
