@@ -67,7 +67,7 @@ export default async function Home({
       {!q && !categoria && (settings?.showPrices ?? true) && (
         <PromoCarousel products={promoProducts} />
       )}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-4 pb-10">
+      <main id="catalogo" className="flex-1 max-w-6xl w-full mx-auto px-4 pt-4 pb-10 scroll-mt-20">
         <h2 className="font-display text-2xl font-semibold text-brown-dark mb-6">
           {q ? `Resultados para "${q}"` : "Nuestros productos"}
         </h2>

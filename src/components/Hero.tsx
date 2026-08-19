@@ -28,9 +28,15 @@ export default function Hero({
         <h1 className="font-display text-4xl sm:text-5xl font-semibold mb-4">
           Lo mejor para tu bebé
         </h1>
-        <p className="text-cream/80 max-w-xl mx-auto text-base sm:text-lg">
+        <p className="text-cream/80 max-w-xl mx-auto text-base sm:text-lg mb-7">
           Articulos y accesorios pensados para el cuidado y la alimentacion de tu bebe, con la calidad que se merece.
         </p>
+        <a
+          href="#catalogo"
+          className="inline-block bg-green hover:bg-green-dark text-white font-semibold px-6 py-3 rounded-full transition-colors"
+        >
+          Ver productos
+        </a>
       </div>
     </section>
   );
