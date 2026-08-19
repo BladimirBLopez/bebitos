@@ -26,15 +26,12 @@ export default function AdminSidebar() {
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <Image
-            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
+            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
             alt="Bebitos"
-            width={32}
-            height={32}
-            className="rounded-full"
+            width={110}
+            height={35}
+            className="object-contain w-[100px] h-auto brightness-0 invert opacity-90"
           />
-          <span className="font-display font-semibold text-cream text-sm hidden sm:block">
-            Panel Bebitos
-          </span>
         </div>
         <div className="flex items-center gap-3 sm:hidden">
           <Link href="/" target="_blank" className="text-cream/70">

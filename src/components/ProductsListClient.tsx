@@ -21,10 +21,14 @@ type ProductRow = {
   images: string[];
 };
 
+type Category = { id: string; name: string };
+
 export default function ProductsListClient({
   products,
+  allCategories = [],
 }: {
   products: ProductRow[];
+  allCategories?: Category[];
 }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -34,7 +38,7 @@ export default function ProductsListClient({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"eliminar" | null>(null);
 
-  const categories = ["Todas", ...Array.from(new Set(products.map((p) => p.category)))];
+  const categories = ["Todas", ...allCategories.map((c) => c.name)];
 
   const filtered = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
