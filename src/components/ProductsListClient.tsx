@@ -70,6 +70,13 @@ export default function ProductsListClient({
 
     setBulkAction(null);
     if (res.ok) {
+      if (action === "eliminar") {
+        setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
+      } else {
+        setProducts((prev) =>
+          prev.map((p) => (ids.includes(p.id) ? { ...p, inStock: action === "activar" } : p))
+        );
+      }
       showToast(`${ids.length} producto(s) actualizado(s)`, "success");
       setSelected(new Set());
       router.refresh();
@@ -81,13 +88,17 @@ export default function ProductsListClient({
   async function handleDelete() {
     if (!toDelete) return;
     const res = await fetch(`/api/admin/products/${toDelete.id}`, { method: "DELETE" });
+    const deletedName = toDelete.name;
+    const deletedId = toDelete.id;
     setToDelete(null);
 
     if (res.ok) {
-      showToast(`"${toDelete.name}" fue borrado`, "success");
+      setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+      showToast(`"${deletedName}" fue borrado`, "success");
       router.refresh();
     } else {
-      showToast("No se pudo borrar el producto", "error");
+      const errorData = await res.json().catch(() => ({}));
+      showToast(errorData.error || "No se pudo borrar el producto", "error");
     }
   }
 

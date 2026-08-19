@@ -40,11 +40,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  try {
-    await prisma.product.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `DEBUG: ${message}` }, { status: 500 });
-  }
+  await prisma.product.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
