@@ -313,13 +313,16 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="self-start bg-green hover:bg-green-dark text-white font-semibold px-6 py-3 rounded-full transition-colors disabled:opacity-60"
-        >
-          {saving ? "Guardando..." : "Guardar cambios"}
-        </button>
+        <div className="h-4" />
+        <div className="sticky bottom-4 z-30">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-green hover:bg-green-dark text-white font-semibold px-6 py-3 rounded-full transition-colors disabled:opacity-60 shadow-xl"
+          >
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
       </form>
     </div>
   );
