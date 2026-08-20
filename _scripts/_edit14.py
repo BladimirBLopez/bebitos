@@ -1,22 +1,29 @@
-path = "src/app/admin/productos/[id]/page.tsx"
-with open(path, "r") as f:
+path = "src/app/links/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''import { notFound } from "next/navigation";
-import AdminHeader from "@/components/AdminHeader";
-import ProductForm from "@/components/ProductForm";
-import { prisma } from "@/lib/prisma";'''
+# 1. Agregar el @handle antes de la ubicacion, y achicar el icono de pin (ya quedo grande por los cambios globales anteriores)
+old1 = '''        <p className="flex items-center gap-1 text-cream/90 text-sm mt-4 drop-shadow-sm">
+          <PinIcon />
+          Santa Cruz, Bolivia
+        </p>'''
+assert content.count(old1) == 1, "old1 no matchea"
+new1 = '''        <p className="font-display font-bold text-cream text-xl mt-4 drop-shadow-sm">
+          @bebitos.bo
+        </p>
+        <p className="flex items-center gap-1 text-cream/90 text-sm mt-2 drop-shadow-sm">
+          <span className="w-4 h-4 [&>svg]:w-4 [&>svg]:h-4"><PinIcon /></span>
+          Santa Cruz, Bolivia
+        </p>'''
+content = content.replace(old1, new1)
 
-new = '''import { notFound } from "next/navigation";
-import AdminHeader from "@/components/AdminHeader";
-import ProductForm from "@/components/ProductForm";
-import { prisma } from "@/lib/prisma";
+# 2. Iconos sociales: de circulo blanco relleno a circulo con contorno (outline), como la referencia
+old2 = 'className="w-10 h-10 rounded-full bg-white border border-brown/15 shadow-sm flex items-center justify-center text-brown-dark hover:bg-brown-dark hover:text-cream transition-colors"'
+assert content.count(old2) == 1, "old2 no matchea"
+new2 = 'className="w-11 h-11 rounded-full border-2 border-cream/80 flex items-center justify-center text-cream hover:bg-cream/10 transition-colors"'
+content = content.replace(old2, new2)
 
-export const dynamic = "force-dynamic";'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
-content = content.replace(old, new)
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: pagina de editar ahora dinamica")
+
+print("OK - 2 reemplazos aplicados")

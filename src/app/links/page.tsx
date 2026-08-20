@@ -105,8 +105,11 @@ export default async function LinksPage() {
           />
         </div>
 
-        <p className="flex items-center gap-1 text-cream/90 text-sm mt-4 drop-shadow-sm">
-          <PinIcon />
+        <p className="font-display font-bold text-cream text-xl mt-4 drop-shadow-sm">
+          @bebitos.bo
+        </p>
+        <p className="flex items-center gap-1 text-cream/90 text-sm mt-2 drop-shadow-sm">
+          <span className="w-4 h-4 [&>svg]:w-4 [&>svg]:h-4"><PinIcon /></span>
           Santa Cruz, Bolivia
         </p>
         <p className="text-cream/95 text-sm text-center max-w-xs mt-2 leading-relaxed drop-shadow-sm">
@@ -124,7 +127,7 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-white border border-brown/15 shadow-sm flex items-center justify-center text-brown-dark hover:bg-brown-dark hover:text-cream transition-colors"
+              className="w-11 h-11 rounded-full border-2 border-cream/80 flex items-center justify-center text-cream hover:bg-cream/10 transition-colors"
             >
               {ICONS[s.name]}
             </a>
