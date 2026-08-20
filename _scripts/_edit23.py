@@ -1,43 +1,13 @@
-path = "prisma/schema.prisma"
-with open(path, "r") as f:
+path = "src/components/ProductDetail.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old_product = '''  category    String
-  colors      Json
-  images      String[]
-  inStock     Boolean  @default(true)
-  isPromo     Boolean  @default(false)
-  promoPrice  Float?'''
+old = 'className="max-w-6xl w-full mx-auto px-4 py-8 pb-24 sm:pb-8"'
+assert content.count(old) == 1, "old no matchea"
+new = 'className="max-w-6xl w-full mx-auto px-4 py-8 pb-20 sm:pb-8"'
+content = content.replace(old, new)
 
-new_product = '''  category    String
-  colors      Json
-  images      String[]
-  inStock     Boolean  @default(true)
-  isPromo     Boolean  @default(false)
-  promoPrice  Float?
-  isNew       Boolean  @default(false)'''
-
-assert content.count(old_product) == 1
-content = content.replace(old_product, new_product)
-
-old_settings = '''  shippingText  String  @default("Envios a nivel nacional")
-  updatedAt     DateTime @updatedAt
-}'''
-
-new_settings = '''  shippingText  String  @default("Envios a nivel nacional")
-  businessHours String  @default("")
-  updatedAt     DateTime @updatedAt
-}
-
-model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-}'''
-
-assert content.count(old_settings) == 1
-content = content.replace(old_settings, new_settings)
-
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: schema actualizado con isNew, businessHours y Category")
+
+print("OK - padding inferior reducido")

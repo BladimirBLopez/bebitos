@@ -57,7 +57,7 @@ export default function ProductDetail({
         tiktokUrl={settings?.tiktokUrl}
         categories={categories}
       />
-      <main className="max-w-6xl w-full mx-auto px-4 py-8 pb-24 sm:pb-8">
+      <main className="max-w-6xl w-full mx-auto px-4 py-8 pb-20 sm:pb-8">
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <nav className="text-sm text-brown-dark/60 flex items-center gap-1.5 flex-wrap">
             <Link href="/" className="hover:text-brown-dark transition-colors">
