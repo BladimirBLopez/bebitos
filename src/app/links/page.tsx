@@ -127,7 +127,7 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full border-2 border-cream/80 flex items-center justify-center text-cream hover:bg-cream/10 transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-cream hover:text-cream/70 transition-colors"
             >
               {ICONS[s.name]}
             </a>
