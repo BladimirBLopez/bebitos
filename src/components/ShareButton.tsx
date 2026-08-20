@@ -6,9 +6,11 @@ import { Share2, Check } from "lucide-react";
 export default function ShareButton({
   title,
   text,
+  iconOnly,
 }: {
   title: string;
   text?: string;
+  iconOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -27,6 +29,18 @@ export default function ShareButton({
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (iconOnly) {
+    return (
+      <button
+        onClick={handleShare}
+        aria-label="Compartir"
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-cream hover:bg-white/30 transition-colors"
+      >
+        {copied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+      </button>
+    );
   }
 
   return (

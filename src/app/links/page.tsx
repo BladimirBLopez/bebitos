@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import ShareButton from "@/components/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,10 @@ export default async function LinksPage() {
         )}
         <div className="absolute inset-0 bg-brown-dark/70 mix-blend-multiply" />
         <div className="absolute inset-0 bg-gradient-to-b from-brown-dark/30 via-brown-dark/80 to-cream" />
+      </div>
+
+      <div className="absolute top-4 right-4 z-10">
+        <ShareButton title="Bebitos" text="Bebitos | Todo para la alimentación de tu bebé" iconOnly />
       </div>
 
       <div className="relative flex flex-col items-center px-6 pt-14">
