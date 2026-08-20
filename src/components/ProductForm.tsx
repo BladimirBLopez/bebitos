@@ -332,7 +332,10 @@ export default function ProductForm({
           <div className="flex gap-2 mb-3">
             <input
               value={featureInput}
-              onChange={(e) => setFeatureInput(e.target.value)}
+              onChange={(e) => {
+                setFeatureInput(e.target.value);
+                if (e.target.value.trim()) setDirty(true);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -386,7 +389,10 @@ export default function ProductForm({
           <div className="flex gap-2 mb-3 items-center">
             <input
               value={colorName}
-              onChange={(e) => setColorName(e.target.value)}
+              onChange={(e) => {
+                setColorName(e.target.value);
+                if (e.target.value.trim()) setDirty(true);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
