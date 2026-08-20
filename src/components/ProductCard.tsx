@@ -30,10 +30,11 @@ export default function ProductCard({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -3 }}
+      className="h-full"
     >
       <Link
         href={`/producto/${product.slug}`}
-        className="block bg-white rounded-2xl border border-brown/10 overflow-hidden shadow-sm hover:shadow-xl hover:border-brown/20 transition-shadow"
+        className="flex flex-col h-full bg-white rounded-2xl border border-brown/10 overflow-hidden shadow-sm hover:shadow-xl hover:border-brown/20 transition-shadow"
       >
         <div className="aspect-square bg-cream relative overflow-hidden">
           {product.images && product.images.length > 0 ? (
@@ -61,8 +62,8 @@ export default function ProductCard({
             )}
           </div>
         </div>
-        <div className="p-4">
-          <h3 className="font-display font-medium text-ink text-base mb-1">
+        <div className="p-4 flex flex-col flex-1">
+          <h3 className="font-display font-medium text-ink text-base mb-1 line-clamp-2">
             {product.name}
           </h3>
           <p className="text-ink/60 text-sm mb-3 line-clamp-2">
@@ -78,7 +79,7 @@ export default function ProductCard({
               />
             ))}
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-auto">
             {showPrices ? (
               <>
                 <div>
