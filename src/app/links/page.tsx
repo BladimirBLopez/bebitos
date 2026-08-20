@@ -86,13 +86,13 @@ export default async function LinksPage() {
       </div>
 
       <div className="relative flex flex-col items-center px-6 pt-14">
-        <div className="w-44 h-44 sm:w-48 sm:h-48 rounded-full border-[6px] border-cream shadow-2xl overflow-hidden relative bg-white flex items-center justify-center">
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-[4px] border-white shadow-2xl overflow-hidden relative bg-white flex items-center justify-center">
           <Image
-            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
+            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787203042/Dise%C3%B1o_sin_t%C3%ADtulo_10_yatmgd.png"
             alt="Bebitos"
             width={140}
-            height={44}
-            className="object-contain w-[62%] h-auto"
+            height={140}
+            className="object-contain w-[70%] h-auto"
             priority
           />
         </div>
@@ -141,14 +141,14 @@ export default async function LinksPage() {
             href={`https://wa.me/${whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 bg-green hover:bg-green-dark text-white rounded-2xl px-4 py-3.5 shadow-md transition-colors"
+            className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 shadow-md transition-colors"
           >
-            <span className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+            <span className="w-10 h-10 rounded-full bg-cream/15 flex items-center justify-center shrink-0">
               <ChatIcon />
             </span>
             <div className="text-left">
               <p className="font-display font-medium text-sm">Comprar por WhatsApp</p>
-              <p className="text-xs text-white/70">Pedidos y consultas</p>
+              <p className="text-xs text-cream/70">Pedidos y consultas</p>
             </div>
           </a>
 
@@ -156,14 +156,14 @@ export default async function LinksPage() {
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 shadow-sm transition-colors"
+            className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 shadow-md transition-colors"
           >
-            <span className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+            <span className="w-10 h-10 rounded-full bg-cream/15 flex items-center justify-center shrink-0">
               <PinIcon />
             </span>
             <div className="text-left">
-              <p className="font-medium text-sm">Visítanos</p>
-              <p className="text-xs text-ink/50">Nuestro punto físico en Santa Cruz</p>
+              <p className="font-display font-medium text-sm">Visítanos</p>
+              <p className="text-xs text-cream/70">Nuestro punto físico en Santa Cruz</p>
             </div>
           </a>
 
@@ -173,14 +173,14 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-white hover:bg-white/80 text-brown-dark rounded-2xl px-4 py-3.5 border border-brown/15 shadow-sm transition-colors"
+              className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 shadow-md transition-colors"
             >
-              <span className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+              <span className="w-10 h-10 rounded-full bg-cream/15 flex items-center justify-center shrink-0">
                 {ICONS[s.name]}
               </span>
               <div className="text-left">
-                <p className="font-medium text-sm">{s.name}</p>
-                <p className="text-xs text-ink/50">{s.desc}</p>
+                <p className="font-display font-medium text-sm">{s.name}</p>
+                <p className="text-xs text-cream/70">{s.desc}</p>
               </div>
             </a>
           ))}
