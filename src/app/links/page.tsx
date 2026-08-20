@@ -51,6 +51,14 @@ function ChatIcon() {
   );
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.34a9.9 9.9 0 0 0 4.62 1.17h.01c5.46 0 9.9-4.45 9.9-9.92C21.95 6.45 17.5 2 12.04 2Zm5.83 14.03c-.24.68-1.4 1.3-1.93 1.34-.49.05-.98.24-3.28-.68-2.77-1.11-4.55-3.94-4.69-4.13-.14-.19-1.13-1.5-1.13-2.86s.7-2.03.95-2.31c.24-.27.53-.34.71-.34l.51.01c.16 0 .38-.06.6.46l.83 2.01c.07.16.12.35.02.55-.1.2-.15.32-.29.5-.14.17-.3.38-.43.51-.14.14-.29.29-.13.57.16.29.72 1.19 1.55 1.93 1.06.95 1.96 1.24 2.24 1.38.29.14.46.12.63-.07.17-.19.72-.83.91-1.12.19-.29.38-.24.63-.14.26.1 1.65.78 1.93.92.29.14.48.21.55.33.07.12.07.68-.17 1.36Z" />
+    </svg>
+  );
+}
+
 const BACKGROUND_IMAGE = "bebitos/w8jzhkpowpj9eesluoys";
 
 export default async function LinksPage() {
@@ -92,7 +100,7 @@ export default async function LinksPage() {
             alt="Bebitos"
             width={140}
             height={140}
-            className="object-contain w-[70%] h-auto"
+            className="object-contain w-[92%] h-auto"
             priority
           />
         </div>
@@ -144,7 +152,7 @@ export default async function LinksPage() {
             className="flex items-center gap-3 bg-brown-dark hover:bg-ink text-cream rounded-2xl px-4 py-3.5 shadow-md transition-colors"
           >
             <span className="w-10 h-10 rounded-full bg-cream/15 flex items-center justify-center shrink-0">
-              <ChatIcon />
+              <WhatsAppIcon />
             </span>
             <div className="text-left">
               <p className="font-display font-medium text-sm">Comprar por WhatsApp</p>
