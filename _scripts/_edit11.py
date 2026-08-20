@@ -1,23 +1,14 @@
-path = "package.json"
-with open(path, "r") as f:
+path = "src/app/links/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },'''
-
-new = '''  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "postinstall": "prisma generate"
-  },'''
-
+old = 'w-7 h-7'
 count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
+assert count == 7, f"aparece {count} veces, esperaba 7"
+new = 'w-9 h-9'
 content = content.replace(old, new)
-with open(path, "w") as f:
+
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: package.json con build actualizado")
+
+print("OK - 7 iconos agrandados a w-9 h-9")
