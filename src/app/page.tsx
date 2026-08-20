@@ -53,7 +53,7 @@ export default async function Home({
   }));
 
   const promoProducts = products.filter((p) => p.originalPrice);
-  const heroImage = dbProducts.find((p) => p.images.length > 0)?.images[0];
+  const heroImage = "bebitos/w8jzhkpowpj9eesluoys";
 
   return (
     <div className="flex flex-col flex-1">

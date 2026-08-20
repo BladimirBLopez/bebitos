@@ -51,19 +51,15 @@ function ChatIcon() {
   );
 }
 
+const BACKGROUND_IMAGE = "bebitos/w8jzhkpowpj9eesluoys";
+
 export default async function LinksPage() {
-  const [settings, productWithImage] = await Promise.all([
-    prisma.settings.findUnique({ where: { id: "singleton" } }),
-    prisma.product.findFirst({
-      where: { images: { isEmpty: false } },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
 
   const whatsapp = settings?.whatsapp || "59169501208";
   const mapsUrl = settings?.mapsUrl || "https://maps.app.goo.gl/JrdPzWFLudsLRbFD7";
   const shippingText = settings?.shippingText || "Envios a nivel nacional";
-  const backgroundImage = productWithImage?.images[0];
+  const backgroundImage = BACKGROUND_IMAGE;
 
   const socials = [
     { name: "Instagram", url: settings?.instagramUrl || "https://www.instagram.com/bebitos.bo", desc: "Novedades y promos" },
