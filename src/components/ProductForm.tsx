@@ -303,27 +303,44 @@ export default function ProductForm({
                 required
               />
             </div>
-            <div>
-              <label className="text-xs font-medium text-ink/60 block mb-1">
-                Categoría
-              </label>
-              <select
-                value={form.category}
-                onChange={(e) => update({ category: e.target.value })}
-                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              >
-                {categories.length === 0 && <option value="">Sin categorías</option>}
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setCategoryModalOpen(true)}
-                className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
-              >
-                Gestionar categorías
-              </button>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-ink/60 block mb-1">
+                  Categoría
+                </label>
+                <select
+                  value={form.category}
+                  onChange={(e) => update({ category: e.target.value })}
+                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                >
+                  {categories.length === 0 && <option value="">Sin categorías</option>}
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setCategoryModalOpen(true)}
+                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
+                >
+                  Gestionar categorías
+                </button>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-ink/60 block mb-1">
+                  Estado del producto
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as StatusOption)}
+                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.emoji} {opt.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </SectionCard>
@@ -459,64 +476,46 @@ export default function ProductForm({
         </SectionCard>
 
         <SectionCard icon={DollarSign} title="Precio">
-          <div className="mb-4">
-            {showPrices ? (
-              <>
+          <div className={`grid gap-4 mb-4 ${status === "oferta" && showPrices ? "sm:grid-cols-2" : ""}`}>
+            <div>
+              {showPrices ? (
+                <>
+                  <label className="text-xs font-medium text-ink/60 block mb-1">
+                    Precio (BOB)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => update({ price: e.target.value })}
+                    className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                    required
+                  />
+                </>
+              ) : (
+                <p className="text-[11px] text-ink/40">
+                  Los precios no se muestran en tu tienda. Actívalos en{" "}
+                  <Link href="/admin/configuracion" className="underline">
+                    Configuración → Precios
+                  </Link>{" "}
+                  para poder asignarle uno a este producto.
+                </p>
+              )}
+            </div>
+
+            {status === "oferta" && showPrices && (
+              <div>
                 <label className="text-xs font-medium text-ink/60 block mb-1">
-                  Precio (BOB)
+                  Precio de oferta (BOB)
                 </label>
                 <input
                   type="number"
-                  value={form.price}
-                  onChange={(e) => update({ price: e.target.value })}
+                  value={form.promoPrice}
+                  onChange={(e) => update({ promoPrice: e.target.value })}
                   className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                  required
                 />
-              </>
-            ) : (
-              <p className="text-[11px] text-ink/40">
-                Los precios no se muestran en tu tienda. Actívalos en{" "}
-                <Link href="/admin/configuracion" className="underline">
-                  Configuración → Precios
-                </Link>{" "}
-                para poder asignarle uno a este producto.
-              </p>
+              </div>
             )}
           </div>
-
-          <label className="text-xs font-medium text-ink/60 block mb-2">
-            Estado del producto
-          </label>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setStatus(opt.value)}
-                className={`text-sm font-medium py-2.5 rounded-xl border transition-colors ${
-                  status === opt.value
-                    ? "bg-brown-dark text-white border-brown-dark"
-                    : "bg-cream text-ink/70 border-brown/15 hover:border-brown/30"
-                }`}
-              >
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {status === "oferta" && (
-            <div>
-              <label className="text-xs font-medium text-ink/60 block mb-1">
-                Precio de oferta (BOB)
-              </label>
-              <input
-                type="number"
-                value={form.promoPrice}
-                onChange={(e) => update({ promoPrice: e.target.value })}
-                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              />
-            </div>
-          )}
         </SectionCard>
 
         <div className="h-16" />
