@@ -31,6 +31,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null);
 
 const STORAGE_KEY = "bebitos_cart";
+const EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 horas sin actividad
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -40,7 +41,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // formato nuevo: { items, savedAt }. Si esta vencido, se descarta.
+        if (parsed && Array.isArray(parsed.items)) {
+          const isExpired = Date.now() - (parsed.savedAt || 0) > EXPIRY_MS;
+          setItems(isExpired ? [] : parsed.items);
+        } else if (Array.isArray(parsed)) {
+          // formato viejo (solo array), lo migramos sin expirar esta vez
+          setItems(parsed);
+        }
       } catch {
         setItems([]);
       }
@@ -50,7 +59,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ items, savedAt: Date.now() })
+      );
     }
   }, [items, loaded]);
 
