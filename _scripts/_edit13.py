@@ -1,20 +1,14 @@
-path = "src/app/admin/productos/page.tsx"
-with open(path, "r") as f:
+path = "src/app/links/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''import Link from "next/link";
-import AdminHeader from "@/components/AdminHeader";
-import { prisma } from "@/lib/prisma";'''
-
-new = '''import Link from "next/link";
-import AdminHeader from "@/components/AdminHeader";
-import { prisma } from "@/lib/prisma";
-
-export const dynamic = "force-dynamic";'''
-
+old = 'w-9 h-9'
 count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
+assert count == 7, f"aparece {count} veces, esperaba 7"
+new = 'w-11 h-11'
 content = content.replace(old, new)
-with open(path, "w") as f:
+
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: pagina de productos ahora dinamica")
+
+print("OK - 7 iconos agrandados a w-11 h-11")
