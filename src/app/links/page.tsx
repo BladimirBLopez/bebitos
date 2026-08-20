@@ -137,12 +137,12 @@ export default async function LinksPage() {
         <div className="w-full max-w-sm flex flex-col gap-3">
           <a
             href="/"
-            className="flex items-center gap-3 w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
+            className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
+            <span className="absolute left-5 w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
               <BagIcon />
             </span>
-            <div className="text-center flex-1">
+            <div className="text-center">
               <p className="font-display font-bold text-lg">Ver catálogo</p>
               <p className="text-sm text-ink/50">Todos nuestros productos</p>
             </div>
@@ -152,12 +152,12 @@ export default async function LinksPage() {
             href={`https://wa.me/${whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
+            className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
+            <span className="absolute left-5 w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
               <WhatsAppIcon />
             </span>
-            <div className="text-center flex-1">
+            <div className="text-center">
               <p className="font-display font-bold text-lg">Comprar por WhatsApp</p>
               <p className="text-sm text-ink/50">Pedidos y consultas</p>
             </div>
@@ -167,12 +167,12 @@ export default async function LinksPage() {
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
+            className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
+            <span className="absolute left-5 w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
               <PinIcon />
             </span>
-            <div className="text-center flex-1">
+            <div className="text-center">
               <p className="font-display font-bold text-lg">Visítanos</p>
               <p className="text-sm text-ink/50">Nuestro punto físico en Santa Cruz</p>
             </div>
@@ -184,12 +184,12 @@ export default async function LinksPage() {
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
+              className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
             >
-              <span className="w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
+              <span className="absolute left-5 w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
                 {ICONS[s.name]}
               </span>
-              <div className="text-center flex-1">
+              <div className="text-center">
                 <p className="font-display font-bold text-lg">{s.name}</p>
                 <p className="text-sm text-ink/50">{s.desc}</p>
               </div>
