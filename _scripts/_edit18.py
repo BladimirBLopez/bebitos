@@ -1,25 +1,14 @@
-path = "prisma/schema.prisma"
-with open(path, "r") as f:
+path = "src/app/links/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-addition = '''
+old = 'w-6 h-6'
+count = content.count(old)
+assert count == 7, f"aparece {count} veces, esperaba 7"
+new = 'w-9 h-9'
+content = content.replace(old, new)
 
-model Settings {
-  id            String  @id @default("singleton")
-  whatsapp      String
-  mapsUrl       String
-  instagramUrl  String
-  facebookUrl   String
-  tiktokUrl     String
-  shippingText  String  @default("Envios a nivel nacional")
-  updatedAt     DateTime @updatedAt
-}
-'''
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content)
 
-if "model Settings" not in content:
-    content = content.rstrip() + "\n" + addition
-    with open(path, "w") as f:
-        f.write(content)
-    print("OK: modelo Settings agregado")
-else:
-    print("Ya existia el modelo Settings, no se toco nada")
+print("OK - 7 iconos agrandados a w-9 h-9")
