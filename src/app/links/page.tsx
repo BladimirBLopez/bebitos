@@ -136,11 +136,11 @@ export default async function LinksPage() {
             href="/"
             className="flex items-center gap-3 w-full bg-white hover:bg-cream/60 text-brown-dark rounded-full px-5 py-4 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-11 h-11 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-full bg-brown-dark/10 text-brown-dark flex items-center justify-center shrink-0">
               <BagIcon />
             </span>
             <div className="text-left">
-              <p className="font-display font-medium text-sm">Ver catálogo</p>
+              <p className="font-display font-medium text-base">Ver catálogo</p>
               <p className="text-xs text-ink/50">Todos nuestros productos</p>
             </div>
           </a>
@@ -151,11 +151,11 @@ export default async function LinksPage() {
             rel="noopener noreferrer"
             className="flex items-center gap-3 w-full bg-white hover:bg-cream/60 text-brown-dark rounded-full px-5 py-4 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-11 h-11 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-full bg-brown-dark/10 text-brown-dark flex items-center justify-center shrink-0">
               <WhatsAppIcon />
             </span>
             <div className="text-left">
-              <p className="font-display font-medium text-sm">Comprar por WhatsApp</p>
+              <p className="font-display font-medium text-base">Comprar por WhatsApp</p>
               <p className="text-xs text-ink/50">Pedidos y consultas</p>
             </div>
           </a>
@@ -166,11 +166,11 @@ export default async function LinksPage() {
             rel="noopener noreferrer"
             className="flex items-center gap-3 w-full bg-white hover:bg-cream/60 text-brown-dark rounded-full px-5 py-4 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="w-11 h-11 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-full bg-brown-dark/10 text-brown-dark flex items-center justify-center shrink-0">
               <PinIcon />
             </span>
             <div className="text-left">
-              <p className="font-display font-medium text-sm">Visítanos</p>
+              <p className="font-display font-medium text-base">Visítanos</p>
               <p className="text-xs text-ink/50">Nuestro punto físico en Santa Cruz</p>
             </div>
           </a>
@@ -183,11 +183,11 @@ export default async function LinksPage() {
               rel="noopener noreferrer"
               className="flex items-center gap-3 w-full bg-white hover:bg-cream/60 text-brown-dark rounded-full px-5 py-4 border border-brown/10 shadow-lg transition-colors"
             >
-              <span className="w-11 h-11 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+              <span className="w-11 h-11 rounded-full bg-brown-dark/10 text-brown-dark flex items-center justify-center shrink-0">
                 {ICONS[s.name]}
               </span>
               <div className="text-left">
-                <p className="font-display font-medium text-sm">{s.name}</p>
+                <p className="font-display font-medium text-base">{s.name}</p>
                 <p className="text-xs text-ink/50">{s.desc}</p>
               </div>
             </a>
