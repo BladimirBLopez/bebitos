@@ -100,7 +100,7 @@ export default async function LinksPage() {
             alt="Bebitos"
             width={140}
             height={140}
-            className="object-contain w-[92%] h-auto"
+            className="object-contain w-[104%] h-auto"
             priority
           />
         </div>
