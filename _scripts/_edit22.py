@@ -1,28 +1,13 @@
-path = "src/app/admin/(panel)/configuracion/page.tsx"
-with open(path, "r") as f:
+path = "src/app/links/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''import { MessageCircle, MapPin, Instagram, Facebook, Music2, Truck } from "lucide-react";'''
-
-new = '''import { MessageCircle, MapPin, Truck, AtSign } from "lucide-react";'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
+old = '            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787228252/bebitos_logo_circulo_etjyti.png"'
+assert content.count(old) == 1, "old no matchea"
+new = '            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787250386/Dise%C3%B1o_sin_t%C3%ADtulo_10_w98gei.png"'
 content = content.replace(old, new)
 
-content = content.replace(
-    '<SectionCard icon={Instagram} title="Instagram">',
-    '<SectionCard icon={AtSign} title="Instagram">'
-)
-content = content.replace(
-    '<SectionCard icon={Facebook} title="Facebook">',
-    '<SectionCard icon={AtSign} title="Facebook">'
-)
-content = content.replace(
-    '<SectionCard icon={Music2} title="TikTok">',
-    '<SectionCard icon={AtSign} title="TikTok">'
-)
-
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: configuracion sin iconos de marca de lucide")
+
+print("OK - logo de links actualizado")
