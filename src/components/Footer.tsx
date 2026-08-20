@@ -134,7 +134,7 @@ export default function Footer({
       </div>
 
       <div className="border-t border-cream/10 py-4 text-center text-cream/40 text-xs">
-        Bebitos © {new Date().getFullYear()} · Todos los derechos reservados
+        Bebitos © 2024 · Todos los derechos reservados
       </div>
     </footer>
   );
