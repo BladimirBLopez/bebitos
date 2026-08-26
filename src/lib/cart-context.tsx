@@ -67,6 +67,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, loaded]);
 
   function addItem(product: Product, color?: string) {
+    // No permitir agregar productos agotados al carrito
+    if (product.inStock === false) return;
+
     setItems((prev) => {
       const existing = prev.find(
         (i) => i.productId === product.id && i.color === color

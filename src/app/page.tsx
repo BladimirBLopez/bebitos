@@ -22,7 +22,6 @@ export default async function Home({
   const [dbProducts, settings, categories] = await Promise.all([
     prisma.product.findMany({
       where: {
-        inStock: true,
         ...(q
           ? {
               OR: [
@@ -47,6 +46,7 @@ export default async function Home({
     price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
     originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
     isNew: p.isNew,
+    inStock: p.inStock,
     category: p.category,
     colors: p.colors as { name: string; hex: string }[],
     images: p.images,

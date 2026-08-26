@@ -57,7 +57,7 @@ export default async function ProductPage({
     prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  if (!p || !p.inStock) {
+  if (!p) {
     notFound();
   }
 
@@ -70,6 +70,7 @@ export default async function ProductPage({
     price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
     originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
     isNew: p.isNew,
+    inStock: p.inStock,
     category: p.category,
     colors: p.colors as { name: string; hex: string }[],
     images: p.images,

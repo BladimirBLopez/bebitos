@@ -92,6 +92,13 @@ export default function ProductDetail({
                   Foto pendiente
                 </div>
               )}
+              {product.inStock === false && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                  <span className="text-white font-display font-bold text-2xl tracking-wide">
+                    Agotado
+                  </span>
+                </div>
+              )}
             </div>
             {product.images && product.images.length > 1 && (
               <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
@@ -162,15 +169,25 @@ export default function ProductDetail({
             <div className="hidden sm:block border-t border-brown/10 pt-5">
               {showPrices ? (
                 <div className="flex items-center justify-between">
-                  <span className="font-display font-semibold text-brown-dark text-2xl">
+                  <span
+                    className={`font-display font-semibold text-2xl ${
+                      product.inStock === false ? "text-ink/30" : "text-brown-dark"
+                    }`}
+                  >
                     BOB {product.price}
                   </span>
-                  <button
-                    onClick={handleAdd}
-                    className="bg-green hover:bg-green-dark text-white font-semibold px-5 py-2.5 rounded-full transition-colors"
-                  >
-                    {added ? "¡Agregado! ✓" : "Agregar al carrito"}
-                  </button>
+                  {product.inStock === false ? (
+                    <span className="bg-ink/10 text-ink/40 font-semibold px-5 py-2.5 rounded-full">
+                      Agotado
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleAdd}
+                      className="bg-green hover:bg-green-dark text-white font-semibold px-5 py-2.5 rounded-full transition-colors"
+                    >
+                      {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <a
@@ -203,15 +220,25 @@ export default function ProductDetail({
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown/10 px-4 py-3 flex items-center justify-between gap-3 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         {showPrices ? (
           <>
-            <span className="font-display font-semibold text-brown-dark text-xl shrink-0">
+            <span
+              className={`font-display font-semibold text-xl shrink-0 ${
+                product.inStock === false ? "text-ink/30" : "text-brown-dark"
+              }`}
+            >
               BOB {product.price}
             </span>
-            <button
-              onClick={handleAdd}
-              className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
-            >
-              {added ? "¡Agregado! ✓" : "Agregar al carrito"}
-            </button>
+            {product.inStock === false ? (
+              <span className="flex-1 bg-ink/10 text-ink/40 text-center font-semibold py-2.5 rounded-full">
+                Agotado
+              </span>
+            ) : (
+              <button
+                onClick={handleAdd}
+                className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+              >
+                {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+              </button>
+            )}
           </>
         ) : (
           <a

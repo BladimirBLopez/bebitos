@@ -12,6 +12,7 @@ export type Product = {
   price: number;
   originalPrice?: number;
   isNew?: boolean;
+  inStock?: boolean;
   category: string;
   colors: ProductColor[];
   images: string[]; // Cloudinary public_ids

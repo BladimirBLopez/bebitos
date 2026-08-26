@@ -49,18 +49,27 @@ export default function ProductCard({
               Foto pendiente
             </div>
           )}
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {product.originalPrice && (
-              <span className="bg-green text-white text-xs font-bold px-2 py-1 rounded-full w-fit shadow-sm">
-                Oferta
+          {product.inStock === false && (
+            <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+              <span className="text-white font-display font-bold text-lg tracking-wide">
+                Agotado
               </span>
-            )}
-            {product.isNew && !product.originalPrice && (
-              <span className="bg-brown-dark text-cream text-xs font-bold px-2 py-1 rounded-full w-fit shadow-sm">
-                Nuevo
-              </span>
-            )}
-          </div>
+            </div>
+          )}
+          {product.inStock !== false && (
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
+              {product.originalPrice && (
+                <span className="bg-green text-white text-xs font-bold px-2 py-1 rounded-full w-fit shadow-sm">
+                  Oferta
+                </span>
+              )}
+              {product.isNew && !product.originalPrice && (
+                <span className="bg-brown-dark text-cream text-xs font-bold px-2 py-1 rounded-full w-fit shadow-sm">
+                  Nuevo
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="p-4 flex flex-col flex-1">
           <h3 className="font-display font-medium text-ink text-base mb-1 line-clamp-2">
@@ -88,16 +97,26 @@ export default function ProductCard({
                       BOB {product.originalPrice}
                     </span>
                   )}
-                  <span className="font-display font-bold text-green-dark text-lg">
+                  <span
+                    className={`font-display font-bold text-lg ${
+                      product.inStock === false ? "text-ink/30" : "text-green-dark"
+                    }`}
+                  >
                     BOB {product.price}
                   </span>
                 </div>
-                <button
-                  onClick={handleAdd}
-                  className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm shadow-green/30 transition-colors"
-                >
-                  Agregar
-                </button>
+                {product.inStock === false ? (
+                  <span className="bg-ink/10 text-ink/40 text-sm font-semibold px-3 py-1.5 rounded-full">
+                    Agotado
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleAdd}
+                    className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm shadow-green/30 transition-colors"
+                  >
+                    Agregar
+                  </button>
+                )}
               </>
             ) : (
               <span className="bg-brown-dark text-cream text-sm font-semibold px-3 py-1.5 rounded-full w-full text-center">
