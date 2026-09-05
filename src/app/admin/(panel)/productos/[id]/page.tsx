@@ -34,6 +34,7 @@ export default async function EditarProductoPage({
           images: product.images,
           inStock: product.inStock,
           isPromo: product.isPromo,
+          isNew: product.isNew,
           promoPrice: product.promoPrice ? String(product.promoPrice) : "",
         }}
       />
