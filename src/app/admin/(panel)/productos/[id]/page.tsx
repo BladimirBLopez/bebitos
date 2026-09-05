@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import ProductForm from "@/components/ProductForm";
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +19,7 @@ export default async function EditarProductoPage({
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-brown-dark mb-6">
-        Editar producto
-      </h1>
+      <PageHeader title="Editar producto" meta={product.name} />
       <ProductForm
         initial={{
           id: product.id,

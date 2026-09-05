@@ -72,12 +72,12 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-brown/10 p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+    <div className="bg-panel-surface rounded-xl border border-panel-border p-5" style={{ boxShadow: "var(--shadow-panel)" }}>
       <div className="flex items-center gap-2.5 mb-4">
-        <span className="w-8 h-8 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+        <span className="w-8 h-8 rounded-lg bg-brown-dark/10 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-brown-dark" />
         </span>
-        <h3 className="font-display font-semibold text-brown-dark text-sm">
+        <h3 className="font-sans font-semibold text-panel-ink text-sm">
           {title}
         </h3>
       </div>

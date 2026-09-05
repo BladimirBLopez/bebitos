@@ -6,6 +6,7 @@ import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
 import ToggleSwitch from "@/components/ToggleSwitch";
 import SocialLinkModal from "@/components/SocialLinkModal";
+import PageHeader from "@/components/PageHeader";
 
 const SOCIAL_ICONS: Record<string, React.ReactNode> = {
   Instagram: (
@@ -51,12 +52,12 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-brown/10 p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+    <div className="bg-panel-surface rounded-xl border border-panel-border p-5" style={{ boxShadow: "var(--shadow-panel)" }}>
       <div className="flex items-center gap-2.5 mb-4">
-        <span className="w-8 h-8 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+        <span className="w-8 h-8 rounded-lg bg-brown-dark/10 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-brown-dark" />
         </span>
-        <h3 className="font-display font-semibold text-brown-dark text-sm">
+        <h3 className="font-sans font-semibold text-panel-ink text-sm">
           {title}
         </h3>
       </div>
@@ -184,14 +185,12 @@ export default function ConfiguracionPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-brown-dark mb-1">
-        Configuración
-      </h1>
-      <p className="text-ink/50 text-sm mb-6">
-        Estos datos se usan en tu tienda y página de links
-      </p>
+      <PageHeader
+        title="Configuración"
+        meta="Estos datos se usan en tu tienda y página de links"
+      />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl mt-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
         <p className="text-xs font-semibold text-brown-dark/50 uppercase tracking-wide mt-2">
           Contacto y redes
         </p>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, X, Tag, ChevronUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
+import PageHeader from "@/components/PageHeader";
 
 type Category = { id: string; name: string; order: number };
 
@@ -142,15 +143,13 @@ export default function CategoriasPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-brown-dark mb-1">
-        Categorías
-      </h1>
-      <p className="text-ink/50 text-sm mb-6">
-        Organiza tus productos por categoría
-      </p>
+      <PageHeader
+        title="Categorías"
+        meta={loading ? "Organiza tus productos por categoría" : `${categories.length} categoría${categories.length === 1 ? "" : "s"}`}
+      />
 
-      <div className="bg-white rounded-2xl border border-brown/10 p-5 max-w-xl mb-4" style={{ boxShadow: "var(--shadow-card)" }}>
-        <p className="font-display font-semibold text-brown-dark text-sm mb-3">
+      <div className="bg-panel-surface rounded-xl border border-panel-border p-5 max-w-xl mb-4" style={{ boxShadow: "var(--shadow-panel)" }}>
+        <p className="font-sans font-semibold text-panel-ink text-sm mb-3">
           Nueva categoría
         </p>
         <label className="text-xs font-medium text-ink/60 block mb-1">Nombre</label>
@@ -178,8 +177,8 @@ export default function CategoriasPage() {
           {categories.map((c, i) => (
             <div
               key={c.id}
-              className="bg-white rounded-2xl border border-brown/10 p-4 flex items-center gap-3"
-              style={{ boxShadow: "var(--shadow-card)" }}
+              className="bg-panel-surface rounded-xl border border-panel-border p-4 flex items-center gap-3"
+              style={{ boxShadow: "var(--shadow-panel)" }}
             >
               <div className="flex flex-col gap-0.5 shrink-0">
                 <button

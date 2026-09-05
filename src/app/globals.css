@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Identidad Bebitos */
+  /* Identidad Bebitos (tienda pública) */
   --cream: #FCF8ED;
   --brown: #B6794C;
   --brown-dark: #6B4226;
@@ -11,6 +11,15 @@
 
   --background: var(--cream);
   --foreground: var(--ink);
+
+  /* Panel admin: mismo ADN de marca, más estructurado y neutro */
+  --panel-bg: #F3F1EC;
+  --panel-surface: #FFFFFF;
+  --panel-border: #E4DFD3;
+  --panel-ink: #2B241C;
+  --panel-ink-soft: #6B6355;
+  --amber: #B87A2E;
+  --amber-soft: #F3E4CC;
 }
 
 @theme inline {
@@ -22,10 +31,18 @@
   --color-green: var(--green);
   --color-green-dark: var(--green-dark);
   --color-ink: var(--ink);
+  --color-panel-bg: var(--panel-bg);
+  --color-panel-surface: var(--panel-surface);
+  --color-panel-border: var(--panel-border);
+  --color-panel-ink: var(--panel-ink);
+  --color-panel-ink-soft: var(--panel-ink-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
   --font-sans: var(--font-nunito);
   --font-display: var(--font-fredoka);
   --shadow-card: 0 1px 2px rgba(61, 43, 31, 0.04), 0 2px 8px rgba(61, 43, 31, 0.06);
   --shadow-card-hover: 0 2px 4px rgba(61, 43, 31, 0.06), 0 8px 20px rgba(61, 43, 31, 0.10);
+  --shadow-panel: 0 1px 2px rgba(43, 36, 28, 0.03), 0 1px 8px rgba(43, 36, 28, 0.05);
 }
 
 body {

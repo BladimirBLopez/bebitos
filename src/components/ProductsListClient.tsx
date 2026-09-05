@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, ImageOff, Trash2, Check, ChevronUp, ChevronDown } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import ToggleSwitch from "./ToggleSwitch";
+import PageHeader from "./PageHeader";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -133,18 +134,19 @@ export default function ProductsListClient({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold text-brown-dark">
-          Productos
-        </h1>
-        <Link
-          href="/admin/productos/nuevo"
-          className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-full transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo producto
-        </Link>
-      </div>
+      <PageHeader
+        title="Productos"
+        meta={`${products.length} producto${products.length === 1 ? "" : "s"} en tu catálogo`}
+        action={
+          <Link
+            href="/admin/productos/nuevo"
+            className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo producto
+          </Link>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-2 mb-3">
         <div className="relative flex-1">
@@ -211,10 +213,9 @@ export default function ProductsListClient({
             return (
               <div
                 key={p.id}
-                className={`bg-white rounded-xl p-3 flex items-center gap-2 transition-shadow group hover:[box-shadow:var(--shadow-card-hover)] ${
+                className={`bg-panel-surface border border-panel-border rounded-xl p-3 flex items-center gap-2 transition-shadow group hover:[box-shadow:var(--shadow-panel)] ${
                   isSelected ? "ring-2 ring-brown-dark/30" : ""
                 }`}
-                style={{ boxShadow: "var(--shadow-card)" }}
               >
                 {!filtersActive && (
                   <div className="hidden sm:flex flex-col gap-0.5 shrink-0">
