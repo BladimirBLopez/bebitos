@@ -40,6 +40,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await prisma.category.delete({ where: { id } });
+
+  const existing = await prisma.category.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 });
+  }
+
+  await prisma.$transaction([
+    prisma.product.updateMany({
+      where: { category: existing.name },
+      data: { category: "Sin categoría" },
+    }),
+    prisma.category.delete({ where: { id } }),
+  ]);
+
   return NextResponse.json({ ok: true });
 }
