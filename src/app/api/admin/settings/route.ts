@@ -27,6 +27,7 @@ export async function PUT(req: NextRequest) {
       businessHours: data.businessHours,
       showPrices: data.showPrices,
       qualityReportUrl: data.qualityReportUrl,
+      leadMagnetUrl: data.leadMagnetUrl,
     },
   });
 

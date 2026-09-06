@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Truck, Clock, Plus, DollarSign, Save, Check, Pencil } from "lucide-react";
+import { MessageCircle, MapPin, Truck, Clock, Plus, DollarSign, Gift, Save, Check, Pencil } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
 import ToggleSwitch from "@/components/ToggleSwitch";
@@ -38,6 +38,7 @@ type SettingsData = {
   businessHours: string;
   showPrices: boolean;
   qualityReportUrl: string;
+  leadMagnetUrl: string;
 };
 
 type Category = { id: string; name: string };
@@ -226,6 +227,21 @@ export default function ConfiguracionPage() {
             className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
             placeholder="Envios a nivel nacional"
           />
+        </SectionCard>
+
+        <SectionCard icon={Gift} title="Regalo descargable">
+          <label className="text-xs font-medium text-ink/60 block mb-1">
+            Link de descarga (carpeta de Drive o archivo)
+          </label>
+          <input
+            value={form.leadMagnetUrl}
+            onChange={(e) => setForm((f) => f && { ...f, leadMagnetUrl: e.target.value })}
+            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
+            placeholder="https://drive.google.com/..."
+          />
+          <p className="text-[11px] text-ink/40 mt-2">
+            Se muestra en <span className="font-medium">/regalo</span> después de que alguien deja su nombre y WhatsApp
+          </p>
         </SectionCard>
 
         <SectionCard icon={DollarSign} title="Precios">

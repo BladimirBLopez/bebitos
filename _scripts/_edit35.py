@@ -1,89 +1,43 @@
-path = "src/app/producto/[slug]/page.tsx"
-with open(path, "r") as f:
+path = "src/components/ProductDetail.tsx"
+
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''  const { slug } = await params;
-  const [p, settings] = await Promise.all([
-    prisma.product.findUnique({ where: { slug } }),
-    prisma.settings.findUnique({ where: { id: "singleton" } }),
-  ]);
+old = '''            <span className="font-display font-semibold text-brown-dark text-xl shrink-0">
+              BOB {product.price}
+            </span>
+            <button
+              onClick={handleAdd}
+              className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+            >
+              {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+            </button>'''
 
-  if (!p || !p.inStock) {
-    notFound();
-  }
+assert content.count(old) == 1, "old no matchea"
 
-  const product = {
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    description: p.description,
-    features: p.features,
-    price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
-    originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
-    category: p.category,
-    colors: p.colors as { name: string; hex: string }[],
-    images: p.images,
-  };'''
+new = '''            <span
+              className={`font-display font-semibold text-xl shrink-0 ${
+                product.inStock === false ? "text-ink/30" : "text-brown-dark"
+              }`}
+            >
+              BOB {product.price}
+            </span>
+            {product.inStock === false ? (
+              <span className="flex-1 bg-ink/10 text-ink/40 text-center font-semibold py-2.5 rounded-full">
+                Agotado
+              </span>
+            ) : (
+              <button
+                onClick={handleAdd}
+                className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-2.5 rounded-full transition-colors"
+              >
+                {added ? "¡Agregado! ✓" : "Agregar al carrito"}
+              </button>
+            )}'''
 
-new = '''  const { slug } = await params;
-  const [p, settings] = await Promise.all([
-    prisma.product.findUnique({ where: { slug } }),
-    prisma.settings.findUnique({ where: { id: "singleton" } }),
-  ]);
-
-  if (!p || !p.inStock) {
-    notFound();
-  }
-
-  const product = {
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    description: p.description,
-    features: p.features,
-    price: p.isPromo && p.promoPrice ? p.promoPrice : p.price,
-    originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
-    isNew: p.isNew,
-    category: p.category,
-    colors: p.colors as { name: string; hex: string }[],
-    images: p.images,
-  };
-
-  const relatedRaw = await prisma.product.findMany({
-    where: { category: p.category, inStock: true, id: { not: p.id } },
-    take: 4,
-  });
-
-  const related = relatedRaw.map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    name: r.name,
-    description: r.description,
-    features: r.features,
-    price: r.isPromo && r.promoPrice ? r.promoPrice : r.price,
-    originalPrice: r.isPromo && r.promoPrice ? r.price : undefined,
-    isNew: r.isNew,
-    category: r.category,
-    colors: r.colors as { name: string; hex: string }[],
-    images: r.images,
-  }));'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
 content = content.replace(old, new)
 
-old2 = '''    <ProductDetail
-      product={product}
-      settings={{'''
-new2 = '''    <ProductDetail
-      product={product}
-      related={related}
-      settings={{'''
-
-count2 = content.count(old2)
-assert count2 == 1, f"Encontrado {count2} veces, se esperaba 1"
-content = content.replace(old2, new2)
-
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: pagina de producto trae relacionados")
+
+print("OK - precio y botón móvil cambiados para productos agotados")

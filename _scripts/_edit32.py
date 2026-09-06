@@ -1,29 +1,34 @@
-path = "src/app/api/admin/products/[id]/route.ts"
-with open(path, "r") as f:
+path = "src/components/ProductDetail.tsx"
+
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''      inStock: data.inStock,
-      isPromo: data.isPromo,
-      promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-    },
-  });
+old = '''              ) : (
+                <div className="w-full h-full flex items-center justify-center text-brown/30">
+                  Foto pendiente
+                </div>
+              )}
+            </div>'''
 
-  return NextResponse.json(product);
-}'''
+assert content.count(old) == 1, "old no matchea"
 
-new = '''      inStock: data.inStock,
-      isPromo: data.isPromo,
-      isNew: data.isNew || false,
-      promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-    },
-  });
+new = '''              ) : (
+                <div className="w-full h-full flex items-center justify-center text-brown/30">
+                  Foto pendiente
+                </div>
+              )}
+              {product.inStock === false && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                  <span className="text-white font-display font-bold text-2xl tracking-wide">
+                    Agotado
+                  </span>
+                </div>
+              )}
+            </div>'''
 
-  return NextResponse.json(product);
-}'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
 content = content.replace(old, new)
-with open(path, "w") as f:
+
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: PUT products guarda isNew")
+
+print("OK - overlay de Agotado agregado en ProductDetail")

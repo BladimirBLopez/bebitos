@@ -1,29 +1,29 @@
-path = "src/components/ProductCard.tsx"
-with open(path, "r") as f:
+path = "src/app/producto/[slug]/page.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''        {product.originalPrice && (
-          <span className="absolute top-2 left-2 bg-green text-white text-xs font-bold px-2 py-1 rounded-full">
-            Oferta
-          </span>
-        )}'''
+# 1. Ya no ocultar el producto agotado (solo si no existe)
+old1 = '''  if (!p || !p.inStock) {
+    notFound();
+  }'''
+assert content.count(old1) == 1, "old1 no matchea"
+new1 = '''  if (!p) {
+    notFound();
+  }'''
+content = content.replace(old1, new1)
 
-new = '''        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {product.originalPrice && (
-            <span className="bg-green text-white text-xs font-bold px-2 py-1 rounded-full w-fit">
-              Oferta
-            </span>
-          )}
-          {product.isNew && !product.originalPrice && (
-            <span className="bg-brown-dark text-cream text-xs font-bold px-2 py-1 rounded-full w-fit">
-              Nuevo
-            </span>
-          )}
-        </div>'''
+# 2. Agregar inStock al mapeo del producto principal
+old2 = '''    originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
+    isNew: p.isNew,
+    category: p.category,'''
+assert content.count(old2) == 1, "old2 no matchea"
+new2 = '''    originalPrice: p.isPromo && p.promoPrice ? p.price : undefined,
+    isNew: p.isNew,
+    inStock: p.inStock,
+    category: p.category,'''
+content = content.replace(old2, new2)
 
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
-content = content.replace(old, new)
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: ProductCard con badge Nuevo")
+
+print("OK - 2 reemplazos aplicados en producto/[slug]/page.tsx")

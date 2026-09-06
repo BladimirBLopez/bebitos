@@ -44,6 +44,18 @@ function BagIcon() {
   );
 }
 
+function GiftIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-9 h-9">
+      <rect x="4" y="9" width="16" height="11" rx="1.5" />
+      <path d="M4 9h16v3.5H4V9Z" />
+      <path d="M12 9v11" />
+      <path d="M12 9c-1-2.5-2.7-4-4.2-4C6.4 5 5.5 5.9 5.5 7c0 1.3 1 2 2.3 2H12Z" />
+      <path d="M12 9c1-2.5 2.7-4 4.2-4C17.6 5 18.5 5.9 18.5 7c0 1.3-1 2-2.3 2H12Z" />
+    </svg>
+  );
+}
+
 function ChatIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-9 h-9">
@@ -140,6 +152,19 @@ export default async function LinksPage() {
         </div>
 
         <div className="w-full max-w-sm flex flex-col gap-3">
+          <a
+            href="/regalo"
+            className="relative flex items-center justify-center w-full min-h-[64px] bg-green/15 hover:bg-green/25 text-green-dark rounded-[24px] px-5 py-2.5 border border-green/30 shadow-lg transition-colors"
+          >
+            <span className="absolute left-5 w-8 h-8 text-green-dark flex items-center justify-center shrink-0">
+              <GiftIcon />
+            </span>
+            <div className="text-center">
+              <p className="font-display font-bold text-lg">Descarga gratis 🎁</p>
+              <p className="text-sm text-green-dark/70">Checklist y calendario de alimentación</p>
+            </div>
+          </a>
+
           <a
             href="/"
             className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"

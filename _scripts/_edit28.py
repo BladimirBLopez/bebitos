@@ -1,35 +1,23 @@
-path = "src/app/links/page.tsx"
-with open(path, "r") as f:
+path = "src/components/ProductCard.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''    <div className="min-h-screen bg-cream">
-      {/* Banda superior con degradado */}
-      <div className="h-32 bg-gradient-to-br from-brown-dark to-brown relative" />
+# 1. Overlay oscuro con "Agotado" sobre la imagen
+old1 = '''          )}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">'''
+assert content.count(old1) == 1, "old1 no matchea"
+new1 = '''          )}
+          {product.inStock === false && (
+            <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+              <span className="text-white font-display font-bold text-lg tracking-wide">
+                Agotado
+              </span>
+            </div>
+          )}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">'''
+content = content.replace(old1, new1)
 
-      <div className="flex flex-col items-center px-6 -mt-12">
-        <Image
-          src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
-          alt="Bebitos"
-          width={96}
-          height={96}
-          className="rounded-full border-4 border-cream shadow-md"
-          priority
-        />'''
-
-new = '''    <div className="min-h-screen bg-cream">
-      <div className="flex flex-col items-center px-6 pt-14">
-        <Image
-          src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787019365/Dise%C3%B1o_sin_t%C3%ADtulo_7_qau8wd.png"
-          alt="Bebitos"
-          width={96}
-          height={96}
-          className="rounded-full shadow-md"
-          priority
-        />'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
-content = content.replace(old, new)
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: portada eliminada, fondo limpio")
+
+print("OK - paso 1 aplicado")

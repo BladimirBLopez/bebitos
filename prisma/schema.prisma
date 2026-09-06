@@ -27,7 +27,6 @@ model Product {
   updatedAt   DateTime @updatedAt
 }
 
-
 model Settings {
   id            String  @id @default("singleton")
   whatsapp      String
@@ -39,6 +38,7 @@ model Settings {
   businessHours String  @default("")
   showPrices    Boolean  @default(true)
   qualityReportUrl String @default("")
+  leadMagnetUrl String @default("")
   updatedAt     DateTime @updatedAt
 }
 
@@ -46,5 +46,13 @@ model Category {
   id        String   @id @default(cuid())
   name      String   @unique
   order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  whatsapp  String
+  source    String   @default("regalo")
   createdAt DateTime @default(now())
 }

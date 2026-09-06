@@ -1,60 +1,53 @@
-path = "src/middleware.ts"
-with open(path, "r") as f:
+path = "src/components/ProductCard.tsx"
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+old3 = '''                <div>
+                  {product.originalPrice && (
+                    <span className="text-xs text-red-400 line-through block">
+                      BOB {product.originalPrice}
+                    </span>
+                  )}
+                  <span className="font-display font-bold text-green-dark text-lg">
+                    BOB {product.price}
+                  </span>
+                </div>
+                <button
+                  onClick={handleAdd}
+                  className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm shadow-green/30 transition-colors"
+                >
+                  Agregar
+                </button>'''
+assert content.count(old3) == 1, "old3 no matchea"
+new3 = '''                <div>
+                  {product.originalPrice && (
+                    <span className="text-xs text-red-400 line-through block">
+                      BOB {product.originalPrice}
+                    </span>
+                  )}
+                  <span
+                    className={`font-display font-bold text-lg ${
+                      product.inStock === false ? "text-ink/30" : "text-green-dark"
+                    }`}
+                  >
+                    BOB {product.price}
+                  </span>
+                </div>
+                {product.inStock === false ? (
+                  <span className="bg-ink/10 text-ink/40 text-sm font-semibold px-3 py-1.5 rounded-full">
+                    Agotado
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleAdd}
+                    className="bg-green hover:bg-green-dark text-white text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm shadow-green/30 transition-colors"
+                  >
+                    Agregar
+                  </button>
+                )}'''
+content = content.replace(old3, new3)
 
-  if (pathname === "/admin/login") {
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/admin")) {
-    const cookie = req.cookies.get(COOKIE_NAME)?.value;
-    const valid = await isValidSession(cookie);
-    if (!valid) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ["/admin/:path*"],
-};'''
-
-new = '''export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  if (pathname === "/admin/login" || pathname === "/api/admin/login") {
-    return NextResponse.next();
-  }
-
-  const isApiAdmin = pathname.startsWith("/api/admin");
-  const isPanelAdmin = pathname.startsWith("/admin");
-
-  if (isApiAdmin || isPanelAdmin) {
-    const cookie = req.cookies.get(COOKIE_NAME)?.value;
-    const valid = await isValidSession(cookie);
-    if (!valid) {
-      if (isApiAdmin) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-      }
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
-};'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
-content = content.replace(old, new)
-with open(path, "w") as f:
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: middleware protege tambien /api/admin/*")
+
+print("OK - paso 3 aplicado")

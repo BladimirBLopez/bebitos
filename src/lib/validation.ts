@@ -57,7 +57,7 @@ export function validateSettings(data: unknown): { valid: boolean; error?: strin
   if (!d.whatsapp || typeof d.whatsapp !== "string" || !/^\d{6,15}$/.test(d.whatsapp.trim())) {
     return { valid: false, error: "El número de WhatsApp debe tener solo dígitos (6-15)" };
   }
-  const urlFields = ["mapsUrl", "instagramUrl", "facebookUrl", "tiktokUrl"];
+  const urlFields = ["mapsUrl", "instagramUrl", "facebookUrl", "tiktokUrl", "leadMagnetUrl"];
   for (const field of urlFields) {
     const value = d[field];
     if (value && typeof value === "string" && value.trim() !== "") {
@@ -67,6 +67,25 @@ export function validateSettings(data: unknown): { valid: boolean; error?: strin
         return { valid: false, error: `El link de ${field} no es una URL válida` };
       }
     }
+  }
+
+  return { valid: true };
+}
+
+export function validateLead(data: unknown): { valid: boolean; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
+  }
+  const d = data as Record<string, unknown>;
+
+  if (!d.name || typeof d.name !== "string" || !d.name.trim()) {
+    return { valid: false, error: "El nombre es requerido" };
+  }
+  if (d.name.length > 120) {
+    return { valid: false, error: "El nombre es demasiado largo" };
+  }
+  if (!d.whatsapp || typeof d.whatsapp !== "string" || !/^\d{6,15}$/.test(d.whatsapp.trim())) {
+    return { valid: false, error: "El número de WhatsApp debe tener solo dígitos (6-15)" };
   }
 
   return { valid: true };

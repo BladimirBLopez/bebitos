@@ -1,29 +1,22 @@
-path = "src/app/api/admin/products/route.ts"
-with open(path, "r") as f:
+path = "src/lib/cart-context.tsx"
+
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''      inStock: data.inStock,
-      isPromo: data.isPromo,
-      promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-    },
-  });
+old = '''  function addItem(product: Product, color?: string) {
+    setItems((prev) => {'''
 
-  return NextResponse.json(product);
-}'''
+assert content.count(old) == 1, "old no matchea"
 
-new = '''      inStock: data.inStock,
-      isPromo: data.isPromo,
-      isNew: data.isNew || false,
-      promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-    },
-  });
+new = '''  function addItem(product: Product, color?: string) {
+    // No permitir agregar productos agotados al carrito
+    if (product.inStock === false) return;
 
-  return NextResponse.json(product);
-}'''
+    setItems((prev) => {'''
 
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
 content = content.replace(old, new)
-with open(path, "w") as f:
+
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: POST products guarda isNew")
+
+print("OK - protección contra productos agotados agregada al carrito")

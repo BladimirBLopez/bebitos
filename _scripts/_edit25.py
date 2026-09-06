@@ -1,17 +1,22 @@
 path = "src/lib/types.ts"
-with open(path, "r") as f:
+with open(path, "r", encoding="utf-8") as f:
     content = f.read()
 
-old = '''  originalPrice?: number;
-  category: string;'''
-
-new = '''  originalPrice?: number;
-  isNew?: boolean;
-  category: string;'''
-
-count = content.count(old)
-assert count == 1, f"Encontrado {count} veces, se esperaba 1"
+old = '''  isNew?: boolean;
+  category: string;
+  colors: ProductColor[];
+  images: string[]; // Cloudinary public_ids
+};'''
+assert content.count(old) == 1, "old no matchea"
+new = '''  isNew?: boolean;
+  inStock?: boolean;
+  category: string;
+  colors: ProductColor[];
+  images: string[]; // Cloudinary public_ids
+};'''
 content = content.replace(old, new)
-with open(path, "w") as f:
+
+with open(path, "w", encoding="utf-8") as f:
     f.write(content)
-print("OK: types.ts con isNew")
+
+print("OK - inStock agregado al tipo Product")
