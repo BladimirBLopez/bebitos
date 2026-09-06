@@ -154,14 +154,14 @@ export default async function LinksPage() {
         <div className="w-full max-w-sm flex flex-col gap-3">
           <a
             href="/regalo"
-            className="relative flex items-center justify-center w-full min-h-[64px] bg-green/15 hover:bg-green/25 text-green-dark rounded-[24px] px-5 py-2.5 border border-green/30 shadow-lg transition-colors"
+            className="relative flex items-center justify-center w-full min-h-[64px] bg-white hover:bg-cream/60 text-brown-dark rounded-[24px] px-5 py-2.5 border border-brown/10 shadow-lg transition-colors"
           >
-            <span className="absolute left-5 w-8 h-8 text-green-dark flex items-center justify-center shrink-0">
+            <span className="absolute left-5 w-8 h-8 text-brown-dark flex items-center justify-center shrink-0">
               <GiftIcon />
             </span>
             <div className="text-center">
               <p className="font-display font-bold text-lg">Descarga gratis 🎁</p>
-              <p className="text-sm text-green-dark/70">Checklist y calendario de alimentación</p>
+              <p className="text-sm text-ink/50">Checklist y calendario de alimentación</p>
             </div>
           </a>
 
