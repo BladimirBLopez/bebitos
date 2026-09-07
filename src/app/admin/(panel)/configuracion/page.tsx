@@ -432,7 +432,7 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <div className="h-40" />
+        <div className="h-20" />
         <div className="fixed bottom-0 left-0 right-0 sm:left-56 bg-white border-t border-brown/10 p-3 z-30 shadow-lg">
           <button
             type="submit"
