@@ -36,6 +36,13 @@ export default function RegaloPage() {
     setError("");
     setLoading(true);
 
+    // Validación: exactamente 8 dígitos
+    if (!/^\d{8}$/.test(whatsapp)) {
+      setError("El número de WhatsApp debe tener exactamente 8 dígitos (sin código de país)");
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,14 +124,19 @@ export default function RegaloPage() {
                 ¿Número de WhatsApp? <span className="text-red-400">*</span>
               </label>
               <p className="text-xs text-ink/40 mb-3">
-                ¡Verifica que esté escrito correctamente, será nuestro medio de contacto!
+                ¡Verifica que esté escrito correctamente! Son exactamente 8 dígitos (sin código de país).
               </p>
               <input
                 value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (value.length <= 8) {
+                    setWhatsapp(value);
+                  }
+                }}
                 required
                 inputMode="numeric"
-                placeholder="Tu respuesta"
+                placeholder="Ej: 71234567"
                 className="w-full border-0 border-b-2 border-cream focus:border-green px-1 py-2 text-sm outline-none bg-transparent transition-colors"
               />
             </div>
