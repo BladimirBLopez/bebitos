@@ -5,6 +5,7 @@ import { Download, Trash2, MessageCircle } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
+import jsPDF from "jspdf";
 
 type Lead = {
   id: string;
@@ -39,145 +40,127 @@ export default function LeadsPage() {
     setToDelete(null);
   }
 
-  async function exportPDF() {
+  function exportPDF() {
+    if (leads.length === 0) {
+      showToast("No hay leads para exportar", "error");
+      return;
+    }
+
     setExporting(true);
     showToast("Generando PDF...", "info");
 
     try {
-      // Cargar jsPDF desde CDN
-      await loadJSPDF();
-      await generatePDF();
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const margin = 14;
+      const colorVerde = [46, 125, 50];
+      const colorMarron = [121, 85, 72];
+      const colorCrema = [255, 248, 225];
+
+      // === HEADER ===
+      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+      doc.rect(0, 0, pageWidth, 8, "F");
+
+      // Logo redondo
+      const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
+      const imgX = margin;
+      const imgY = 12;
+      const imgSize = 18;
+
+      doc.setFillColor(255, 255, 255);
+      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "F");
+      doc.saveGraphicsState();
+      doc.ellipse(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, imgSize/2, "clip");
+      doc.addImage(logoUrl, "PNG", imgX, imgY, imgSize, imgSize);
+      doc.restoreGraphicsState();
+      doc.setDrawColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+      doc.setLineWidth(0.8);
+      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "S");
+
+      // Título
+      doc.setFontSize(22);
+      doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
+      doc.text("Bebitos", margin + 22, 26);
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Reporte de Leads", margin + 22, 33);
+
+      // === INFO ===
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const fecha = new Date().toLocaleDateString("es-BO", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      doc.text(`Generado: ${fecha}`, margin, 48);
+      doc.text(`Total de leads: ${leads.length}`, margin, 54);
+
+      // === TABLA ===
+      const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
+      const rows = leads.map((lead, index) => [
+        index + 1,
+        lead.name,
+        lead.whatsapp,
+        lead.babyAge || "No especificada",
+        new Date(lead.createdAt).toLocaleDateString("es-BO"),
+      ]);
+
+      let y = 62;
+      const colWidths = [10, 50, 35, 30, 35];
+
+      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+      doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 2, 2, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      let x = margin + 2;
+      headers.forEach((h, i) => {
+        doc.text(h, x, y + 5.5);
+        x += colWidths[i];
+      });
+
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(8);
+      rows.forEach((row, i) => {
+        y += 8;
+        if (i % 2 === 0) {
+          doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
+          doc.rect(margin, y, pageWidth - margin * 2, 7, "F");
+        }
+        let xPos = margin + 2;
+        row.forEach((cell, j) => {
+          doc.text(String(cell), xPos, y + 5);
+          xPos += colWidths[j];
+        });
+      });
+
+      // === FOOTER ===
+      const finalY = y + 12;
+      doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
+      doc.setLineWidth(0.5);
+      doc.line(margin, finalY, pageWidth - margin, finalY);
+
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
+      doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 12);
+
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.text(`Página 1 de ${pageCount}`, pageWidth - margin - 20, finalY + 6);
+
+      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+      doc.rect(0, 297 - 6, pageWidth, 6, "F");
+
+      doc.save("leads-bebitos.pdf");
+      showToast("PDF exportado correctamente", "success");
     } catch (error) {
-      console.error("Error:", error);
-      showToast("Error al generar el PDF", "error");
+      console.error("Error al generar PDF:", error);
+      showToast("Error al generar el PDF. Revisa la consola.", "error");
     } finally {
       setExporting(false);
     }
-  }
-
-  function loadJSPDF(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (window.jspdf) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Error al cargar jsPDF"));
-      document.body.appendChild(script);
-    });
-  }
-
-  function generatePDF() {
-    // @ts-ignore
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF("p", "mm", "a4");
-    const pageWidth = 210;
-    const margin = 14;
-    const colorVerde = [46, 125, 50];
-    const colorMarron = [121, 85, 72];
-    const colorCrema = [255, 248, 225];
-
-    // === HEADER ===
-    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-    doc.rect(0, 0, pageWidth, 8, "F");
-
-    // Logo redondo
-    const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
-    const imgX = margin;
-    const imgY = 12;
-    const imgSize = 18;
-
-    doc.setFillColor(255, 255, 255);
-    doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "F");
-    doc.saveGraphicsState();
-    doc.ellipse(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, imgSize/2, "clip");
-    doc.addImage(logoUrl, "PNG", imgX, imgY, imgSize, imgSize);
-    doc.restoreGraphicsState();
-    doc.setDrawColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-    doc.setLineWidth(0.8);
-    doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "S");
-
-    // Título
-    doc.setFontSize(22);
-    doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-    doc.text("Bebitos", margin + 22, 26);
-    doc.setFontSize(11);
-    doc.setTextColor(100, 100, 100);
-    doc.text("Reporte de Leads", margin + 22, 33);
-
-    // === INFO ===
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    const fecha = new Date().toLocaleDateString("es-BO", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    doc.text(`Generado: ${fecha}`, margin, 48);
-    doc.text(`Total de leads: ${leads.length}`, margin, 54);
-
-    // === TABLA ===
-    const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
-    const rows = leads.map((lead, index) => [
-      index + 1,
-      lead.name,
-      lead.whatsapp,
-      lead.babyAge || "No especificada",
-      new Date(lead.createdAt).toLocaleDateString("es-BO"),
-    ]);
-
-    let y = 62;
-    const colWidths = [10, 50, 35, 30, 35];
-
-    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 2, 2, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    let x = margin + 2;
-    headers.forEach((h, i) => {
-      doc.text(h, x, y + 5.5);
-      x += colWidths[i];
-    });
-
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(8);
-    rows.forEach((row, i) => {
-      y += 8;
-      if (i % 2 === 0) {
-        doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
-        doc.rect(margin, y, pageWidth - margin * 2, 7, "F");
-      }
-      let xPos = margin + 2;
-      row.forEach((cell, j) => {
-        doc.text(String(cell), xPos, y + 5);
-        xPos += colWidths[j];
-      });
-    });
-
-    // === FOOTER ===
-    const finalY = y + 12;
-    doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-    doc.setLineWidth(0.5);
-    doc.line(margin, finalY, pageWidth - margin, finalY);
-
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
-    doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 12);
-
-    const pageCount = doc.internal.getNumberOfPages();
-    doc.text(`Página 1 de ${pageCount}`, pageWidth - margin - 20, finalY + 6);
-
-    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-    doc.rect(0, 297 - 6, pageWidth, 6, "F");
-
-    doc.save("leads-bebitos.pdf");
-    showToast("PDF exportado correctamente", "success");
   }
 
   return (
