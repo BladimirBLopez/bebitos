@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, MapPin, Truck, Clock, Plus, DollarSign, Gift, Save, Check, Pencil } from "lucide-react";
+import { MessageCircle, MapPin, Truck, Clock, Plus, DollarSign, Gift, Save, Check, Pencil, X, Trash2, ChevronUp, ChevronDown, ImageOff } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
 import ToggleSwitch from "@/components/ToggleSwitch";
 import SocialLinkModal from "@/components/SocialLinkModal";
 import PageHeader from "@/components/PageHeader";
+
+const CLOUD_NAME = "dkq95jus0";
+const UPLOAD_PRESET = "bebitos_admin";
 
 const SOCIAL_ICONS: Record<string, React.ReactNode> = {
   Instagram: (
@@ -38,10 +41,9 @@ type SettingsData = {
   businessHours: string;
   showPrices: boolean;
   qualityReportUrl: string;
-  leadMagnetUrl: string;
 };
 
-type Category = { id: string; name: string };
+type GiftResource = { id: string; label: string; image: string; order: number };
 
 function SectionCard({
   icon: Icon,
@@ -64,6 +66,198 @@ function SectionCard({
       </div>
       {children}
     </div>
+  );
+}
+
+function GiftResourceManager() {
+  const { showToast } = useToast();
+  const [resources, setResources] = useState<GiftResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [labelInput, setLabelInput] = useState("");
+  const [toDelete, setToDelete] = useState<GiftResource | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/gift-resources")
+      .then((res) => res.json())
+      .then((data) => {
+        setResources(data);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("folder", "bebitos/regalo");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData }
+      );
+
+      if (!res.ok) throw new Error("Error al subir la imagen");
+
+      const data = await res.json();
+      setPendingImage(data.public_id);
+      showToast("Imagen subida, ponle un nombre y agrégala", "success");
+    } catch {
+      showToast("No se pudo subir la imagen. Intenta de nuevo.", "error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function addResource() {
+    if (!pendingImage || !labelInput.trim()) return;
+
+    const res = await fetch("/api/admin/gift-resources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: labelInput.trim(), image: pendingImage }),
+    });
+
+    if (res.ok) {
+      const created = await res.json();
+      setResources((r) => [...r, created]);
+      setPendingImage(null);
+      setLabelInput("");
+      showToast("Recurso agregado", "success");
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      showToast(errorData.error || "No se pudo agregar", "error");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    await fetch(`/api/admin/gift-resources/${toDelete.id}`, { method: "DELETE" });
+    setResources((r) => r.filter((res) => res.id !== toDelete.id));
+    showToast("Recurso borrado", "success");
+    setToDelete(null);
+  }
+
+  async function move(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= resources.length) return;
+
+    const reordered = [...resources];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    setResources(reordered);
+
+    const items = reordered.map((r, i) => ({ id: r.id, order: i }));
+    await fetch("/api/admin/gift-resources", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+  }
+
+  return (
+    <SectionCard icon={Gift} title="Regalo descargable">
+      <p className="text-[11px] text-ink/40 mb-3">
+        Sube las imágenes que quieres regalar. Aparecen en <span className="font-medium">/regalo</span> con su propio botón de descarga, después de que alguien deja su nombre y WhatsApp.
+      </p>
+
+      {!loading && resources.length > 0 && (
+        <div className="flex flex-col gap-2 mb-4">
+          {resources.map((r, i) => (
+            <div key={r.id} className="flex items-center gap-2 bg-cream rounded-xl p-2">
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  className="w-6 h-5 rounded bg-white flex items-center justify-center text-brown-dark disabled:opacity-30"
+                >
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === resources.length - 1}
+                  className="w-6 h-5 rounded bg-white flex items-center justify-center text-brown-dark disabled:opacity-30"
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-white shrink-0 overflow-hidden flex items-center justify-center">
+                {r.image ? (
+                  <img
+                    src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_80,h_80,c_fill/${r.image}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageOff className="w-4 h-4 text-brown/25" />
+                )}
+              </div>
+              <p className="flex-1 text-sm text-ink truncate">{r.label}</p>
+              <button
+                type="button"
+                onClick={() => setToDelete(r)}
+                className="text-red-300 hover:text-red-500 p-1.5 shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="border-t border-brown/10 pt-3">
+        {!pendingImage ? (
+          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-brown/20 rounded-xl py-3 text-sm text-ink/50 cursor-pointer hover:border-brown/40 transition-colors">
+            {uploading ? "Subiendo..." : "+ Subir nueva imagen"}
+            <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="hidden" />
+          </label>
+        ) : (
+          <div className="flex items-center gap-2">
+            <img
+              src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_60,h_60,c_fill/${pendingImage}`}
+              alt=""
+              className="w-11 h-11 rounded-lg object-cover shrink-0"
+            />
+            <input
+              value={labelInput}
+              onChange={(e) => setLabelInput(e.target.value)}
+              placeholder="Nombre, ej. Checklist de alimentos"
+              className="flex-1 border border-brown/15 rounded-xl px-3 py-2 text-sm outline-none focus:border-brown/40"
+            />
+            <button
+              type="button"
+              onClick={addResource}
+              disabled={!labelInput.trim()}
+              className="bg-brown-dark text-white w-9 h-9 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-40"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingImage(null)}
+              className="text-ink/30 hover:text-red-400 p-1 shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <ConfirmModal
+        open={!!toDelete}
+        title="¿Borrar este recurso?"
+        message={toDelete ? `"${toDelete.label}" dejará de aparecer en /regalo.` : ""}
+        onConfirm={confirmDelete}
+        onCancel={() => setToDelete(null)}
+      />
+    </SectionCard>
   );
 }
 
@@ -229,21 +423,6 @@ export default function ConfiguracionPage() {
           />
         </SectionCard>
 
-        <SectionCard icon={Gift} title="Regalo descargable">
-          <label className="text-xs font-medium text-ink/60 block mb-1">
-            Link de descarga (carpeta de Drive o archivo)
-          </label>
-          <input
-            value={form.leadMagnetUrl}
-            onChange={(e) => setForm((f) => f && { ...f, leadMagnetUrl: e.target.value })}
-            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-            placeholder="https://drive.google.com/..."
-          />
-          <p className="text-[11px] text-ink/40 mt-2">
-            Se muestra en <span className="font-medium">/regalo</span> después de que alguien deja su nombre y WhatsApp
-          </p>
-        </SectionCard>
-
         <SectionCard icon={DollarSign} title="Precios">
           <ToggleSwitch
             checked={form.showPrices}
@@ -265,6 +444,10 @@ export default function ConfiguracionPage() {
           </button>
         </div>
       </form>
+
+      <div className="max-w-xl mt-4">
+        <GiftResourceManager />
+      </div>
     </div>
   );
 }

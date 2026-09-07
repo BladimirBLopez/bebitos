@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Download } from "lucide-react";
+
+const CLOUD_NAME = "dkq95jus0";
+const BABY_AGE_OPTIONS = ["Estoy en embarazo", "0-3 meses", "4-6 meses", "7-12 meses", "+1 año"];
+
+type GiftResource = { id: string; label: string; image: string };
 
 function GiftIcon() {
   return (
@@ -18,9 +24,12 @@ function GiftIcon() {
 export default function RegaloPage() {
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [babyAge, setBabyAge] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [resources, setResources] = useState<GiftResource[]>([]);
+  const [loadingResources, setLoadingResources] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +39,7 @@ export default function RegaloPage() {
     const res = await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, whatsapp, source: "regalo-alimentacion" }),
+      body: JSON.stringify({ name, whatsapp, babyAge, source: "regalo-alimentacion" }),
     });
 
     setLoading(false);
@@ -41,63 +50,73 @@ export default function RegaloPage() {
       return;
     }
 
-    const data = await res.json();
-    setDownloadUrl(data.downloadUrl || "");
+    setSubmitted(true);
+    setLoadingResources(true);
+    try {
+      const resResources = await fetch("/api/gift-resources");
+      const data = await resResources.json();
+      setResources(data);
+    } finally {
+      setLoadingResources(false);
+    }
   }
 
   return (
-    <div className="min-h-screen bg-[#F0EBF8] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-[560px] flex flex-col gap-4">
-        <div className="bg-white rounded-lg border border-black/10 overflow-hidden">
-          <div className="bg-green flex items-center gap-4 px-6 py-8">
-            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shrink-0">
+    <div className="min-h-screen bg-cream flex flex-col items-center px-4 py-8">
+      <div className="w-full max-w-[520px] flex flex-col gap-4">
+
+        {/* Banner colorido, estilo tienda */}
+        <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg overflow-hidden">
+          <div className="bg-green flex items-center gap-4 px-6 py-7">
+            <div className="w-16 h-16 rounded-full bg-white border-[3px] border-white shadow flex items-center justify-center shrink-0 overflow-hidden">
               <Image
                 src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787250386/Dise%C3%B1o_sin_t%C3%ADtulo_10_w98gei.png"
                 alt="Bebitos"
-                width={44}
-                height={44}
-                className="object-contain w-9 h-9"
+                width={56}
+                height={56}
+                className="object-contain w-11 h-11"
               />
             </div>
             <div className="text-white flex items-center gap-2">
               <GiftIcon />
-              <p className="font-display font-bold text-lg leading-tight">DESCARGA GRATIS</p>
+              <p className="font-display font-bold text-2xl leading-tight tracking-wide">DESCARGA GRATIS</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-black/10 overflow-hidden">
-          <div className="h-2 bg-brown-dark" />
+        {/* Titulo */}
+        <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg overflow-hidden">
+          <div className="h-2 bg-brown" />
           <div className="p-6">
-            <h1 className="text-[28px] leading-tight font-normal text-ink mb-3">
-              Checklist y calendario de alimentación
+            <h1 className="font-display font-bold text-[26px] leading-tight text-brown-dark mb-2">
+              Checklist y calendario de alimentación 🥑
             </h1>
-            <p className="text-sm text-ink/70">
-              Deja tus datos y te enviamos el link de descarga al toque. Nunca compartimos tu información con terceros.
+            <p className="text-sm text-ink/60">
+              Deja tus datos y descarga tus archivos al toque. Nunca compartimos tu información con terceros.
             </p>
           </div>
         </div>
 
-        {downloadUrl === null ? (
+        {!submitted ? (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="bg-white rounded-lg border border-black/10 p-6">
-              <label className="text-[15px] text-ink block mb-3">
-                ¿Cuál es tu nombre? <span className="text-red-500">*</span>
+            <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg p-6">
+              <label className="font-display font-semibold text-brown-dark text-base block mb-3">
+                ¿Cuál es tu nombre? <span className="text-red-400">*</span>
               </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Tu respuesta"
-                className="w-full border-0 border-b border-black/20 focus:border-b-2 focus:border-brown-dark px-0.5 py-2 text-sm outline-none bg-transparent transition-colors"
+                className="w-full border-0 border-b-2 border-cream focus:border-green px-1 py-2 text-sm outline-none bg-transparent transition-colors"
               />
             </div>
 
-            <div className="bg-white rounded-lg border border-black/10 p-6">
-              <label className="text-[15px] text-ink block mb-1">
-                ¿Número de WhatsApp? <span className="text-red-500">*</span>
+            <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg p-6">
+              <label className="font-display font-semibold text-brown-dark text-base block mb-1">
+                ¿Número de WhatsApp? <span className="text-red-400">*</span>
               </label>
-              <p className="text-xs text-ink/50 mb-3">
+              <p className="text-xs text-ink/40 mb-3">
                 ¡Verifica que esté escrito correctamente, será nuestro medio de contacto!
               </p>
               <input
@@ -106,49 +125,77 @@ export default function RegaloPage() {
                 required
                 inputMode="numeric"
                 placeholder="Tu respuesta"
-                className="w-full border-0 border-b border-black/20 focus:border-b-2 focus:border-brown-dark px-0.5 py-2 text-sm outline-none bg-transparent transition-colors"
+                className="w-full border-0 border-b-2 border-cream focus:border-green px-1 py-2 text-sm outline-none bg-transparent transition-colors"
               />
+            </div>
+
+            <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg p-6">
+              <label className="font-display font-semibold text-brown-dark text-base block mb-3">
+                ¿Edad de tu bebé? <span className="text-red-400">*</span>
+              </label>
+              <div className="flex flex-col gap-2.5">
+                {BABY_AGE_OPTIONS.map((opt) => (
+                  <label key={opt} className="flex items-center gap-2.5 text-sm text-ink cursor-pointer">
+                    <input
+                      type="radio"
+                      name="babyAge"
+                      value={opt}
+                      checked={babyAge === opt}
+                      onChange={(e) => setBabyAge(e.target.value)}
+                      required
+                      className="w-4 h-4 accent-green"
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
             </div>
 
             {error && (
               <p className="text-sm text-red-500 px-2">{error}</p>
             )}
 
-            <div className="flex items-center justify-between px-1">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-white border border-black/10 hover:bg-cream/60 text-green-dark font-medium text-sm px-6 py-2.5 rounded transition-colors disabled:opacity-60"
-                style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }}
-              >
-                {loading ? "Enviando..." : "Enviar"}
-              </button>
-              <p className="text-xs text-ink/30">No compartas contraseñas aquí</p>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-green hover:bg-green-dark text-white font-display font-bold text-lg py-3.5 rounded-full shadow-lg transition-colors disabled:opacity-60"
+            >
+              {loading ? "Enviando..." : "Enviar 🎁"}
+            </button>
           </form>
         ) : (
-          <div className="bg-white rounded-lg border border-black/10 overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-brown/10 shadow-lg overflow-hidden">
             <div className="h-2 bg-green" />
             <div className="p-6">
-              <h2 className="text-2xl font-normal text-ink mb-3">
+              <h2 className="font-display font-bold text-2xl text-brown-dark mb-2">
                 ¡Gracias por tu registro! 🤎
               </h2>
-              {downloadUrl ? (
+
+              {loadingResources ? (
+                <p className="text-sm text-ink/60">Cargando tus archivos...</p>
+              ) : resources.length > 0 ? (
                 <>
-                  <p className="text-sm text-ink/70 mb-4">
+                  <p className="text-sm text-ink/60 mb-4">
                     Descarga aquí tus archivos gratis:
                   </p>
-                  <a
-                    href={downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green-dark text-sm underline break-all"
-                  >
-                    {downloadUrl}
-                  </a>
+                  <div className="flex flex-col gap-2.5">
+                    {resources.map((r) => (
+                      <a
+                        key={r.id}
+                        href={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/fl_attachment/${r.image}`}
+                        className="flex items-center justify-between gap-3 bg-cream hover:bg-cream/70 rounded-2xl px-4 py-3 transition-colors"
+                      >
+                        <span className="font-medium text-brown-dark text-sm">{r.label}</span>
+                        <span className="flex items-center gap-1.5 bg-green text-white text-xs font-semibold px-3 py-1.5 rounded-full shrink-0">
+                          <Download className="w-3.5 h-3.5" />
+                          Descargar
+                        </span>
+                      </a>
+                    ))}
+                  </div>
                 </>
               ) : (
-                <p className="text-sm text-ink/70">
+                <p className="text-sm text-ink/60">
                   En breve te escribimos por WhatsApp con tu regalo 💛
                 </p>
               )}

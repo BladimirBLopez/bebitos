@@ -10,6 +10,7 @@ type Lead = {
   id: string;
   name: string;
   whatsapp: string;
+  babyAge: string;
   source: string;
   createdAt: string;
 };
@@ -38,9 +39,9 @@ export default function LeadsPage() {
   }
 
   function exportCsv() {
-    const header = "Nombre,WhatsApp,Origen,Fecha\n";
+    const header = "Nombre,WhatsApp,Edad del bebe,Origen,Fecha\n";
     const rows = leads
-      .map((l) => `"${l.name}","${l.whatsapp}","${l.source}","${new Date(l.createdAt).toLocaleDateString("es-BO")}"`)
+      .map((l) => `"${l.name}","${l.whatsapp}","${l.babyAge}","${l.source}","${new Date(l.createdAt).toLocaleDateString("es-BO")}"`)
       .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -86,9 +87,16 @@ export default function LeadsPage() {
             >
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-panel-ink truncate">{lead.name}</p>
-                <p className="text-xs text-panel-ink-soft">
-                  {new Date(lead.createdAt).toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" })}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  {lead.babyAge && (
+                    <span className="text-[11px] font-medium bg-green/15 text-green-dark px-2 py-0.5 rounded-full">
+                      {lead.babyAge}
+                    </span>
+                  )}
+                  <p className="text-xs text-panel-ink-soft">
+                    {new Date(lead.createdAt).toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" })}
+                  </p>
+                </div>
               </div>
               <a
                 href={`https://wa.me/${lead.whatsapp}`}

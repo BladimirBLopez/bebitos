@@ -57,7 +57,7 @@ export function validateSettings(data: unknown): { valid: boolean; error?: strin
   if (!d.whatsapp || typeof d.whatsapp !== "string" || !/^\d{6,15}$/.test(d.whatsapp.trim())) {
     return { valid: false, error: "El número de WhatsApp debe tener solo dígitos (6-15)" };
   }
-  const urlFields = ["mapsUrl", "instagramUrl", "facebookUrl", "tiktokUrl", "leadMagnetUrl"];
+  const urlFields = ["mapsUrl", "instagramUrl", "facebookUrl", "tiktokUrl"];
   for (const field of urlFields) {
     const value = d[field];
     if (value && typeof value === "string" && value.trim() !== "") {
@@ -71,6 +71,8 @@ export function validateSettings(data: unknown): { valid: boolean; error?: strin
 
   return { valid: true };
 }
+
+const BABY_AGE_OPTIONS = ["Estoy en embarazo", "0-3 meses", "4-6 meses", "7-12 meses", "+1 año"];
 
 export function validateLead(data: unknown): { valid: boolean; error?: string } {
   if (!data || typeof data !== "object") {
@@ -86,6 +88,28 @@ export function validateLead(data: unknown): { valid: boolean; error?: string } 
   }
   if (!d.whatsapp || typeof d.whatsapp !== "string" || !/^\d{6,15}$/.test(d.whatsapp.trim())) {
     return { valid: false, error: "El número de WhatsApp debe tener solo dígitos (6-15)" };
+  }
+  if (!d.babyAge || typeof d.babyAge !== "string" || !BABY_AGE_OPTIONS.includes(d.babyAge)) {
+    return { valid: false, error: "Selecciona la edad de tu bebé" };
+  }
+
+  return { valid: true };
+}
+
+export function validateGiftResource(data: unknown): { valid: boolean; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
+  }
+  const d = data as Record<string, unknown>;
+
+  if (!d.label || typeof d.label !== "string" || !d.label.trim()) {
+    return { valid: false, error: "El nombre del recurso es requerido" };
+  }
+  if (d.label.length > 100) {
+    return { valid: false, error: "El nombre es demasiado largo" };
+  }
+  if (!d.image || typeof d.image !== "string" || !d.image.trim()) {
+    return { valid: false, error: "Falta la imagen del recurso" };
   }
 
   return { valid: true };

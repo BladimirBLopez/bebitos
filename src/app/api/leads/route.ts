@@ -14,11 +14,10 @@ export async function POST(req: NextRequest) {
     data: {
       name: data.name.trim(),
       whatsapp: data.whatsapp.trim(),
+      babyAge: data.babyAge,
       source: typeof data.source === "string" && data.source.trim() ? data.source.trim() : "regalo",
     },
   });
 
-  const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
-
-  return NextResponse.json({ downloadUrl: settings?.leadMagnetUrl || "" });
+  return NextResponse.json({ ok: true });
 }
