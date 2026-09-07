@@ -20,6 +20,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<Lead | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/leads")
@@ -38,130 +39,145 @@ export default function LeadsPage() {
     setToDelete(null);
   }
 
-  function exportPDF() {
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    script.onload = () => {
-      // @ts-ignore
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("p", "mm", "a4");
-      const pageWidth = 210;
-      const margin = 14;
-      const colorVerde = [46, 125, 50];
-      const colorMarron = [121, 85, 72];
-      const colorCrema = [255, 248, 225];
+  async function exportPDF() {
+    setExporting(true);
+    showToast("Generando PDF...", "info");
 
-      // === HEADER ===
-      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-      doc.rect(0, 0, pageWidth, 8, "F");
+    try {
+      // Cargar jsPDF desde CDN
+      await loadJSPDF();
+      await generatePDF();
+    } catch (error) {
+      console.error("Error:", error);
+      showToast("Error al generar el PDF", "error");
+    } finally {
+      setExporting(false);
+    }
+  }
 
-      // Logo redondo con clip
-      const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
-      const imgX = margin;
-      const imgY = 12;
-      const imgSize = 18;
+  function loadJSPDF(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (window.jspdf) {
+        resolve();
+        return;
+      }
 
-      // Dibujar círculo blanco de fondo
-      doc.setFillColor(255, 255, 255);
-      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "F");
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Error al cargar jsPDF"));
+      document.body.appendChild(script);
+    });
+  }
 
-      // Recortar imagen en círculo
-      doc.saveGraphicsState();
-      doc.ellipse(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, imgSize/2, "clip");
-      doc.addImage(logoUrl, "PNG", imgX, imgY, imgSize, imgSize);
-      doc.restoreGraphicsState();
+  function generatePDF() {
+    // @ts-ignore
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageWidth = 210;
+    const margin = 14;
+    const colorVerde = [46, 125, 50];
+    const colorMarron = [121, 85, 72];
+    const colorCrema = [255, 248, 225];
 
-      // Borde del círculo
-      doc.setDrawColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-      doc.setLineWidth(0.8);
-      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "S");
+    // === HEADER ===
+    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+    doc.rect(0, 0, pageWidth, 8, "F");
 
-      // Título
-      doc.setFontSize(22);
-      doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-      doc.text("Bebitos", margin + 22, 26);
+    // Logo redondo
+    const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
+    const imgX = margin;
+    const imgY = 12;
+    const imgSize = 18;
 
-      // Subtítulo
-      doc.setFontSize(11);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Reporte de Leads", margin + 22, 33);
+    doc.setFillColor(255, 255, 255);
+    doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "F");
+    doc.saveGraphicsState();
+    doc.ellipse(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, imgSize/2, "clip");
+    doc.addImage(logoUrl, "PNG", imgX, imgY, imgSize, imgSize);
+    doc.restoreGraphicsState();
+    doc.setDrawColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+    doc.setLineWidth(0.8);
+    doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "S");
 
-      // === INFO DEL REPORTE ===
-      doc.setFontSize(9);
-      doc.setTextColor(80, 80, 80);
-      const fecha = new Date().toLocaleDateString("es-BO", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+    // Título
+    doc.setFontSize(22);
+    doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
+    doc.text("Bebitos", margin + 22, 26);
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Reporte de Leads", margin + 22, 33);
+
+    // === INFO ===
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    const fecha = new Date().toLocaleDateString("es-BO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    doc.text(`Generado: ${fecha}`, margin, 48);
+    doc.text(`Total de leads: ${leads.length}`, margin, 54);
+
+    // === TABLA ===
+    const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
+    const rows = leads.map((lead, index) => [
+      index + 1,
+      lead.name,
+      lead.whatsapp,
+      lead.babyAge || "No especificada",
+      new Date(lead.createdAt).toLocaleDateString("es-BO"),
+    ]);
+
+    let y = 62;
+    const colWidths = [10, 50, 35, 30, 35];
+
+    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    let x = margin + 2;
+    headers.forEach((h, i) => {
+      doc.text(h, x, y + 5.5);
+      x += colWidths[i];
+    });
+
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(8);
+    rows.forEach((row, i) => {
+      y += 8;
+      if (i % 2 === 0) {
+        doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
+        doc.rect(margin, y, pageWidth - margin * 2, 7, "F");
+      }
+      let xPos = margin + 2;
+      row.forEach((cell, j) => {
+        doc.text(String(cell), xPos, y + 5);
+        xPos += colWidths[j];
       });
-      doc.text(`Generado: ${fecha}`, margin, 48);
-      doc.text(`Total de leads: ${leads.length}`, margin, 54);
+    });
 
-      // === TABLA ===
-      const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
-      const rows = leads.map((lead, index) => [
-        index + 1,
-        lead.name,
-        lead.whatsapp,
-        lead.babyAge || "No especificada",
-        new Date(lead.createdAt).toLocaleDateString("es-BO"),
-      ]);
+    // === FOOTER ===
+    const finalY = y + 12;
+    doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
+    doc.setLineWidth(0.5);
+    doc.line(margin, finalY, pageWidth - margin, finalY);
 
-      let y = 62;
-      const colWidths = [10, 50, 35, 30, 35];
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
+    doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 12);
 
-      // Cabecera de la tabla
-      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-      doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 2, 2, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      let x = margin + 2;
-      headers.forEach((h, i) => {
-        doc.text(h, x, y + 5.5);
-        x += colWidths[i];
-      });
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.text(`Página 1 de ${pageCount}`, pageWidth - margin - 20, finalY + 6);
 
-      // Filas
-      doc.setTextColor(50, 50, 50);
-      doc.setFontSize(8);
-      rows.forEach((row, i) => {
-        y += 8;
-        if (i % 2 === 0) {
-          doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
-          doc.rect(margin, y, pageWidth - margin * 2, 7, "F");
-        }
-        let xPos = margin + 2;
-        row.forEach((cell, j) => {
-          doc.text(String(cell), xPos, y + 5);
-          xPos += colWidths[j];
-        });
-      });
+    doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+    doc.rect(0, 297 - 6, pageWidth, 6, "F");
 
-      // === PIE DE PÁGINA ===
-      const finalY = y + 12;
-      doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-      doc.setLineWidth(0.5);
-      doc.line(margin, finalY, pageWidth - margin, finalY);
-
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
-      doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 12);
-
-      // Número de página
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.text(`Página 1 de ${pageCount}`, pageWidth - margin - 20, finalY + 6);
-
-      // === FOOTER DECORATIVO ===
-      doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-      doc.rect(0, 297 - 6, pageWidth, 6, "F");
-
-      doc.save("leads-bebitos.pdf");
-      showToast("PDF exportado correctamente", "success");
-    };
-    document.body.appendChild(script);
+    doc.save("leads-bebitos.pdf");
+    showToast("PDF exportado correctamente", "success");
   }
 
   return (
@@ -173,10 +189,11 @@ export default function LeadsPage() {
           leads.length > 0 ? (
             <button
               onClick={exportPDF}
-              className="flex items-center gap-1.5 bg-brown-dark hover:bg-ink text-cream text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              disabled={exporting}
+              className="flex items-center gap-1.5 bg-brown-dark hover:bg-ink text-cream text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              Exportar PDF
+              {exporting ? "Generando..." : "Exportar PDF"}
             </button>
           ) : undefined
         }
