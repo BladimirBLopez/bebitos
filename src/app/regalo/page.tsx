@@ -70,7 +70,7 @@ export default function RegaloPage() {
           <div className="bg-green flex items-center gap-4 px-6 py-7">
             <div className="w-16 h-16 rounded-full bg-white border-[3px] border-white shadow flex items-center justify-center shrink-0 overflow-hidden">
               <Image
-                src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787250386/Dise%C3%B1o_sin_t%C3%ADtulo_10_w98gei.png"
+                src="https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png"
                 alt="Bebitos"
                 width={56}
                 height={56}
