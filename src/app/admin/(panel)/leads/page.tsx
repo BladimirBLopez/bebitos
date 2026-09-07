@@ -47,7 +47,7 @@ export default function LeadsPage() {
     }
 
     setExporting(true);
-    showToast("Generando PDF...", "info");
+    showToast("Generando PDF...", "success");
 
     try {
       const doc = new jsPDF("p", "mm", "a4");
@@ -147,8 +147,8 @@ export default function LeadsPage() {
       doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
       doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 12);
 
-      const pageCount = doc.internal.getNumberOfPages();
-      doc.text(`Página 1 de ${pageCount}`, pageWidth - margin - 20, finalY + 6);
+      // Número de página (simplificado)
+      doc.text("Página 1", pageWidth - margin - 20, finalY + 6);
 
       doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
       doc.rect(0, 297 - 6, pageWidth, 6, "F");
@@ -157,7 +157,7 @@ export default function LeadsPage() {
       showToast("PDF exportado correctamente", "success");
     } catch (error) {
       console.error("Error al generar PDF:", error);
-      showToast("Error al generar el PDF. Revisa la consola.", "error");
+      showToast("Error al generar el PDF", "error");
     } finally {
       setExporting(false);
     }
