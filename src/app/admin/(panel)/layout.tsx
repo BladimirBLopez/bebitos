@@ -10,7 +10,7 @@ export default function AdminPanelLayout({
     <ToastProvider>
       <div className="min-h-screen bg-panel-bg flex flex-col sm:flex-row">
         <AdminSidebar />
-        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-5xl">
+        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-5xl pb-40">
           {children}
         </main>
       </div>
