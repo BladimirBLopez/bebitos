@@ -52,13 +52,29 @@ export default function LeadsPage() {
       const colorCrema = [255, 248, 225];
 
       // === HEADER ===
-      // Línea decorativa superior
       doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
       doc.rect(0, 0, pageWidth, 8, "F");
 
-      // Logo (desde Cloudinary)
+      // Logo redondo con clip
       const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
-      doc.addImage(logoUrl, "PNG", margin, 12, 18, 18);
+      const imgX = margin;
+      const imgY = 12;
+      const imgSize = 18;
+
+      // Dibujar círculo blanco de fondo
+      doc.setFillColor(255, 255, 255);
+      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "F");
+
+      // Recortar imagen en círculo
+      doc.saveGraphicsState();
+      doc.ellipse(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, imgSize/2, "clip");
+      doc.addImage(logoUrl, "PNG", imgX, imgY, imgSize, imgSize);
+      doc.restoreGraphicsState();
+
+      // Borde del círculo
+      doc.setDrawColor(colorVerde[0], colorVerde[1], colorVerde[2]);
+      doc.setLineWidth(0.8);
+      doc.circle(imgX + imgSize/2, imgY + imgSize/2, imgSize/2, "S");
 
       // Título
       doc.setFontSize(22);
@@ -112,7 +128,6 @@ export default function LeadsPage() {
       doc.setFontSize(8);
       rows.forEach((row, i) => {
         y += 8;
-        // Color alternado
         if (i % 2 === 0) {
           doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
           doc.rect(margin, y, pageWidth - margin * 2, 7, "F");
