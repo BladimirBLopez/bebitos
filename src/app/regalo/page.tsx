@@ -72,9 +72,9 @@ export default function RegaloPage() {
               <Image
                 src="https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png"
                 alt="Bebitos"
-                width={100}
-                height={100}
-                className="object-contain w-20 h-20"
+                width={130}
+                height={130}
+                className="object-contain w-28 h-28"
               />
             </div>
             <div className="text-white flex items-center gap-2">
