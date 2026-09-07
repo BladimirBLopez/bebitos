@@ -38,18 +38,64 @@ export default function LeadsPage() {
     setToDelete(null);
   }
 
-  function exportCsv() {
-    const header = "Nombre,WhatsApp,Edad del bebe,Origen,Fecha\n";
-    const rows = leads
-      .map((l) => `"${l.name}","${l.whatsapp}","${l.babyAge}","${l.source}","${new Date(l.createdAt).toLocaleDateString("es-BO")}"`)
-      .join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "leads-bebitos.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  function exportPDF() {
+    // Cargar jsPDF desde CDN
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    script.onload = () => {
+      // @ts-ignore
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Título
+      doc.setFontSize(18);
+      doc.text("Leads - Bebitos", 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Generado: ${new Date().toLocaleDateString("es-BO")}`, 14, 30);
+      doc.text(`Total: ${leads.length} leads`, 14, 37);
+
+      // Tabla (manual)
+      const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
+      const rows = leads.map((lead, index) => [
+        index + 1,
+        lead.name,
+        lead.whatsapp,
+        lead.babyAge || "No especificada",
+        new Date(lead.createdAt).toLocaleDateString("es-BO"),
+      ]);
+
+      let y = 45;
+      // Dibujar encabezados
+      doc.setFillColor(139, 92, 246);
+      doc.rect(14, y, 182, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      let x = 16;
+      headers.forEach((h) => {
+        doc.text(h, x, y + 6);
+        x += 36;
+      });
+
+      // Dibujar filas
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(8);
+      rows.forEach((row, i) => {
+        y += 8;
+        if (i % 2 === 0) {
+          doc.setFillColor(240, 240, 240);
+          doc.rect(14, y, 182, 7, "F");
+        }
+        let xPos = 16;
+        row.forEach((cell) => {
+          doc.text(String(cell), xPos, y + 5);
+          xPos += 36;
+        });
+      });
+
+      doc.save("leads-bebitos.pdf");
+      showToast("PDF exportado correctamente", "success");
+    };
+    document.body.appendChild(script);
   }
 
   return (
@@ -60,11 +106,11 @@ export default function LeadsPage() {
         action={
           leads.length > 0 ? (
             <button
-              onClick={exportCsv}
+              onClick={exportPDF}
               className="flex items-center gap-1.5 bg-brown-dark hover:bg-ink text-cream text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              Exportar CSV
+              Exportar PDF
             </button>
           ) : undefined
         }
