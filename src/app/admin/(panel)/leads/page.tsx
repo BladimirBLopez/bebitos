@@ -99,7 +99,7 @@ export default function LeadsPage() {
                 </div>
               </div>
               <a
-                href={`https://wa.me/${lead.whatsapp}`}
+                href={`https://wa.me/${lead.whatsapp.startsWith("591") ? lead.whatsapp : "591" + lead.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 bg-green/15 hover:bg-green/25 text-green-dark text-sm font-medium px-3 py-2 rounded-lg transition-colors shrink-0"
