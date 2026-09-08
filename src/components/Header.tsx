@@ -36,6 +36,9 @@ export default function Header({
               priority
             />
           </Link>
+          <div className="bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full ml-2 shadow-md animate-pulse">
+            🔵 EN PRUEBAS
+          </div>
         </div>
 
         <nav className="hidden md:flex items-center gap-4">
