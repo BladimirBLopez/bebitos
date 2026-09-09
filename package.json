@@ -4,18 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev",
-    "build": "prisma generate && node node_modules/next/dist/bin/next build",
+    "build": "node node_modules/prisma/build/index.js generate && node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
-    "postinstall": "prisma generate"
+    "postinstall": "node node_modules/prisma/build/index.js generate"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.19.3",
-    "bcryptjs": "^3.0.3",
     "date-fns": "^4.4.0",
     "framer-motion": "^13.1.0",
-    "jose": "^6.2.12",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.469.0",
