@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request) {
   try {
     const user = await requireAuth();
     if (!user) {
@@ -11,6 +11,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     const { name, email, password, role } = await req.json();
+    const id = req.url.split("/")[6]; // Obtener id de la URL
 
     if (!name || !email) {
       return NextResponse.json({ error: "Nombre y email requeridos" }, { status: 400 });
@@ -19,7 +20,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
 
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         email,
@@ -34,15 +35,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request) {
   try {
     const user = await requireAuth();
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const id = req.url.split("/")[6]; // Obtener id de la URL
+
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
