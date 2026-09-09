@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Users, Plus, Trash2, Edit, Save, X } from "lucide-react";
+import { Plus, Trash2, Edit, X, Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 export default function AdminUsuariosPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,10 +26,10 @@ export default function AdminUsuariosPage() {
       if (res.ok) {
         setUsers(data);
       } else {
-        setError(data.error || "Errores al lista usuarios");
+        setError(data.error || "Error al listar usuarios");
       }
     } catch (err) {
-      setError("Errores interno");
+      setError("Error interno");
     } finally {
       setLoading(false);
     }
@@ -60,12 +58,12 @@ export default function AdminUsuariosPage() {
       setFormData({ name: "", email: "", password: "", role: "ADMIN" });
       fetchUsers();
     } catch (err) {
-      setError("Errores interno");
+      setError("Error interno");
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Añadir seguro eliminar este usuario?")) return;
+    if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "DELETE",
@@ -76,7 +74,7 @@ export default function AdminUsuariosPage() {
         setError("Error al eliminar");
       }
     } catch (err) {
-      setError("Errores interno");
+      setError("Error interno");
     }
   }
 
@@ -137,7 +135,7 @@ export default function AdminUsuariosPage() {
                     <Trash2 className="w-4 h-4" />
                     Delete
                   </button>
-                  </div>
+                </div>
               </div>
             ))}
           </>
