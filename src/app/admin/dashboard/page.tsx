@@ -5,6 +5,8 @@ import SalesChart from "@/components/dashboard/SalesChart";
 import TopProductsChart from "@/components/dashboard/TopProductsChart";
 import LeadsPieChart from "@/components/dashboard/LeadsPieChart";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const stats = await getDashboardStats();
 
