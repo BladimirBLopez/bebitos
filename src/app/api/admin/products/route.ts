@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateProduct } from "@/lib/validation";
 
+export async function GET() {
+  try {
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        stock: true,
+        inStock: true,
+        price: true,
+        isPromo: true,
+        promoPrice: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(products);
+  } catch (err) {
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const data = await req.json();
 

@@ -1,47 +1,62 @@
+import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
-const COOKIE_NAME = "bebitos_admin_session";
+const secretKey = process.env.JWT_SECRET || "bebitos-secret-key";
+const encodedKey = new TextEncoder().encode(secretKey);
 
-async function sign(value: string) {
-  const secret = process.env.ADMIN_SECRET || "";
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signatureBuffer = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(value)
-  );
-  return Array.from(new Uint8Array(signatureBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+export async function createSession(userId: string) {
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const token = await new SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(encodedKey);
 
-export function checkCredentials(user: string, password: string) {
-  return (
-    user === process.env.ADMIN_USER &&
-    password === process.env.ADMIN_PASSWORD
-  );
-}
-
-export async function createSession() {
-  const value = "authenticated";
-  const signature = await sign(value);
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, `${value}.${signature}`, {
+  (await cookies()).set("admin_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    expires: expiresAt,
   });
 }
 
-export async function destroySession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+export async function deleteSession() {
+  (await cookies()).delete("admin_session");
+}
+
+export async function getCurrentUser() {
+  const token = (await cookies()).get("admin_session")?.value;
+  if (!token) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, encodedKey);
+    const userId = payload.userId as string;
+
+    // Verificar en la base de datos si el usuario sigue activo y existe
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true, active: true },
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function requireAuth() {
+  const user = await getCurrentUser();
+  if (!user || !user.active) {
+    return null; // No autenticado
+  }
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await requireAuth();
+  if (!user) return null;
+  if (user.role !== "ADMIN" && user.role !== "EDITOR") {
+    return null; // Sin permisos
+  }
+  return user;
 }

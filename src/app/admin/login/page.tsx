@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,10 +16,11 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
 
-    const res = await fetch("/api/admin/login", {
+    // Cambiamos la URL a la nueva API y el campo user por email
+    const res = await fetch("/api/admin/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user, password }),
+      body: JSON.stringify({ email, password }),
     });
 
     setLoading(false);
@@ -51,10 +52,10 @@ export default function AdminLoginPage() {
         className="w-full max-w-xs bg-cream rounded-2xl p-6 flex flex-col gap-3"
       >
         <input
-          type="text"
-          placeholder="Usuario"
-          value={user}
-          onChange={(e) => setUser(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="border border-brown/20 rounded-lg px-3 py-2 text-ink outline-none focus:border-brown"
           autoCapitalize="off"
         />
