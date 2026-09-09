@@ -8,6 +8,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(ADMIN)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
 model Product {
   id          String   @id @default(cuid())
   slug        String   @unique
@@ -18,8 +35,8 @@ model Product {
   category    String
   colors      Json
   images      String[]
-  stock       Int      @default(0)  // ← NUEVO CAMPO
-  inStock     Boolean  @default(false) // ← SE CALCULA AUTOMÁTICAMENTE
+  stock       Int      @default(0)
+  inStock     Boolean  @default(false)
   isPromo     Boolean  @default(false)
   promoPrice  Float?
   isNew       Boolean  @default(false)
@@ -29,17 +46,17 @@ model Product {
 }
 
 model Settings {
-  id            String  @id @default("singleton")
-  whatsapp      String
-  mapsUrl       String
-  instagramUrl  String
-  facebookUrl   String
-  tiktokUrl     String
-  shippingText  String  @default("Envios a nivel nacional")
-  businessHours String  @default("")
-  showPrices    Boolean @default(true)
-  qualityReportUrl String @default("")
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default("singleton")
+  whatsapp        String
+  mapsUrl         String
+  instagramUrl    String
+  facebookUrl     String
+  tiktokUrl       String
+  shippingText    String   @default("Envios a nivel nacional")
+  businessHours   String   @default("")
+  showPrices      Boolean  @default(true)
+  qualityReportUrl String  @default("")
+  updatedAt       DateTime @updatedAt
 }
 
 model Category {
