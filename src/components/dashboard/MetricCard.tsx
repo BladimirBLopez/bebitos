@@ -4,6 +4,8 @@ type MetricCardProps = {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  trend?: string;
+  trendUp?: boolean;
   color: "blue" | "green" | "purple" | "yellow";
 };
 
@@ -14,15 +16,20 @@ const colors = {
   yellow: "bg-yellow-50 text-yellow-600",
 };
 
-export default function MetricCard({ title, value, icon: Icon, color }: MetricCardProps) {
+export default function MetricCard({ title, value, icon: Icon, trend, trendUp, color }: MetricCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4 border border-brown/10">
-      <div className={`p-3 rounded-full ${colors[color]}`}>
-        <Icon className="w-5 h-5" />
-      </div>
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
       <div>
-        <p className="text-ink/50 text-sm">{title}</p>
-        <p className="font-display text-2xl font-bold text-brown-dark">{value}</p>
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        {trend && (
+          <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+            {trendUp ? '↑' : '↓'} {trend}
+          </p>
+        )}
+      </div>
+      <div className={`p-3 rounded-lg ${colors[color]}`}>
+        <Icon className="w-6 h-6" />
       </div>
     </div>
   );
