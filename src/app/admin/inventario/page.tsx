@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Box, Plus, Minus, AlertTriangle } from "lucide-react";
+import { Box, Plus, Minus, AlertTriangle, X, Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 export default function AdminInventarioPage() {
@@ -47,7 +47,7 @@ export default function AdminInventarioPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error al hacer el stock");
+        setError(data.error || "Error al hacer de stock");
         return;
       }
       setShowModal(false);
