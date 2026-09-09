@@ -1,7 +1,17 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingBag, Users, Settings, LogOut, Box } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  Package, 
+  ShoppingBag, 
+  Users, 
+  Settings, 
+  LogOut, 
+  Box, 
+  ClipboardList
+} from "lucide-react";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -9,11 +19,14 @@ export default function AdminSidebar() {
   const links = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/productos", label: "Productos", icon: Package },
-    { href: "/admin/inventario", label: "Inventario", icon: Box }, // ← NUEVO
+    { href: "/admin/inventario", label: "Inventario", icon: Box },
     { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag },
-    { href: "/admin/leads", label: "Leads", icon: Users },
+    { href: "/admin/leads", label: "Leads", icon: ClipboardList },
+    { href: "/admin/usuarios", label: "Usuarios", icon: Users },
     { href: "/admin/configuracion", label: "Configuración", icon: Settings },
   ];
+
+  const isActive = (href: string) => pathname === href || pathname?.startsWith(href + "/");
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto p-4">
