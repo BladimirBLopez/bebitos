@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function PUT(req: Request) {
   try {
-    const user = await requireAuth();
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const { name, email, password, role } = await req.json();
-    const id = req.url.split("/")[6]; // Obtener id de la URL
+    const id = req.url.split("/")[6];
 
     if (!name || !email) {
       return NextResponse.json({ error: "Nombre y email requeridos" }, { status: 400 });
@@ -37,12 +37,12 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const user = await requireAuth();
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const id = req.url.split("/")[6]; // Obtener id de la URL
+    const id = req.url.split("/")[6];
 
     await prisma.user.delete({
       where: { id },
