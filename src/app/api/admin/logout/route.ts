@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { destroySession } from "@/lib/auth";
+import { deleteSession } from "@/lib/auth";
 
 export async function POST() {
-  await destroySession();
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteSession();
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
 }

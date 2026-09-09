@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request) {
   try {
     const { stock } = await req.json();
-
-    // Calculate automatically if it is in stock or not
     const inStock = stock > 0;
 
     await prisma.product.update({
-      where: { id: params.id },
+      where: { id: req.url.split("/")[6] },
       data: {
         stock,
         inStock,
