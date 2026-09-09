@@ -18,7 +18,8 @@ model Product {
   category    String
   colors      Json
   images      String[]
-  inStock     Boolean  @default(true)
+  stock       Int      @default(0)  // ← NUEVO CAMPO
+  inStock     Boolean  @default(false) // ← SE CALCULA AUTOMÁTICAMENTE
   isPromo     Boolean  @default(false)
   promoPrice  Float?
   isNew       Boolean  @default(false)

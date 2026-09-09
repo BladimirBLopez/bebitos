@@ -1,108 +1,53 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, Tag, Users, Settings, LogOut, ExternalLink, Link2 } from "lucide-react";
-
-const NAV = [
-  { href: "/admin", label: "Inicio", icon: LayoutDashboard },
-  { href: "/admin/productos", label: "Productos", icon: Package },
-  { href: "/admin/categorias", label: "Categorías", icon: Tag },
-  { href: "/admin/leads", label: "Leads", icon: Users },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
-];
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Package, ShoppingBag, Users, Settings, LogOut, Box } from "lucide-react";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
-  async function handleLogout() {
-    await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
-    router.refresh();
-  }
+  const links = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/productos", label: "Productos", icon: Package },
+    { href: "/admin/inventario", label: "Inventario", icon: Box }, // ← NUEVO
+    { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag },
+    { href: "/admin/leads", label: "Leads", icon: Users },
+    { href: "/admin/configuracion", label: "Configuración", icon: Settings },
+  ];
 
   return (
-    <aside className="w-full sm:w-56 sm:min-h-screen bg-brown-dark flex flex-col shrink-0">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Image
-            src="https://res.cloudinary.com/dkq95jus0/image/upload/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png"
-            alt="Bebitos"
-            width={110}
-            height={35}
-            className="object-contain w-[100px] h-auto brightness-0 invert opacity-90"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 sm:hidden">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-1 bg-cream/10 hover:bg-cream/20 text-cream/90 text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Tienda
-          </Link>
-          <Link
-            href="/links"
-            target="_blank"
-            className="flex items-center gap-1 bg-cream/10 hover:bg-cream/20 text-cream/90 text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors"
-          >
-            <Link2 className="w-3.5 h-3.5" />
-            Links
-          </Link>
-          <button onClick={handleLogout} className="text-cream/70 p-1.5">
-            <LogOut className="w-4.5 h-4.5" />
-          </button>
-        </div>
+    <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto p-4">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-brown-dark">Bebitos Admin</h2>
       </div>
-
-      <nav className="flex sm:flex-col gap-1 sm:gap-0.5 px-3 sm:px-2 pb-3 sm:pb-0 sm:py-3 overflow-x-auto">
-        {NAV.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
+      <nav className="space-y-1">
+        {links.map((link) => {
+          const isActive = pathname === link.href || pathname?.startsWith(link.href + "/");
+          const Icon = link.icon;
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-none sm:border-l-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-                active
-                  ? "bg-cream text-brown-dark sm:bg-cream/[0.08] sm:border-cream sm:text-cream"
-                  : "bg-cream/10 sm:bg-transparent sm:border-transparent text-cream/80 sm:text-cream/60 hover:bg-cream/20 sm:hover:bg-cream/[0.06] hover:text-cream"
+              key={link.href}
+              href={link.href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-brown-dark text-cream"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              {item.label}
+              <Icon className="w-4 h-4" />
+              {link.label}
             </Link>
           );
         })}
       </nav>
-
-      <div className="hidden sm:flex flex-col gap-0.5 px-2 pb-4 border-t border-cream/10 pt-3 mt-auto">
+      <div className="mt-8 pt-4 border-t border-gray-200">
         <Link
-          href="/"
-          target="_blank"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-cream/60 hover:bg-cream/[0.06] hover:text-cream transition-colors"
+          href="/api/admin/logout"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
         >
-          <ExternalLink className="w-4 h-4 shrink-0" />
-          Ver tienda
+          <LogOut className="w-4 h-4" />
+          Cerrar Sesión
         </Link>
-        <Link
-          href="/links"
-          target="_blank"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-cream/60 hover:bg-cream/[0.06] hover:text-cream transition-colors"
-        >
-          <Link2 className="w-4 h-4 shrink-0" />
-          Ver links
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-cream/60 hover:bg-cream/[0.06] hover:text-cream transition-colors"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          Cerrar sesión
-        </button>
       </div>
     </aside>
   );
