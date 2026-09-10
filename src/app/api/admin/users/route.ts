@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -12,6 +12,8 @@ export async function GET() {
     // --- DIAGNÓSTICO TEMPORAL ---
     const cookieStore = await cookies();
     const token = cookieStore.get("admin_session")?.value;
+    const headerStore = await headers();
+    const rawCookieHeader = headerStore.get("cookie");
 
     let jwtError: string | null = null;
     let payload: any = null;
@@ -34,6 +36,8 @@ export async function GET() {
           error: "No autorizado",
           debug: {
             hasCookie: !!token,
+            rawCookieHeader: rawCookieHeader,
+            allCookieNames: cookieStore.getAll().map((c) => c.name),
             tokenPreview: token ? token.slice(0, 15) + "..." : null,
             jwtVerifyError: jwtError,
             decodedUserId: payload?.userId || null,
