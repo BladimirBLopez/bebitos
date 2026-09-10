@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useToast } from "@/lib/toast-context";
 
 export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
   const WHATSAPP_NUMBER = whatsapp || "59169501208";
   const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
   const { items, removeItem, updateQty, totalItems, totalPrice, clearCart } = useCart();
+  const { showToast } = useToast();
 
   function buildWhatsappMessage() {
     const lines = items.map(
@@ -16,6 +19,47 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
     );
     const text = `Hola! Quiero hacer este pedido:\n\n${lines.join("\n")}\n\nTotal: BOB ${totalPrice}`;
     return encodeURIComponent(text);
+  }
+
+  async function handleSendOrder() {
+    if (items.length === 0 || sending) return;
+    setSending(true);
+
+    // Abrimos la pestaña ya, en blanco, para que el navegador no la bloquee
+    const newWindow = window.open("", "_blank");
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: i.productId, quantity: i.qty })),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        newWindow?.close();
+        showToast(data.error || "No se pudo registrar el pedido", "error");
+        setSending(false);
+        return;
+      }
+
+      const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsappMessage()}`;
+      if (newWindow) {
+        newWindow.location.href = waUrl;
+      } else {
+        window.location.href = waUrl;
+      }
+
+      clearCart();
+      setOpen(false);
+    } catch {
+      newWindow?.close();
+      showToast("Error de conexión, intenta de nuevo", "error");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -114,14 +158,13 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
                     BOB {totalPrice}
                   </span>
                 </div>
-                <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsappMessage()}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center bg-green hover:bg-green-dark text-white font-semibold py-3 rounded-full transition-colors mb-2"
+                <button
+                  onClick={handleSendOrder}
+                  disabled={sending}
+                  className="block w-full text-center bg-green hover:bg-green-dark disabled:opacity-60 text-white font-semibold py-3 rounded-full transition-colors mb-2"
                 >
-                  Enviar pedido por WhatsApp
-                </a>
+                  {sending ? "Enviando pedido..." : "Enviar pedido por WhatsApp"}
+                </button>
                 <button
                   onClick={clearCart}
                   className="w-full text-center text-ink/50 text-sm py-1"
