@@ -20,6 +20,13 @@
   --panel-ink-soft: #6B6355;
   --amber: #B87A2E;
   --amber-soft: #F3E4CC;
+
+  /* Estados de pedido: derivados de la marca, no colores genéricos */
+  --brown-soft: #EFE1D3;
+  --ink-soft-bg: #E8E4DA;
+  --green-soft: #E3F1D2;
+  --red: #B3453A;
+  --red-soft: #F5E2DF;
 }
 
 @theme inline {
@@ -38,6 +45,11 @@
   --color-panel-ink-soft: var(--panel-ink-soft);
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
+  --color-brown-soft: var(--brown-soft);
+  --color-ink-soft-bg: var(--ink-soft-bg);
+  --color-green-soft: var(--green-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
   --font-sans: var(--font-nunito);
   --font-display: var(--font-fredoka);
   --shadow-card: 0 1px 2px rgba(61, 43, 31, 0.04), 0 2px 8px rgba(61, 43, 31, 0.06);
@@ -48,4 +60,10 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* El panel admin usa la tipografía seria (Nunito) incluso donde
+   componentes compartidos con la tienda pública usan font-display */
+.admin-panel .font-display {
+  font-family: var(--font-nunito);
 }

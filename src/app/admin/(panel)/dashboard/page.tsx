@@ -89,11 +89,11 @@ export default async function DashboardPage() {
                   <div className="text-right">
                     <p className="font-semibold text-sm text-panel-ink">Bs. {order.total.toFixed(2)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      order.status === "pendiente" ? "bg-yellow-100 text-yellow-800" :
-                      order.status === "confirmado" ? "bg-blue-100 text-blue-800" :
-                      order.status === "enviado" ? "bg-purple-100 text-purple-800" :
-                      order.status === "entregado" ? "bg-green-100 text-green-800" :
-                      "bg-red-100 text-red-800"
+                      order.status === "pendiente" ? "bg-amber-soft text-amber" :
+                      order.status === "confirmado" ? "bg-brown-soft text-brown-dark" :
+                      order.status === "enviado" ? "bg-ink-soft-bg text-ink" :
+                      order.status === "entregado" ? "bg-green-soft text-green-dark" :
+                      "bg-red-soft text-red"
                     }`}>
                       {order.status}
                     </span>

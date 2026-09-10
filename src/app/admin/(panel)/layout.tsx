@@ -18,7 +18,7 @@ export default async function AdminPanelLayout({
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-panel-bg flex flex-col sm:flex-row">
+      <div className="admin-panel min-h-screen bg-panel-bg flex flex-col sm:flex-row">
         <AdminSidebar />
         <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-5xl pb-32">
           {children}

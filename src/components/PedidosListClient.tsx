@@ -29,11 +29,11 @@ type Order = {
 const STATUS_OPTIONS = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
 const STATUS_STYLES: Record<string, string> = {
-  pendiente: "bg-amber-100 text-amber-700",
-  confirmado: "bg-blue-100 text-blue-700",
-  enviado: "bg-purple-100 text-purple-700",
-  entregado: "bg-green/15 text-green-dark",
-  cancelado: "bg-red-100 text-red-600",
+  pendiente: "bg-amber-soft text-amber",
+  confirmado: "bg-brown-soft text-brown-dark",
+  enviado: "bg-ink-soft-bg text-ink",
+  entregado: "bg-green-soft text-green-dark",
+  cancelado: "bg-red-soft text-red",
 };
 
 export default function PedidosListClient({ orders: initialOrders }: { orders: Order[] }) {
