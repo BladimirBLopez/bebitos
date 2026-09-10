@@ -19,7 +19,7 @@ export default function GastosPieChart({ data }: { data: CategoryData[] }) {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value: number) => `Bs. ${value.toFixed(2)}`} />
+            <Tooltip formatter={(value) => `Bs. ${Number(value).toFixed(2)}`} />
           </PieChart>
         </ResponsiveContainer>
       )}

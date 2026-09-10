@@ -11,7 +11,7 @@ export default function BalanceChart({ data }: { data: BalanceData }) {
         <BarChart data={data}>
           <XAxis dataKey="month" />
           <YAxis />
-          <Tooltip formatter={(value: number) => `Bs. ${value.toFixed(2)}`} />
+          <Tooltip formatter={(value) => `Bs. ${Number(value).toFixed(2)}`} />
           <Legend />
           <Bar dataKey="ingresos" name="Ingresos" fill="#85BF35" radius={[4, 4, 0, 0]} />
           <Bar dataKey="gastos" name="Gastos" fill="#B84226" radius={[4, 4, 0, 0]} />
