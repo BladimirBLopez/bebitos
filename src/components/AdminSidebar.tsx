@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -28,10 +28,16 @@ const links = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const isActive = (href: string) =>
     pathname === href || pathname?.startsWith(href + "/");
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  }
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
     <nav className="space-y-1">
@@ -91,14 +97,16 @@ export default function AdminSidebar() {
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="mt-8 pt-4 border-t border-panel-border">
-              <Link
-                href="/api/admin/logout"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink"
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink"
               >
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
-              </Link>
+              </button>
             </div>
           </aside>
         </div>
@@ -111,13 +119,13 @@ export default function AdminSidebar() {
         </div>
         <NavLinks />
         <div className="mt-8 pt-4 border-t border-panel-border">
-          <Link
-            href="/api/admin/logout"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink"
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink"
           >
             <LogOut className="w-4 h-4" />
             Cerrar Sesión
-          </Link>
+          </button>
         </div>
       </aside>
     </>
