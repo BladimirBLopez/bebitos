@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Trash2, MessageCircle } from "lucide-react";
+import { Download, Trash2, MessageCircle, UserPlus } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
@@ -21,6 +21,34 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<Lead | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [converting, setConverting] = useState<string | null>(null);
+
+  async function convertToClient(lead: Lead) {
+    setConverting(lead.id);
+    try {
+      const res = await fetch("/api/admin/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: lead.name,
+          phone: lead.whatsapp,
+          notes: `Convertido desde Lead (${lead.source}${lead.babyAge ? `, bebé: ${lead.babyAge}` : ""})`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Error al convertir", "error");
+        return;
+      }
+      await fetch(`/api/admin/leads/${lead.id}`, { method: "DELETE" });
+      setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      showToast("Convertido a cliente", "success");
+    } catch {
+      showToast("Error interno", "error");
+    } finally {
+      setConverting(null);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/admin/leads")
@@ -221,6 +249,15 @@ export default function LeadsPage() {
                 <MessageCircle className="w-3.5 h-3.5" />
                 {lead.whatsapp}
               </a>
+              <button
+                onClick={() => convertToClient(lead)}
+                disabled={converting === lead.id}
+                className="flex items-center gap-1.5 bg-brown-dark/10 hover:bg-brown-dark/20 text-brown-dark text-sm font-medium px-3 py-2 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                title="Convertir a cliente"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                {converting === lead.id ? "..." : "Convertir"}
+              </button>
               <button
                 onClick={() => setToDelete(lead)}
                 className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
