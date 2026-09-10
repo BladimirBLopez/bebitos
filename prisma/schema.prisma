@@ -89,9 +89,8 @@ model Order {
   phone      String
   total      Float
   status     OrderStatus  @default(pendiente)
+  origin     OrderOrigin  @default(manual)
   items      OrderItem[]
-  clienteId  String?
-  cliente    Cliente?     @relation(fields: [clienteId], references: [id])
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 }
@@ -115,25 +114,7 @@ enum OrderStatus {
   cancelado
 }
 
-model Cliente {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String
-  email     String?
-  address   String?
-  notes     String?
-  orders    Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Gasto {
-  id        String   @id @default(cuid())
-  concept   String
-  category  String
-  amount    Float
-  date      DateTime @default(now())
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum OrderOrigin {
+  online
+  manual
 }
