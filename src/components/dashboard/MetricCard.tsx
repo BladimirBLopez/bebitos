@@ -4,7 +4,7 @@ type MetricCardProps = {
   title: string;
   value: string | number;
   icon: LucideIcon;
-  trend?: string;
+  trend?: string | null;
   trendUp?: boolean;
   color: "blue" | "green" | "purple" | "yellow";
 };

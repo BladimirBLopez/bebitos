@@ -22,32 +22,32 @@ export default async function DashboardPage() {
           title="Total Productos"
           value={stats.totalProducts}
           icon={Package}
-          trend="+12%"
-          trendUp={true}
+          trend={stats.trends.products.trend}
+          trendUp={stats.trends.products.trendUp}
           color="blue"
         />
         <MetricCard
           title="Leads Captados"
           value={stats.totalLeads}
           icon={Users}
-          trend="+5%"
-          trendUp={true}
+          trend={stats.trends.leads.trend}
+          trendUp={stats.trends.leads.trendUp}
           color="green"
         />
         <MetricCard
           title="Pedidos"
           value={stats.totalOrders}
           icon={ShoppingBag}
-          trend="-2%"
-          trendUp={false}
+          trend={stats.trends.orders.trend}
+          trendUp={stats.trends.orders.trendUp}
           color="purple"
         />
         <MetricCard
           title="Ingresos"
           value={`Bs. ${stats.totalRevenue.toFixed(2)}`}
           icon={DollarSign}
-          trend="+18%"
-          trendUp={true}
+          trend={stats.trends.revenue.trend}
+          trendUp={stats.trends.revenue.trendUp}
           color="yellow"
         />
       </div>

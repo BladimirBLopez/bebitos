@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 
+export type Trend = { trend: string | null; trendUp: boolean };
+
 export type DashboardStats = {
   totalProducts: number;
   totalLeads: number;
@@ -15,7 +17,26 @@ export type DashboardStats = {
   salesByMonth: { month: string; sales: number }[];
   topProducts: { name: string; sales: number }[];
   leadsBySource: { name: string; value: number }[];
+  trends: {
+    products: Trend;
+    leads: Trend;
+    orders: Trend;
+    revenue: Trend;
+  };
 };
+
+function calcTrend(current: number, previous: number): Trend {
+  if (previous === 0 && current === 0) {
+    return { trend: null, trendUp: true };
+  }
+  if (previous === 0) {
+    return { trend: "Nuevo", trendUp: true };
+  }
+  const change = ((current - previous) / previous) * 100;
+  const trendUp = change >= 0;
+  const trend = `${trendUp ? "+" : ""}${change.toFixed(0)}%`;
+  return { trend, trendUp };
+}
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const [
@@ -102,6 +123,59 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     value: l._count.source,
   }));
 
+  // ── Tendencias: mes actual vs. mes anterior ──
+  const now = new Date();
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const [
+    productsThisMonth,
+    productsLastMonth,
+    leadsThisMonth,
+    leadsLastMonth,
+    ordersThisMonth,
+    ordersLastMonth,
+    revenueThisMonth,
+    revenueLastMonth,
+  ] = await Promise.all([
+    prisma.product.count({ where: { createdAt: { gte: startOfThisMonth } } }),
+    prisma.product.count({
+      where: { createdAt: { gte: startOfLastMonth, lt: startOfThisMonth } },
+    }),
+    prisma.lead.count({ where: { createdAt: { gte: startOfThisMonth } } }),
+    prisma.lead.count({
+      where: { createdAt: { gte: startOfLastMonth, lt: startOfThisMonth } },
+    }),
+    prisma.order.count({ where: { createdAt: { gte: startOfThisMonth } } }),
+    prisma.order.count({
+      where: { createdAt: { gte: startOfLastMonth, lt: startOfThisMonth } },
+    }),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: {
+        createdAt: { gte: startOfThisMonth },
+        status: { not: "cancelado" },
+      },
+    }),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: {
+        createdAt: { gte: startOfLastMonth, lt: startOfThisMonth },
+        status: { not: "cancelado" },
+      },
+    }),
+  ]);
+
+  const trends = {
+    products: calcTrend(productsThisMonth, productsLastMonth),
+    leads: calcTrend(leadsThisMonth, leadsLastMonth),
+    orders: calcTrend(ordersThisMonth, ordersLastMonth),
+    revenue: calcTrend(
+      revenueThisMonth._sum.total || 0,
+      revenueLastMonth._sum.total || 0
+    ),
+  };
+
   return {
     totalProducts,
     totalLeads,
@@ -111,5 +185,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     salesByMonth: formattedSales,
     topProducts,
     leadsBySource,
+    trends,
   };
 }
