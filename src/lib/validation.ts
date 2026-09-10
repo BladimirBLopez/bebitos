@@ -194,3 +194,37 @@ export function validateCliente(data: unknown): { valid: boolean; error?: string
 
   return { valid: true };
 }
+
+const GASTO_CATEGORIES_VALID = ["Insumos", "Transporte", "Sueldos", "Marketing", "Alquiler", "Servicios", "Otros"];
+
+export function validateGasto(data: unknown): { valid: boolean; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
+  }
+  const d = data as Record<string, unknown>;
+
+  if (!d.concept || typeof d.concept !== "string" || !d.concept.trim()) {
+    return { valid: false, error: "El concepto es requerido" };
+  }
+  if (d.concept.length > 150) {
+    return { valid: false, error: "El concepto es demasiado largo" };
+  }
+  if (!d.category || typeof d.category !== "string" || !GASTO_CATEGORIES_VALID.includes(d.category)) {
+    return { valid: false, error: "Selecciona una categoría válida" };
+  }
+  const amount = Number(d.amount);
+  if (isNaN(amount) || amount <= 0) {
+    return { valid: false, error: "El monto debe ser un número mayor a 0" };
+  }
+  if (amount > 1000000) {
+    return { valid: false, error: "El monto parece incorrecto" };
+  }
+  if (d.date && typeof d.date !== "string") {
+    return { valid: false, error: "Formato de fecha inválido" };
+  }
+  if (d.notes && typeof d.notes !== "string") {
+    return { valid: false, error: "Formato de notas inválido" };
+  }
+
+  return { valid: true };
+}

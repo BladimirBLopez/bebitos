@@ -17,3 +17,13 @@ export type Product = {
   colors: ProductColor[];
   images: string[]; // Cloudinary public_ids
 };
+
+export const GASTO_CATEGORIES = [
+  "Insumos",
+  "Transporte",
+  "Sueldos",
+  "Marketing",
+  "Alquiler",
+  "Servicios",
+  "Otros",
+];
