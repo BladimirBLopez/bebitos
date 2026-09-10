@@ -16,7 +16,9 @@ export async function GET() {
       select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
     });
 
-    return NextResponse.json(users);
+    return NextResponse.json(users, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (err) {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
