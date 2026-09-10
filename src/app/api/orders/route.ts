@@ -2,40 +2,62 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
-import { validateOrder } from "@/lib/validation";
 
-export async function GET() {
-  try {
-    const orders = await prisma.order.findMany({
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
-    });
+type CartItemInput = { productId: string; quantity: number };
 
-    return NextResponse.json(orders, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    });
-  } catch (err) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+function validateCartItems(
+  data: unknown
+): { valid: boolean; items?: CartItemInput[]; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
   }
+  const d = data as Record<string, unknown>;
+  if (!Array.isArray(d.items) || d.items.length === 0) {
+    return { valid: false, error: "El carrito está vacío" };
+  }
+  const items: CartItemInput[] = [];
+  for (const raw of d.items) {
+    if (!raw || typeof raw !== "object") {
+      return { valid: false, error: "Formato de producto inválido" };
+    }
+    const it = raw as Record<string, unknown>;
+    if (!it.productId || typeof it.productId !== "string") {
+      return { valid: false, error: "Falta el producto" };
+    }
+    const quantity = Number(it.quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return { valid: false, error: "Cantidad inválida" };
+    }
+    items.push({ productId: it.productId, quantity });
+  }
+  return { valid: true, items };
 }
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
 
-  const validation = validateOrder(data);
-  if (!validation.valid) {
+  const validation = validateCartItems(data);
+  if (!validation.valid || !validation.items) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
   }
-
-  const items = data.items as { productId: string; quantity: number }[];
+  const items = validation.items;
   const productIds = items.map((i) => i.productId);
+
+  const body = data as Record<string, unknown>;
+  const customerName =
+    typeof body.customer === "string" && body.customer.trim()
+      ? body.customer.trim().slice(0, 150)
+      : "Cliente de WhatsApp";
+  const customerPhone =
+    typeof body.phone === "string" && /^\d{6,15}$/.test(body.phone.trim())
+      ? body.phone.trim()
+      : "00000000";
 
   try {
     const order = await prisma.$transaction(async (tx) => {
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
       });
-
       const productMap = new Map(products.map((p) => [p.id, p]));
 
       let total = 0;
@@ -52,14 +74,11 @@ export async function POST(req: NextRequest) {
           throw new Error(`Producto no encontrado: ${item.productId}`);
         }
         if (product.stock < item.quantity) {
-          throw new Error(
-            `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`
-          );
+          throw new Error(`Sin stock suficiente de "${product.name}"`);
         }
-
-        const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
+        const price =
+          product.isPromo && product.promoPrice ? product.promoPrice : product.price;
         total += price * item.quantity;
-
         orderItemsData.push({
           productId: product.id,
           productName: product.name,
@@ -68,27 +87,13 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const phone = data.phone.trim();
-      const customerName = data.customer.trim();
-      const email = data.email?.trim() || null;
-
-      // Buscar cliente existente por teléfono, o crearlo si no existe
-      let cliente = await tx.cliente.findFirst({ where: { phone } });
-      if (!cliente) {
-        cliente = await tx.cliente.create({
-          data: { name: customerName, phone, email },
-        });
-      }
-
       const newOrder = await tx.order.create({
         data: {
           customer: customerName,
-          email,
-          phone,
+          phone: customerPhone,
           total,
           status: "pendiente",
-          origin: "manual",
-          clienteId: cliente.id,
+          origin: "online",
           items: { create: orderItemsData },
         },
         include: { items: true },
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
       return newOrder;
     });
 
-    return NextResponse.json(order);
+    return NextResponse.json({ ok: true, orderId: order.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error interno";
     return NextResponse.json({ error: message }, { status: 400 });
