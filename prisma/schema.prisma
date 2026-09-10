@@ -90,6 +90,8 @@ model Order {
   total      Float
   status     OrderStatus  @default(pendiente)
   items      OrderItem[]
+  clienteId  String?
+  cliente    Cliente?     @relation(fields: [clienteId], references: [id])
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 }
@@ -120,6 +122,7 @@ model Cliente {
   email     String?
   address   String?
   notes     String?
+  orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
