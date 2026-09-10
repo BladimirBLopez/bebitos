@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
@@ -25,10 +26,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 });
     }
 
-    await createSession(user.id);
+    // --- DIAGNÓSTICO TEMPORAL ---
+    let sessionError: string | null = null;
+    try {
+      await createSession(user.id);
+    } catch (e: any) {
+      sessionError = e?.message || String(e);
+    }
+    const cookieStoreAfter = await cookies();
+    const cookieAfter = cookieStoreAfter.get("admin_session");
 
-    return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
-  } catch (err) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      debug: {
+        serverTime: new Date().toISOString(),
+        nodeEnv: process.env.NODE_ENV,
+        sessionError,
+        cookieVisibleAfterSet: !!cookieAfter,
+        cookieValuePreview: cookieAfter ? cookieAfter.value.slice(0, 15) + "..." : null,
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Error interno", debugCatch: err?.message || String(err) }, { status: 500 });
   }
 }

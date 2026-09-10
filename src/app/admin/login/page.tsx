@@ -10,23 +10,31 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setDebugInfo(null);
     setLoading(true);
 
-    // Cambiamos la URL a la nueva API y el campo user por email
     const res = await fetch("/api/admin/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
+    const data = await res.json().catch(() => null);
     setLoading(false);
 
     if (!res.ok) {
-      setError("Usuario o contraseña incorrectos");
+      setError((data && data.error) || "Usuario o contraseña incorrectos");
+      if (data && data.debugCatch) setDebugInfo({ debugCatch: data.debugCatch });
+      return;
+    }
+
+    if (data && data.debug) {
+      setDebugInfo(data.debug);
       return;
     }
 
@@ -75,6 +83,23 @@ export default function AdminLoginPage() {
           {loading ? "Ingresando..." : "Ingresar"}
         </button>
       </form>
+
+      {debugInfo && (
+        <div className="w-full max-w-xs mt-4">
+          <pre className="text-xs bg-black text-lime-400 p-3 rounded overflow-auto whitespace-pre-wrap">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+          <button
+            onClick={() => {
+              router.push("/admin/productos");
+              router.refresh();
+            }}
+            className="w-full mt-2 bg-green hover:bg-green-dark text-white font-semibold py-2 rounded-full"
+          >
+            Continuar a Productos
+          </button>
+        </div>
+      )}
     </div>
   );
 }
