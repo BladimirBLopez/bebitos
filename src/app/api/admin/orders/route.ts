@@ -68,13 +68,26 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      const phone = data.phone.trim();
+      const customerName = data.customer.trim();
+      const email = data.email?.trim() || null;
+
+      // Buscar cliente existente por teléfono, o crearlo si no existe
+      let cliente = await tx.cliente.findFirst({ where: { phone } });
+      if (!cliente) {
+        cliente = await tx.cliente.create({
+          data: { name: customerName, phone, email },
+        });
+      }
+
       const newOrder = await tx.order.create({
         data: {
-          customer: data.customer.trim(),
-          email: data.email?.trim() || null,
-          phone: data.phone.trim(),
+          customer: customerName,
+          email,
+          phone,
           total,
           status: "pendiente",
+          clienteId: cliente.id,
           items: { create: orderItemsData },
         },
         include: { items: true },
