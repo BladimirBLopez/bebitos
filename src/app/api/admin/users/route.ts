@@ -35,6 +35,8 @@ export async function GET() {
         {
           error: "No autorizado",
           debug: {
+            serverTime: new Date().toISOString(),
+            requestId: Math.random().toString(36).slice(2, 10),
             hasCookie: !!token,
             rawCookieHeader: rawCookieHeader,
             allCookieNames: cookieStore.getAll().map((c) => c.name),
