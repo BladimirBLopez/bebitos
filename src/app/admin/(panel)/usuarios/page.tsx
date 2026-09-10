@@ -8,6 +8,7 @@ export default function AdminUsuariosPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
 
@@ -27,6 +28,7 @@ export default function AdminUsuariosPage() {
         setUsers(data);
       } else {
         setError(data.error || "Error al listar usuarios");
+        setDebugInfo(data.debug || null);
       }
     } catch (err) {
       setError("Error interno");
@@ -100,7 +102,16 @@ export default function AdminUsuariosPage() {
         }
       />
 
-      {error && <p className="text-red-600 bg-red-50 p-2 rounded mb-4">{error}</p>}
+      {error && (
+        <div className="mb-4">
+          <p className="text-red-600 bg-red-50 p-2 rounded">{error}</p>
+          {debugInfo && (
+            <pre className="text-xs bg-black text-lime-400 p-3 rounded mt-2 overflow-auto whitespace-pre-wrap">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-4">
         {loading ? (
