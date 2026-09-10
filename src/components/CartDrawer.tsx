@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { useToast } from "@/lib/toast-context";
 
 export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
   const WHATSAPP_NUMBER = whatsapp || "59169501208";
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const { items, removeItem, updateQty, totalItems, totalPrice, clearCart } = useCart();
-  const { showToast } = useToast();
 
   function buildWhatsappMessage() {
     const lines = items.map(
@@ -24,6 +23,7 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
   async function handleSendOrder() {
     if (items.length === 0 || sending) return;
     setSending(true);
+    setError("");
 
     // Abrimos la pestaña ya, en blanco, para que el navegador no la bloquee
     const newWindow = window.open("", "_blank");
@@ -40,7 +40,7 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
 
       if (!res.ok) {
         newWindow?.close();
-        showToast(data.error || "No se pudo registrar el pedido", "error");
+        setError(data.error || "No se pudo registrar el pedido");
         setSending(false);
         return;
       }
@@ -56,7 +56,7 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
       setOpen(false);
     } catch {
       newWindow?.close();
-      showToast("Error de conexión, intenta de nuevo", "error");
+      setError("Error de conexión, intenta de nuevo");
     } finally {
       setSending(false);
     }
@@ -152,6 +152,9 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
 
             {items.length > 0 && (
               <div className="p-4 border-t border-brown/15">
+                {error && (
+                  <p className="text-red-500 text-xs text-center mb-2">{error}</p>
+                )}
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-semibold text-ink">Total</span>
                   <span className="font-display font-semibold text-brown-dark text-xl">
