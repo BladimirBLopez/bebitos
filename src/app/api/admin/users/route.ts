@@ -44,7 +44,10 @@ export async function GET() {
             hasJwtSecretEnv: !!process.env.JWT_SECRET,
           },
         },
-        { status: 401 }
+        {
+          status: 401,
+          headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+        }
       );
     }
 
