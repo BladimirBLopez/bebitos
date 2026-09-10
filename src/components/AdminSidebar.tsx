@@ -14,10 +14,14 @@ import {
   ClipboardList,
   Menu,
   X,
+  ShoppingCart,
+  ClipboardCheck,
 } from "lucide-react";
 
 const links = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
+  { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardCheck },
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/inventario", label: "Inventario", icon: Box },
   { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag },

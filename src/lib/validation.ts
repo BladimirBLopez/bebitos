@@ -115,6 +115,46 @@ export function validateGiftResource(data: unknown): { valid: boolean; error?: s
   return { valid: true };
 }
 
+export function validateOrder(data: unknown): { valid: boolean; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
+  }
+  const d = data as Record<string, unknown>;
+
+  if (!d.customer || typeof d.customer !== "string" || !d.customer.trim()) {
+    return { valid: false, error: "El nombre del cliente es requerido" };
+  }
+  if (d.customer.length > 150) {
+    return { valid: false, error: "El nombre del cliente es demasiado largo" };
+  }
+  if (!d.phone || typeof d.phone !== "string" || !/^\d{6,15}$/.test(d.phone.trim())) {
+    return { valid: false, error: "El WhatsApp debe tener solo dígitos (6-15)" };
+  }
+  if (d.email && typeof d.email === "string" && d.email.trim() !== "") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) {
+      return { valid: false, error: "El email no es válido" };
+    }
+  }
+  if (!Array.isArray(d.items) || d.items.length === 0) {
+    return { valid: false, error: "Agrega al menos un producto" };
+  }
+  for (const item of d.items) {
+    if (!item || typeof item !== "object") {
+      return { valid: false, error: "Formato de producto inválido" };
+    }
+    const it = item as Record<string, unknown>;
+    if (!it.productId || typeof it.productId !== "string") {
+      return { valid: false, error: "Falta el producto" };
+    }
+    const qty = Number(it.quantity);
+    if (isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+      return { valid: false, error: "La cantidad debe ser un entero mayor a 0" };
+    }
+  }
+
+  return { valid: true };
+}
+
 export function validateCategoryName(name: unknown): { valid: boolean; error?: string } {
   if (!name || typeof name !== "string" || !name.trim()) {
     return { valid: false, error: "El nombre es requerido" };
