@@ -164,3 +164,33 @@ export function validateCategoryName(name: unknown): { valid: boolean; error?: s
   }
   return { valid: true };
 }
+
+export function validateCliente(data: unknown): { valid: boolean; error?: string } {
+  if (!data || typeof data !== "object") {
+    return { valid: false, error: "Datos inválidos" };
+  }
+  const d = data as Record<string, unknown>;
+
+  if (!d.name || typeof d.name !== "string" || !d.name.trim()) {
+    return { valid: false, error: "El nombre es requerido" };
+  }
+  if (d.name.length > 150) {
+    return { valid: false, error: "El nombre es demasiado largo" };
+  }
+  if (!d.phone || typeof d.phone !== "string" || !/^\d{6,15}$/.test(d.phone.trim())) {
+    return { valid: false, error: "El WhatsApp debe tener solo dígitos (6-15)" };
+  }
+  if (d.email && typeof d.email === "string" && d.email.trim() !== "") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) {
+      return { valid: false, error: "El email no es válido" };
+    }
+  }
+  if (d.address && typeof d.address !== "string") {
+    return { valid: false, error: "Formato de dirección inválido" };
+  }
+  if (d.notes && typeof d.notes !== "string") {
+    return { valid: false, error: "Formato de notas inválido" };
+  }
+
+  return { valid: true };
+}

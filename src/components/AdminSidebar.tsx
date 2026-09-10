@@ -8,6 +8,7 @@ import {
   Package,
   ShoppingBag,
   Users,
+  Contact,
   Settings,
   LogOut,
   Box,
@@ -22,6 +23,7 @@ const links = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
   { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardCheck },
+  { href: "/admin/clientes", label: "Clientes", icon: Contact },
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/inventario", label: "Inventario", icon: Box },
   { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag },
@@ -69,7 +71,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* Barra superior mobile */}
       <div className="sm:hidden flex items-center justify-between px-4 py-3 bg-panel-surface border-b border-panel-border">
         <h2 className="text-lg font-bold text-brown-dark">Bebitos Admin</h2>
         <button
@@ -81,7 +82,6 @@ export default function AdminSidebar() {
         </button>
       </div>
 
-      {/* Drawer mobile */}
       {open && (
         <div className="sm:hidden fixed inset-0 z-50 flex">
           <div
@@ -116,7 +116,6 @@ export default function AdminSidebar() {
         </div>
       )}
 
-      {/* Sidebar desktop */}
       <aside className="hidden sm:flex sm:flex-col w-64 bg-panel-surface border-r border-panel-border h-screen sticky top-0 overflow-y-auto p-4">
         <div className="mb-8">
           <h2 className="text-xl font-bold text-brown-dark">Bebitos Admin</h2>
