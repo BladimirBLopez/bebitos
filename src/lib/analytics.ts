@@ -7,6 +7,8 @@ export type DashboardStats = {
   totalLeads: number;
   totalOrders: number;
   totalRevenue: number;
+  enPromo: number;
+  sinStock: number;
   recentOrders: {
     id: string;
     customer: string;
@@ -44,6 +46,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalLeads,
     totalOrders,
     totalRevenue,
+    enPromo,
+    sinStock,
     recentOrders,
   ] = await Promise.all([
     prisma.product.count(),
@@ -53,6 +57,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       _sum: { total: true },
       where: { status: { not: "cancelado" } },
     }),
+    prisma.product.count({ where: { isPromo: true } }),
+    prisma.product.count({ where: { inStock: false } }),
     prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
@@ -181,6 +187,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalLeads,
     totalOrders,
     totalRevenue: totalRevenue._sum.total || 0,
+    enPromo,
+    sinStock,
     recentOrders,
     salesByMonth: formattedSales,
     topProducts,

@@ -101,7 +101,7 @@ export default function AdminInventarioPage() {
                       setStockToAdd(0);
                       setShowModal(true);
                     }}
-                    className="flex items-center gap-1 text-sm text-blue-600 hover:bg-blue-50 p-2 rounded"
+                    className="flex items-center gap-1 text-sm text-brown-dark hover:bg-panel-bg p-2 rounded"
                   >
                     <Plus className="w-4 h-4" />
                     Actualizar
@@ -115,29 +115,29 @@ export default function AdminInventarioPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleUpdateStock} className="w-full max-w-md bg-white rounded-2xl p-6">
+          <form onSubmit={handleUpdateStock} className="w-full max-w-md bg-panel-surface rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Gestionar Stock</h2>
-              <button type="button" onClick={() => setShowModal(false)} className="text-gray-500">
+              <h2 className="text-lg font-bold text-panel-ink">Gestionar Stock</h2>
+              <button type="button" onClick={() => setShowModal(false)} className="text-panel-ink-soft">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">{selectedProduct?.name}</p>
+              <p className="text-sm text-panel-ink-soft">{selectedProduct?.name}</p>
               <div className="relative">
                 <input
                   type="number"
                   value={stockToAdd}
                   onChange={(e) => setStockToAdd(parseInt(e.target.value))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-panel-border rounded-lg px-3 py-2"
                   placeholder="Nuevo stock"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
                     type="button"
                     onClick={() => setStockToAdd((prev) => prev - 1)}
-                    className="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 p-2 rounded"
+                    className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
                   >
                     <Minus className="w-4 h-4" />
                     Reducir
@@ -145,7 +145,7 @@ export default function AdminInventarioPage() {
                   <button
                     type="button"
                     onClick={() => setStockToAdd((prev) => prev + 1)}
-                    className="flex items-center gap-1 text-sm text-gray-600 bg-gray-100 p-2 rounded"
+                    className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
                   >
                     <Plus className="w-4 h-4" />
                     Aumentar

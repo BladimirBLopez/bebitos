@@ -6,24 +6,26 @@ type MetricCardProps = {
   icon: LucideIcon;
   trend?: string | null;
   trendUp?: boolean;
-  color: "blue" | "green" | "purple" | "yellow";
+  color: "brown" | "green" | "amber" | "ink" | "amberSoft" | "red";
 };
 
 const colors = {
-  blue: "bg-blue-50 text-blue-600",
-  green: "bg-green-50 text-green-600",
-  purple: "bg-purple-50 text-purple-600",
-  yellow: "bg-yellow-50 text-yellow-600",
+  brown: "bg-brown-dark/10 text-brown-dark",
+  green: "bg-green/15 text-green-dark",
+  amber: "bg-amber/15 text-amber",
+  ink: "bg-ink/10 text-ink",
+  amberSoft: "bg-amber-soft text-amber",
+  red: "bg-red-50 text-red-600",
 };
 
 export default function MetricCard({ title, value, icon: Icon, trend, trendUp, color }: MetricCardProps) {
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+    <div className="bg-panel-surface p-4 rounded-xl shadow-panel border border-panel-border flex items-center justify-between">
       <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        <p className="text-sm text-panel-ink-soft">{title}</p>
+        <p className="text-2xl font-bold text-panel-ink">{value}</p>
         {trend && (
-          <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-dark' : 'text-red-600'}`}>
             {trendUp ? '↑' : '↓'} {trend}
           </p>
         )}
