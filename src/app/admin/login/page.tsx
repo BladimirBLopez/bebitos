@@ -11,6 +11,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [verifyInfo, setVerifyInfo] = useState<any>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +90,21 @@ export default function AdminLoginPage() {
           <pre className="text-xs bg-black text-lime-400 p-3 rounded overflow-auto whitespace-pre-wrap">
             {JSON.stringify(debugInfo, null, 2)}
           </pre>
+          <button
+            onClick={async () => {
+              const r = await fetch("/api/admin/users", { credentials: "include", cache: "no-store" });
+              const d = await r.json().catch(() => null);
+              setVerifyInfo({ status: r.status, body: d });
+            }}
+            className="w-full mt-2 bg-brown-dark hover:bg-ink text-cream font-semibold py-2 rounded-full"
+          >
+            Verificar cookie ahora (sin navegar)
+          </button>
+          {verifyInfo && (
+            <pre className="text-xs bg-black text-yellow-300 p-3 rounded overflow-auto whitespace-pre-wrap mt-2">
+              {JSON.stringify(verifyInfo, null, 2)}
+            </pre>
+          )}
           <button
             onClick={() => {
               router.push("/admin/productos");
