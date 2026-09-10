@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck } from "lucide-react";
 import PageHeader from "./PageHeader";
 import { useToast } from "@/lib/toast-context";
 
@@ -26,6 +26,15 @@ type CartLine = {
   maxStock: number;
 };
 
+type ClienteMatch = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  orderCount: number;
+  lastOrderAt: string | null;
+};
+
 export default function VentaForm({ products }: { products: ProductOption[] }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -37,6 +46,8 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [clienteMatch, setClienteMatch] = useState<ClienteMatch | null>(null);
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
@@ -46,6 +57,39 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
     () => cart.reduce((sum, line) => sum + line.price * line.quantity, 0),
     [cart]
   );
+
+  async function handlePhoneBlur() {
+    const cleaned = phone.trim();
+    if (!/^\d{6,15}$/.test(cleaned)) {
+      setClienteMatch(null);
+      return;
+    }
+    setCheckingPhone(true);
+    try {
+      const res = await fetch(`/api/admin/clientes/lookup?phone=${cleaned}`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (data.found) {
+        setClienteMatch({
+          id: data.cliente.id,
+          name: data.cliente.name,
+          phone: data.cliente.phone,
+          email: data.cliente.email,
+          orderCount: data.orderCount,
+          lastOrderAt: data.lastOrderAt,
+        });
+        setCustomer(data.cliente.name);
+        setEmail(data.cliente.email || "");
+      } else {
+        setClienteMatch(null);
+      }
+    } catch {
+      setClienteMatch(null);
+    } finally {
+      setCheckingPhone(false);
+    }
+  }
 
   function addToCart(product: ProductOption) {
     const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
@@ -254,6 +298,41 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
             className="bg-panel-surface border border-panel-border rounded-xl p-4 space-y-3"
           >
             <h3 className="font-semibold text-panel-ink text-sm mb-1">Datos del cliente</h3>
+
+            <div>
+              <label className="text-xs text-panel-ink-soft block mb-1">WhatsApp *</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (clienteMatch) setClienteMatch(null);
+                }}
+                onBlur={handlePhoneBlur}
+                required
+                placeholder="70123456"
+                className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+              />
+              {checkingPhone && (
+                <p className="text-xs text-panel-ink-soft mt-1">Buscando cliente...</p>
+              )}
+            </div>
+
+            {clienteMatch && (
+              <div className="flex items-start gap-2 bg-green/10 border border-green/30 rounded-lg px-3 py-2">
+                <UserCheck className="w-4 h-4 text-green-dark shrink-0 mt-0.5" />
+                <div className="text-xs text-panel-ink">
+                  <p className="font-semibold">Cliente existente: {clienteMatch.name}</p>
+                  <p className="text-panel-ink-soft">
+                    {clienteMatch.orderCount} compra{clienteMatch.orderCount === 1 ? "" : "s"} anterior
+                    {clienteMatch.orderCount === 1 ? "" : "es"}
+                    {clienteMatch.lastOrderAt &&
+                      ` · última: ${new Date(clienteMatch.lastOrderAt).toLocaleDateString("es-BO")}`}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs text-panel-ink-soft block mb-1">Nombre *</label>
               <input
@@ -261,17 +340,6 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-panel-ink-soft block mb-1">WhatsApp *</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                placeholder="70123456"
                 className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
               />
             </div>
