@@ -13,6 +13,8 @@ export type DashboardStats = {
     createdAt: Date;
   }[];
   salesByMonth: { month: string; sales: number }[];
+  topProducts: { name: string; sales: number }[];
+  leadsBySource: { name: string; value: number }[];
 };
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -58,7 +60,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     },
   });
 
-  // Agrupar por mes
   const salesByMonth = monthlyOrders.reduce((acc, order) => {
     const month = order.createdAt.toLocaleString("es", { month: "short" });
     acc[month] = (acc[month] || 0) + order.total;
@@ -76,6 +77,31 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     sales: salesByMonth[month] || 0,
   }));
 
+  // Productos más vendidos (top 5 por cantidad, excluyendo pedidos cancelados)
+  const topProductsRaw = await prisma.orderItem.groupBy({
+    by: ["productName"],
+    _sum: { quantity: true },
+    where: { order: { status: { not: "cancelado" } } },
+    orderBy: { _sum: { quantity: "desc" } },
+    take: 5,
+  });
+
+  const topProducts = topProductsRaw.map((p) => ({
+    name: p.productName,
+    sales: p._sum.quantity || 0,
+  }));
+
+  // Leads agrupados por fuente
+  const leadsBySourceRaw = await prisma.lead.groupBy({
+    by: ["source"],
+    _count: { source: true },
+  });
+
+  const leadsBySource = leadsBySourceRaw.map((l) => ({
+    name: l.source,
+    value: l._count.source,
+  }));
+
   return {
     totalProducts,
     totalLeads,
@@ -83,5 +109,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue: totalRevenue._sum.total || 0,
     recentOrders,
     salesByMonth: formattedSales,
+    topProducts,
+    leadsBySource,
   };
 }

@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           <SalesChart data={stats.salesByMonth} />
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <LeadsPieChart />
+          <LeadsPieChart data={stats.leadsBySource} />
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export default async function DashboardPage() {
           )}
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <TopProductsChart />
+          <TopProductsChart data={stats.topProducts} />
         </div>
       </div>
     </div>
