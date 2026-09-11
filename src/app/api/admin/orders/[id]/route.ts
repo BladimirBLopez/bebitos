@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 
 const VALID_STATUSES = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
+// Qué estados puede alcanzar un pedido desde cada estado actual.
+// entregado es final. cancelado solo puede reactivarse a pendiente.
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  pendiente: ["confirmado", "cancelado"],
+  confirmado: ["enviado", "cancelado"],
+  enviado: ["entregado", "cancelado"],
+  entregado: [],
+  cancelado: ["pendiente"],
+};
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -24,8 +34,20 @@ export async function PATCH(
         throw new Error("Pedido no encontrado");
       }
 
+      // Sin cambio real: no hacer nada, no es un error
+      if (existing.status === status) {
+        return existing;
+      }
+
+      const allowedNext = ALLOWED_TRANSITIONS[existing.status] || [];
+      if (!allowedNext.includes(status)) {
+        throw new Error(
+          `No se puede pasar de "${existing.status}" a "${status}" directamente`
+        );
+      }
+
       // Pasa a cancelado: devolver stock
-      if (status === "cancelado" && existing.status !== "cancelado") {
+      if (status === "cancelado") {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },
@@ -37,8 +59,8 @@ export async function PATCH(
         }
       }
 
-      // Sale de cancelado: volver a descontar stock (si alcanza)
-      if (status !== "cancelado" && existing.status === "cancelado") {
+      // Sale de cancelado (reactivar a pendiente): volver a descontar stock
+      if (existing.status === "cancelado") {
         for (const item of existing.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (!product || product.stock < item.quantity) {
@@ -92,7 +114,6 @@ export async function DELETE(
         throw new Error("Pedido no encontrado");
       }
 
-      // Si no estaba cancelado, devolver el stock antes de borrar
       if (existing.status !== "cancelado") {
         for (const item of existing.items) {
           await tx.product.update({
