@@ -9,5 +9,12 @@ export default async function AdminPedidosPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  return <PedidosListClient orders={orders} />;
+  // Los pendientes (lo que requiere acción) siempre arriba
+  const sorted = [...orders].sort((a, b) => {
+    if (a.status === "pendiente" && b.status !== "pendiente") return -1;
+    if (b.status === "pendiente" && a.status !== "pendiente") return 1;
+    return 0;
+  });
+
+  return <PedidosListClient orders={sorted} />;
 }

@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 const VALID_STATUSES = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
 // Qué estados puede alcanzar un pedido desde cada estado actual.
+// confirmado puede ir directo a entregado (venta entregada en mano, sin envío).
 // entregado es final. cancelado solo puede reactivarse a pendiente.
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pendiente: ["confirmado", "cancelado"],
-  confirmado: ["enviado", "cancelado"],
+  confirmado: ["enviado", "entregado", "cancelado"],
   enviado: ["entregado", "cancelado"],
   entregado: [],
   cancelado: ["pendiente"],
@@ -34,7 +35,6 @@ export async function PATCH(
         throw new Error("Pedido no encontrado");
       }
 
-      // Sin cambio real: no hacer nada, no es un error
       if (existing.status === status) {
         return existing;
       }
@@ -46,20 +46,15 @@ export async function PATCH(
         );
       }
 
-      // Pasa a cancelado: devolver stock
       if (status === "cancelado") {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },
-            data: {
-              stock: { increment: item.quantity },
-              inStock: true,
-            },
+            data: { stock: { increment: item.quantity }, inStock: true },
           });
         }
       }
 
-      // Sale de cancelado (reactivar a pendiente): volver a descontar stock
       if (existing.status === "cancelado") {
         for (const item of existing.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });

@@ -36,6 +36,32 @@ const STATUS_STYLES: Record<string, string> = {
   cancelado: "bg-red-soft text-red",
 };
 
+type Action = { label: string; status: string; variant: "primary" | "secondary" | "danger" };
+
+const NEXT_ACTIONS: Record<string, Action[]> = {
+  pendiente: [
+    { label: "Confirmar pedido", status: "confirmado", variant: "primary" },
+    { label: "Cancelar", status: "cancelado", variant: "danger" },
+  ],
+  confirmado: [
+    { label: "Marcar enviado", status: "enviado", variant: "primary" },
+    { label: "Marcar entregado", status: "entregado", variant: "secondary" },
+    { label: "Cancelar", status: "cancelado", variant: "danger" },
+  ],
+  enviado: [
+    { label: "Marcar entregado", status: "entregado", variant: "primary" },
+    { label: "Cancelar", status: "cancelado", variant: "danger" },
+  ],
+  entregado: [],
+  cancelado: [{ label: "Reactivar pedido", status: "pendiente", variant: "primary" }],
+};
+
+const VARIANT_STYLES: Record<string, string> = {
+  primary: "bg-green hover:bg-green-dark text-white",
+  secondary: "bg-brown-soft hover:opacity-80 text-brown-dark",
+  danger: "text-red hover:opacity-70 bg-transparent px-2",
+};
+
 export default function PedidosListClient({ orders: initialOrders }: { orders: Order[] }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -132,6 +158,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
         <div className="space-y-3">
           {filtered.map((order) => {
             const isOpen = expanded.has(order.id);
+            const actions = NEXT_ACTIONS[order.status] || [];
             return (
               <div
                 key={order.id}
@@ -187,31 +214,34 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-panel-border">
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={`https://wa.me/${order.phone.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-panel-ink-soft hover:text-panel-ink"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          {order.phone}
-                        </a>
-                      </div>
+                      <a
+                        href={`https://wa.me/${order.phone.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-panel-ink-soft hover:text-panel-ink"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        {order.phone}
+                      </a>
 
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={order.status}
-                          disabled={updating === order.id}
-                          onChange={(e) => changeStatus(order, e.target.value)}
-                          className="text-xs font-medium border border-panel-border rounded-lg px-2.5 py-1.5 bg-panel-bg text-panel-ink capitalize focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                        >
-                          {STATUS_OPTIONS.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {actions.length === 0 && (
+                          <span className="text-xs text-panel-ink-soft italic">
+                            Pedido cerrado
+                          </span>
+                        )}
+                        {actions.map((action) => (
+                          <button
+                            key={action.status}
+                            disabled={updating === order.id}
+                            onClick={() => changeStatus(order, action.status)}
+                            className={`text-xs font-semibold py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                              action.variant === "danger" ? "" : "px-3"
+                            } ${VARIANT_STYLES[action.variant]}`}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
                         <button
                           onClick={() => setToDelete(order)}
                           className="text-red-400 hover:text-red-500"
