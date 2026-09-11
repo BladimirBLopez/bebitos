@@ -2,12 +2,25 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-const secretKey = process.env.JWT_SECRET || "bebitos-secret-key";
-const encodedKey = new TextEncoder().encode(secretKey);
+function getSecretKey(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) return secret;
 
-export async function createSession(userId: string) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "JWT_SECRET no está configurado. No se pueden crear sesiones seguras en producción."
+    );
+  }
+
+  // Solo para desarrollo local, nunca en producción/preview
+  return "bebitos-dev-only-secret";
+}
+
+const encodedKey = new TextEncoder().encode(getSecretKey());
+
+export async function createSession(userId: string, role: string) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const token = await new SignJWT({ userId })
+  const token = await new SignJWT({ userId, role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -34,12 +47,11 @@ export async function getCurrentUser() {
     const { payload } = await jwtVerify(token, encodedKey);
     const userId = payload.userId as string;
 
-    // Verificar en la base de datos si el usuario sigue activo y existe
     return await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, name: true, email: true, role: true, active: true },
     });
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -47,7 +59,7 @@ export async function getCurrentUser() {
 export async function requireAuth() {
   const user = await getCurrentUser();
   if (!user || !user.active) {
-    return null; // No autenticado
+    return null;
   }
   return user;
 }
@@ -56,7 +68,7 @@ export async function requireAdmin() {
   const user = await requireAuth();
   if (!user) return null;
   if (user.role !== "ADMIN" && user.role !== "EDITOR") {
-    return null; // Sin permisos
+    return null;
   }
   return user;
 }

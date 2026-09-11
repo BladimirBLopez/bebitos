@@ -1,56 +1,15 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
-import { cookies, headers } from "next/headers";
-import { jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function GET() {
   try {
-    // --- DIAGNÓSTICO TEMPORAL ---
-    const cookieStore = await cookies();
-    const token = cookieStore.get("admin_session")?.value;
-    const headerStore = await headers();
-    const rawCookieHeader = headerStore.get("cookie");
-
-    let jwtError: string | null = null;
-    let payload: any = null;
-    if (token) {
-      try {
-        const secretKey = process.env.JWT_SECRET || "bebitos-secret-key";
-        const encodedKey = new TextEncoder().encode(secretKey);
-        const result = await jwtVerify(token, encodedKey);
-        payload = result.payload;
-      } catch (e: any) {
-        jwtError = e?.message || String(e);
-      }
-    }
-
     const user = await getCurrentUser();
-
     if (!user) {
-      return NextResponse.json(
-        {
-          error: "No autorizado",
-          debug: {
-            serverTime: new Date().toISOString(),
-            requestId: Math.random().toString(36).slice(2, 10),
-            hasCookie: !!token,
-            rawCookieHeader: rawCookieHeader,
-            allCookieNames: cookieStore.getAll().map((c) => c.name),
-            tokenPreview: token ? token.slice(0, 15) + "..." : null,
-            jwtVerifyError: jwtError,
-            decodedUserId: payload?.userId || null,
-            hasJwtSecretEnv: !!process.env.JWT_SECRET,
-          },
-        },
-        {
-          status: 401,
-          headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-        }
-      );
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const users = await prisma.user.findMany({
@@ -60,7 +19,7 @@ export async function GET() {
     return NextResponse.json(users, {
       headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -95,7 +54,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
