@@ -42,6 +42,8 @@ export default function ProductsListClient({
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"eliminar" | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const categories = ["Todas", ...allCategories.map((c) => c.name)];
   const filtersActive = search.trim() !== "" || category !== "Todas";
@@ -51,6 +53,10 @@ export default function ProductsListClient({
     const matchesCategory = category === "Todas" || p.category === category;
     return matchesSearch && matchesCategory;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -153,14 +159,20 @@ export default function ProductsListClient({
           <Search className="w-4 h-4 text-ink/40 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar producto..."
             className="w-full bg-white border border-brown/15 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brown/40"
           />
         </div>
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
           className="bg-white border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
         >
           {categories.map((c) => (
@@ -207,7 +219,7 @@ export default function ProductsListClient({
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((p) => {
+          {paginated.map((p) => {
             const isSelected = selected.has(p.id);
             const realIndex = products.findIndex((prod) => prod.id === p.id);
             return (
@@ -305,6 +317,28 @@ export default function ProductsListClient({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-panel-ink-soft">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Siguiente
+          </button>
         </div>
       )}
 

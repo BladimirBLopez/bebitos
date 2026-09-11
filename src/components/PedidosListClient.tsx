@@ -67,12 +67,24 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const { showToast } = useToast();
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("Todos");
+  const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<Order | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
-  const filtered =
-    statusFilter === "Todos" ? orders : orders.filter((o) => o.status === statusFilter);
+  const filtered = orders.filter((o) => {
+    const matchesStatus = statusFilter === "Todos" || o.status === statusFilter;
+    const q = search.trim().toLowerCase();
+    const matchesSearch =
+      q === "" || o.customer.toLowerCase().includes(q) || o.phone.includes(q);
+    return matchesStatus && matchesSearch;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -134,11 +146,26 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
         }
       />
 
+      <div className="relative mb-3">
+        <input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Buscar por cliente o teléfono..."
+          className="w-full bg-panel-surface border border-panel-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
+        />
+      </div>
+
       <div className="flex gap-2 flex-wrap mb-4">
         {["Todos", ...STATUS_OPTIONS].map((s) => (
           <button
             key={s}
-            onClick={() => setStatusFilter(s)}
+            onClick={() => {
+              setStatusFilter(s);
+              setPage(1);
+            }}
             className={`text-xs font-medium px-3 py-1.5 rounded-full capitalize transition-colors ${
               statusFilter === s
                 ? "bg-brown-dark text-cream"
@@ -156,7 +183,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
         </p>
       ) : (
         <div className="space-y-3">
-          {filtered.map((order) => {
+          {paginated.map((order) => {
             const isOpen = expanded.has(order.id);
             const actions = NEXT_ACTIONS[order.status] || [];
             return (
@@ -256,6 +283,28 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-panel-ink-soft">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Siguiente
+          </button>
         </div>
       )}
 

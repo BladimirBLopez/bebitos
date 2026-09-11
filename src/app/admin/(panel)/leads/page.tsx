@@ -22,6 +22,18 @@ export default function LeadsPage() {
   const [toDelete, setToDelete] = useState<Lead | null>(null);
   const [exporting, setExporting] = useState(false);
   const [converting, setConverting] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  const filtered = leads.filter((l) => {
+    const q = search.trim().toLowerCase();
+    return q === "" || l.name.toLowerCase().includes(q) || l.whatsapp.includes(q);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   async function convertToClient(lead: Lead) {
     setConverting(lead.id);
@@ -220,8 +232,28 @@ export default function LeadsPage() {
       )}
 
       {leads.length > 0 && (
+        <div className="relative mb-3">
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Buscar por nombre o WhatsApp..."
+            className="w-full bg-panel-surface border border-panel-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
+          />
+        </div>
+      )}
+
+      {leads.length > 0 && filtered.length === 0 && (
+        <p className="text-panel-ink-soft text-sm text-center py-10">
+          No se encontraron leads con ese criterio.
+        </p>
+      )}
+
+      {filtered.length > 0 && (
         <div className="flex flex-col gap-2">
-          {leads.map((lead) => (
+          {paginated.map((lead) => (
             <div
               key={lead.id}
               className="bg-panel-surface border border-panel-border rounded-xl p-4 flex items-center gap-3"
@@ -267,6 +299,28 @@ export default function LeadsPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && filtered.length > 0 && (
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-panel-ink-soft">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
+          >
+            Siguiente
+          </button>
         </div>
       )}
 
