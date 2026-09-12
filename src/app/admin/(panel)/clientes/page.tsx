@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, Trash2, Edit, X, Save, MessageCircle, Search } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -212,69 +213,74 @@ export default function AdminClientesPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-panel-ink">
-                {editing ? "Editar Cliente" : "Nuevo Cliente"}
-              </h2>
-              <button type="button" onClick={() => setShowModal(false)} className="text-panel-ink-soft">
-                <X className="w-5 h-5" />
+      <Dialog.Root open={showModal} onOpenChange={setShowModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto focus:outline-none">
+            <form onSubmit={handleSubmit}>
+              <div className="flex items-center justify-between mb-4">
+                <Dialog.Title className="text-lg font-bold text-panel-ink">
+                  {editing ? "Editar Cliente" : "Nuevo Cliente"}
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button type="button" className="text-panel-ink-soft">
+                    <X className="w-5 h-5" />
+                  </button>
+                </Dialog.Close>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <input
+                  type="text"
+                  placeholder="WhatsApp (solo números, ej. 70123456)"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <input
+                  type="email"
+                  placeholder="Email (opcional)"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <input
+                  type="text"
+                  placeholder="Dirección (opcional)"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <textarea
+                  placeholder="Notas internas (opcional)"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={3}
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
+              >
+                <Save className="w-4 h-4 inline mr-2" />
+                {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear Cliente"}
               </button>
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Nombre completo"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <input
-                type="text"
-                placeholder="WhatsApp (solo números, ej. 70123456)"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <input
-                type="email"
-                placeholder="Email (opcional)"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <input
-                type="text"
-                placeholder="Dirección (opcional)"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <textarea
-                placeholder="Notas internas (opcional)"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 inline mr-2" />
-              {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear Cliente"}
-            </button>
-          </form>
-        </div>
-      )}
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <ConfirmModal
         open={!!toDelete}

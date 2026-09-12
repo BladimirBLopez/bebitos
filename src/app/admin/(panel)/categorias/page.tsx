@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, X, Tag, ChevronUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/lib/toast-context";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -25,43 +26,49 @@ function EditCategoryModal({
     if (category) setValue(category.name);
   }, [category]);
 
-  if (!open || !category) return null;
+  if (!category) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-semibold text-ink text-lg">
-            Nombre de la categoría
-          </h3>
-          <button onClick={onClose} className="text-ink/40 hover:text-ink">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <input
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && value.trim() && onSave(category.id, value.trim())}
-          className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40 mb-5"
-        />
-        <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 text-sm font-medium text-ink/70 bg-cream hover:bg-cream/70 py-2.5 rounded-full transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => value.trim() && onSave(category.id, value.trim())}
-            className="flex-1 text-sm font-semibold text-cream bg-brown-dark hover:bg-ink py-2.5 rounded-full transition-colors"
-          >
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 z-[90]" />
+        <Dialog.Content className="fixed z-[91] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm bg-white rounded-2xl p-6 focus:outline-none">
+          <div className="flex items-center justify-between mb-4">
+            <Dialog.Title className="font-display font-semibold text-ink text-lg">
+              Nombre de la categoría
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="text-ink/40 hover:text-ink">
+                <X className="w-5 h-5" />
+              </button>
+            </Dialog.Close>
+          </div>
+          <input
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && value.trim() && onSave(category.id, value.trim())}
+            className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40 mb-5"
+          />
+          <div className="flex gap-2">
+            <Dialog.Close asChild>
+              <button
+                onClick={onClose}
+                className="flex-1 text-sm font-medium text-ink/70 bg-cream hover:bg-cream/70 py-2.5 rounded-full transition-colors"
+              >
+                Cancelar
+              </button>
+            </Dialog.Close>
+            <button
+              onClick={() => value.trim() && onSave(category.id, value.trim())}
+              className="flex-1 text-sm font-semibold text-cream bg-brown-dark hover:bg-ink py-2.5 rounded-full transition-colors"
+            >
+              Guardar
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

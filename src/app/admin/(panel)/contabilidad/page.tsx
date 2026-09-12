@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, Trash2, Edit, X, Save, DollarSign, TrendingDown, Wallet } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -235,76 +236,81 @@ export default function ContabilidadPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-panel-ink">
-                {editing ? "Editar Gasto" : "Nuevo Gasto"}
-              </h2>
-              <button type="button" onClick={() => setShowModal(false)} className="text-panel-ink-soft">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Concepto (ej. Compra de cajas)"
-                value={formData.concept}
-                onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
-                required
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <div className="w-full border border-panel-border rounded-lg px-3 py-2">
-                <label className="text-xs text-panel-ink-soft">Categoría</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full outline-none bg-transparent"
-                >
-                  {GASTO_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+      <Dialog.Root open={showModal} onOpenChange={setShowModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto focus:outline-none">
+            <form onSubmit={handleSubmit}>
+              <div className="flex items-center justify-between mb-4">
+                <Dialog.Title className="text-lg font-bold text-panel-ink">
+                  {editing ? "Editar Gasto" : "Nuevo Gasto"}
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button type="button" className="text-panel-ink-soft">
+                    <X className="w-5 h-5" />
+                  </button>
+                </Dialog.Close>
               </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Monto (Bs.)"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-              <textarea
-                placeholder="Notas (opcional)"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={2}
-                className="w-full border border-panel-border rounded-lg px-3 py-2"
-              />
-            </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 inline mr-2" />
-              {saving ? "Guardando..." : editing ? "Guardar cambios" : "Registrar Gasto"}
-            </button>
-          </form>
-        </div>
-      )}
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Concepto (ej. Compra de cajas)"
+                  value={formData.concept}
+                  onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
+                  required
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <div className="w-full border border-panel-border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-brown-dark/30">
+                  <label className="text-xs text-panel-ink-soft">Categoría</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full outline-none bg-transparent"
+                  >
+                    {GASTO_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Monto (Bs.)"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  required
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+                <textarea
+                  placeholder="Notas (opcional)"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={2}
+                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
+              >
+                <Save className="w-4 h-4 inline mr-2" />
+                {saving ? "Guardando..." : editing ? "Guardar cambios" : "Registrar Gasto"}
+              </button>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <ConfirmModal
         open={!!toDelete}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Box, Plus, Minus, AlertTriangle, X, Save } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Box, Plus, Minus, X, Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 export default function AdminInventarioPage() {
@@ -82,7 +83,7 @@ export default function AdminInventarioPage() {
 
       <div className="grid gap-4">
         {loading ? (
-          <p className="text-panel-ink-soft">Loading...</p>
+          <p className="text-panel-ink-soft">Cargando...</p>
         ) : (
           <>
             {products.map((product) => (
@@ -113,57 +114,62 @@ export default function AdminInventarioPage() {
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleUpdateStock} className="w-full max-w-md bg-panel-surface rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-panel-ink">Gestionar Stock</h2>
-              <button type="button" onClick={() => setShowModal(false)} className="text-panel-ink-soft">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Dialog.Root open={showModal} onOpenChange={setShowModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 focus:outline-none">
+            <form onSubmit={handleUpdateStock}>
+              <div className="flex items-center justify-between mb-4">
+                <Dialog.Title className="text-lg font-bold text-panel-ink">Gestionar Stock</Dialog.Title>
+                <Dialog.Close asChild>
+                  <button type="button" className="text-panel-ink-soft">
+                    <X className="w-5 h-5" />
+                  </button>
+                </Dialog.Close>
+              </div>
 
-            <div className="space-y-3">
-              <p className="text-sm text-panel-ink-soft">{selectedProduct?.name}</p>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={stockToAdd}
-                  onChange={(e) => setStockToAdd(parseInt(e.target.value))}
-                  className="w-full border border-panel-border rounded-lg px-3 py-2"
-                  placeholder="Nuevo stock"
-                />
-                <div className="flex gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setStockToAdd((prev) => prev - 1)}
-                    className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
-                  >
-                    <Minus className="w-4 h-4" />
-                    Reducir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStockToAdd((prev) => prev + 1)}
-                    className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Aumentar
-                  </button>
+              <div className="space-y-3">
+                <p className="text-sm text-panel-ink-soft">{selectedProduct?.name}</p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={stockToAdd}
+                    onChange={(e) => setStockToAdd(parseInt(e.target.value))}
+                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                    placeholder="Nuevo stock"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setStockToAdd((prev) => prev - 1)}
+                      className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
+                    >
+                      <Minus className="w-4 h-4" />
+                      Reducir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStockToAdd((prev) => prev + 1)}
+                      className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Aumentar
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg"
-            >
-              <Save className="w-4 h-4 inline mr-2" />
-              Actualizar
-            </button>
-          </form>
-        </div>
-      )}
+              <button
+                type="submit"
+                className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg"
+              >
+                <Save className="w-4 h-4 inline mr-2" />
+                Actualizar
+              </button>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }
