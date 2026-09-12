@@ -7,6 +7,7 @@ type MetricCardProps = {
   trend?: string | null;
   trendUp?: boolean;
   color: "brown" | "green" | "amber" | "ink" | "amberSoft" | "red";
+  emphasis?: boolean;
 };
 
 const colors = {
@@ -18,12 +19,18 @@ const colors = {
   red: "bg-red-50 text-red-600",
 };
 
-export default function MetricCard({ title, value, icon: Icon, trend, trendUp, color }: MetricCardProps) {
+export default function MetricCard({ title, value, icon: Icon, trend, trendUp, color, emphasis = false }: MetricCardProps) {
   return (
-    <div className="bg-panel-surface p-4 rounded-xl shadow-panel border border-panel-border flex items-center justify-between">
+    <div
+      className={`bg-panel-surface p-4 rounded-xl flex items-center justify-between ${
+        emphasis
+          ? "border-2 border-brown-dark/20 shadow-card"
+          : "border border-panel-border shadow-panel"
+      }`}
+    >
       <div>
         <p className="text-sm text-panel-ink-soft">{title}</p>
-        <p className="text-2xl font-bold text-panel-ink">{value}</p>
+        <p className={`font-bold text-panel-ink ${emphasis ? "text-3xl" : "text-2xl"}`}>{value}</p>
         {trend && (
           <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-dark' : 'text-red-600'}`}>
             {trendUp ? '↑' : '↓'} {trend}

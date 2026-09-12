@@ -157,6 +157,7 @@ export default function ContabilidadPage() {
               value={`Bs. ${stats.balance.toFixed(2)}`}
               icon={Wallet}
               color={stats.balance >= 0 ? "green" : "red"}
+              emphasis
             />
           </div>
 
