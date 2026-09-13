@@ -18,6 +18,8 @@ import {
   X,
   ShoppingCart,
   ClipboardCheck,
+  Globe,
+  Link2,
 } from "lucide-react";
 
 const groups = [
@@ -105,6 +107,29 @@ export default function AdminSidebar() {
     </nav>
   );
 
+  const ExternalLinks = () => (
+    <div className="space-y-0.5">
+      <a
+        href="https://bebitos.online"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink transition-colors"
+      >
+        <Globe className="w-4 h-4" />
+        Ver tienda
+      </a>
+      <a
+        href="https://bebitos.online/links"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink transition-colors"
+      >
+        <Link2 className="w-4 h-4" />
+        Página de enlaces
+      </a>
+    </div>
+  );
+
   return (
     <>
       <div className="sm:hidden flex items-center justify-between px-4 py-3 bg-panel-surface border-b border-panel-border">
@@ -137,6 +162,9 @@ export default function AdminSidebar() {
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="mt-8 pt-4 border-t border-panel-border">
+              <ExternalLinks />
+            </div>
+            <div className="mt-2 pt-2 border-t border-panel-border">
               <button
                 onClick={() => {
                   setOpen(false);
@@ -158,6 +186,9 @@ export default function AdminSidebar() {
         </div>
         <NavLinks />
         <div className="mt-auto pt-4 border-t border-panel-border">
+          <ExternalLinks />
+        </div>
+        <div className="mt-2 pt-2 border-t border-panel-border">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-panel-ink-soft hover:bg-panel-bg hover:text-panel-ink"
