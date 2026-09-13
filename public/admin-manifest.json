@@ -1,0 +1,22 @@
+{
+  "name": "Bebitos Admin",
+  "short_name": "Bebitos Admin",
+  "description": "Panel de administración de Bebitos",
+  "start_url": "/admin/dashboard",
+  "scope": "/admin/",
+  "display": "standalone",
+  "background_color": "#F7F7F8",
+  "theme_color": "#6B4226",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dkq95jus0/image/upload/w_192,h_192,c_pad,b_white/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://res.cloudinary.com/dkq95jus0/image/upload/w_512,h_512,c_pad,b_white/v1787086146/Dise%C3%B1o_sin_t%C3%ADtulo_8_ccrkbc.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
