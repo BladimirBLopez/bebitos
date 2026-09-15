@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
+import Select from "./ui/Select";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -305,19 +306,13 @@ export default function ProductForm({
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-ink/60 block mb-1">
-                  Categoría
-                </label>
-                <select
+                <Select
+                  label="Categoría"
                   value={form.category}
-                  onChange={(e) => update({ category: e.target.value })}
-                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                >
-                  {categories.length === 0 && <option value="">Sin categorías</option>}
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={(value) => update({ category: value })}
+                  placeholder="Sin categorías"
+                  options={categories.map((c) => ({ value: c.name, label: c.name }))}
+                />
                 <button
                   type="button"
                   onClick={() => setCategoryModalOpen(true)}
@@ -328,18 +323,15 @@ export default function ProductForm({
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink/60 block mb-1">
-                  Estado del producto
-                </label>
-                <select
+                <Select
+                  label="Estado del producto"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as StatusOption)}
-                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.emoji} {opt.label}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setStatus(value as StatusOption)}
+                  options={STATUS_OPTIONS.map((opt) => ({
+                    value: opt.value,
+                    label: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
+                  }))}
+                />
               </div>
             </div>
           </div>
