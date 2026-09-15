@@ -1,57 +1,35 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
-import { CheckCircle2, XCircle, X } from "lucide-react";
-
-type Toast = { id: number; message: string; type: "success" | "error" };
-type ToastContextType = { showToast: (message: string, type?: "success" | "error") => void };
-
-const ToastContext = createContext<ToastContextType | null>(null);
+import { ReactNode } from "react";
+import { Toaster, toast as sonnerToast } from "sonner";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  function showToast(message: string, type: "success" | "error" = "success") {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3500);
-  }
-
-  function dismiss(id: number) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
-
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <>
       {children}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white animate-in ${
-              t.type === "success" ? "bg-green-dark" : "bg-red-500"
-            }`}
-          >
-            {t.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : (
-              <XCircle className="w-4 h-4 shrink-0" />
-            )}
-            {t.message}
-            <button onClick={() => dismiss(t.id)} className="ml-2">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </ToastContext.Provider>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          classNames: {
+            toast:
+              "!rounded-xl !border !border-panel-border !shadow-lg !bg-panel-surface !text-panel-ink !font-medium !text-sm",
+            success: "!bg-green-dark !text-white !border-green-dark",
+            error: "!bg-red-500 !text-white !border-red-500",
+          },
+        }}
+      />
+    </>
   );
 }
 
 export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast debe usarse dentro de ToastProvider");
-  return ctx;
+  function showToast(message: string, type: "success" | "error" = "success") {
+    if (type === "success") {
+      sonnerToast.success(message, { icon: <CheckCircle2 className="w-4 h-4" /> });
+    } else {
+      sonnerToast.error(message, { icon: <XCircle className="w-4 h-4" /> });
+    }
+  }
+  return { showToast };
 }

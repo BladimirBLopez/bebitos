@@ -14,6 +14,7 @@
     "@prisma/client": "^6.19.3",
     "@radix-ui/react-dialog": "^1.1.23",
     "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^13.1.0",
     "jose": "^5.9.6",
@@ -24,6 +25,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "recharts": "^3.10.1",
+    "sonner": "^2.0.8",
     "ws": "^8.21.3"
   },
   "devDependencies": {
