@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Plus, Trash2, Edit, X, Save, DollarSign, TrendingDown, Wallet } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  X,
+  Save,
+  DollarSign,
+  TrendingDown,
+  Wallet,
+  Receipt,
+  Tag,
+  Calendar,
+} from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -11,6 +25,8 @@ import GastosPieChart from "@/components/dashboard/GastosPieChart";
 import Select from "@/components/ui/Select";
 import { useToast } from "@/lib/toast-context";
 import { GASTO_CATEGORIES } from "@/lib/types";
+import { gastoSchema, GastoFormValues } from "@/lib/schemas/gasto";
+import { FormInput, FormTextarea } from "@/components/form/FormField";
 
 type Gasto = {
   id: string;
@@ -29,7 +45,7 @@ type Stats = {
   gastosByCategory: { name: string; value: number }[];
 };
 
-const emptyForm = {
+const emptyForm: GastoFormValues = {
   concept: "",
   category: GASTO_CATEGORIES[0],
   amount: "",
@@ -46,8 +62,18 @@ export default function ContabilidadPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Gasto | null>(null);
   const [toDelete, setToDelete] = useState<Gasto | null>(null);
-  const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<GastoFormValues>({
+    resolver: zodResolver(gastoSchema),
+    defaultValues: emptyForm,
+  });
 
   async function fetchAll() {
     setLoading(true);
@@ -71,15 +97,34 @@ export default function ContabilidadPage() {
     fetchAll();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function openNewModal() {
+    setEditing(null);
+    setError("");
+    reset(emptyForm);
+    setShowModal(true);
+  }
+
+  function openEditModal(gasto: Gasto) {
+    setEditing(gasto);
+    setError("");
+    reset({
+      concept: gasto.concept,
+      category: gasto.category,
+      amount: String(gasto.amount),
+      date: gasto.date.slice(0, 10),
+      notes: gasto.notes || "",
+    });
+    setShowModal(true);
+  }
+
+  async function onSubmit(values: GastoFormValues) {
     setError("");
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/gastos${editing ? `/${editing.id}` : ""}`, {
         method: editing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(values),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -89,7 +134,7 @@ export default function ContabilidadPage() {
       }
       setShowModal(false);
       setEditing(null);
-      setFormData(emptyForm);
+      reset(emptyForm);
       showToast(editing ? "Gasto actualizado" : "Gasto registrado", "success");
       fetchAll();
     } catch {
@@ -123,12 +168,7 @@ export default function ContabilidadPage() {
         meta="Balance de ingresos y gastos del negocio"
         action={
           <button
-            onClick={() => {
-              setEditing(null);
-              setFormData(emptyForm);
-              setError("");
-              setShowModal(true);
-            }}
+            onClick={openNewModal}
             className="flex items-center gap-2 bg-brown-dark hover:bg-ink text-cream text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -209,18 +249,7 @@ export default function ContabilidadPage() {
               <div className="flex items-center gap-3 shrink-0">
                 <p className="font-semibold text-panel-ink">Bs. {gasto.amount.toFixed(2)}</p>
                 <button
-                  onClick={() => {
-                    setEditing(gasto);
-                    setFormData({
-                      concept: gasto.concept,
-                      category: gasto.category,
-                      amount: String(gasto.amount),
-                      date: gasto.date.slice(0, 10),
-                      notes: gasto.notes || "",
-                    });
-                    setError("");
-                    setShowModal(true);
-                  }}
+                  onClick={() => openEditModal(gasto)}
                   className="flex items-center gap-1 text-sm text-brown-dark hover:bg-panel-bg p-2 rounded"
                 >
                   <Edit className="w-4 h-4" />
@@ -239,69 +268,117 @@ export default function ContabilidadPage() {
 
       <Dialog.Root open={showModal} onOpenChange={setShowModal}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto focus:outline-none">
-            <form onSubmit={handleSubmit}>
-              <div className="flex items-center justify-between mb-4">
-                <Dialog.Title className="text-lg font-bold text-panel-ink">
-                  {editing ? "Editar Gasto" : "Nuevo Gasto"}
-                </Dialog.Title>
+          <Dialog.Overlay className="fixed inset-0 bg-ink/40 backdrop-blur-[2px] z-50" />
+          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl shadow-xl max-h-[90vh] flex flex-col focus:outline-none overflow-hidden">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col min-h-0">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b border-panel-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red/10 flex items-center justify-center shrink-0">
+                    <TrendingDown className="w-5 h-5 text-red" />
+                  </div>
+                  <div>
+                    <Dialog.Title className="text-base font-bold text-panel-ink leading-tight">
+                      {editing ? "Editar Gasto" : "Nuevo Gasto"}
+                    </Dialog.Title>
+                    <Dialog.Description className="text-xs text-panel-ink-soft mt-0.5">
+                      {editing ? "Actualiza los datos del gasto" : "Registra una salida de dinero"}
+                    </Dialog.Description>
+                  </div>
+                </div>
                 <Dialog.Close asChild>
-                  <button type="button" className="text-panel-ink-soft">
-                    <X className="w-5 h-5" />
+                  <button
+                    type="button"
+                    className="text-panel-ink-soft hover:text-panel-ink hover:bg-panel-bg rounded-lg p-1.5 transition-colors shrink-0"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </Dialog.Close>
               </div>
 
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Concepto (ej. Compra de cajas)"
-                  value={formData.concept}
-                  onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
+              {/* Body */}
+              <div className="px-6 py-5 space-y-4 overflow-y-auto">
+                <FormInput
+                  label="Concepto"
+                  icon={Receipt}
                   required
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  placeholder="Ej. Compra de cajas"
+                  error={errors.concept?.message}
+                  {...register("concept")}
                 />
-                <Select
-                  label="Categoría"
-                  value={formData.category}
-                  onChange={(value) => setFormData({ ...formData, category: value })}
-                  options={GASTO_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
-                />
-                <input
+
+                <div>
+                  <Controller
+                    name="category"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <label className="text-xs font-semibold text-panel-ink tracking-wide mb-1.5 block">
+                          Categoría<span className="text-amber ml-0.5">*</span>
+                        </label>
+                        <Select
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={GASTO_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+                        />
+                      </div>
+                    )}
+                  />
+                  {errors.category && (
+                    <p className="text-red text-xs mt-1.5">{errors.category.message}</p>
+                  )}
+                </div>
+
+                <FormInput
+                  label="Monto"
+                  icon={DollarSign}
+                  required
+                  hint="en Bs."
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Monto (Bs.)"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  required
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  placeholder="0.00"
+                  error={errors.amount?.message}
+                  {...register("amount")}
                 />
-                <input
+
+                <FormInput
+                  label="Fecha"
+                  icon={Calendar}
+                  required
                   type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  error={errors.date?.message}
+                  {...register("date")}
                 />
-                <textarea
-                  placeholder="Notas (opcional)"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+
+                <FormTextarea
+                  label="Notas"
+                  hint="opcional"
+                  placeholder="Detalles del gasto..."
                   rows={2}
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  {...register("notes")}
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
-              >
-                <Save className="w-4 h-4 inline mr-2" />
-                {saving ? "Guardando..." : editing ? "Guardar cambios" : "Registrar Gasto"}
-              </button>
+              {/* Footer */}
+              <div className="flex gap-2 px-6 py-4 border-t border-panel-border bg-panel-bg/50">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="flex-1 text-sm font-semibold text-panel-ink-soft hover:text-panel-ink py-2.5 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-[2] flex items-center justify-center gap-2 bg-brown-dark hover:bg-ink text-cream font-semibold text-sm py-2.5 rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? "Guardando..." : editing ? "Guardar cambios" : "Registrar Gasto"}
+                </button>
+              </div>
             </form>
           </Dialog.Content>
         </Dialog.Portal>
