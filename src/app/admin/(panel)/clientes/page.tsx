@@ -4,11 +4,26 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Plus, Trash2, Edit, X, Save, MessageCircle, Search } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  X,
+  Save,
+  MessageCircle,
+  Search,
+  Users,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  StickyNote,
+} from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
 import { clienteSchema, ClienteFormValues } from "@/lib/schemas/cliente";
+import { FormInput, FormTextarea } from "@/components/form/FormField";
 
 type Cliente = {
   id: string;
@@ -230,96 +245,102 @@ export default function AdminClientesPage() {
 
       <Dialog.Root open={showModal} onOpenChange={setShowModal}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto focus:outline-none">
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="flex items-center justify-between mb-4">
-                <Dialog.Title className="text-lg font-bold text-panel-ink">
-                  {editing ? "Editar Cliente" : "Nuevo Cliente"}
-                </Dialog.Title>
+          <Dialog.Overlay className="fixed inset-0 bg-ink/40 backdrop-blur-[2px] z-50" />
+          <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl shadow-xl max-h-[90vh] flex flex-col focus:outline-none overflow-hidden">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col min-h-0">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b border-panel-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
+                    <Users className="w-5 h-5 text-brown-dark" />
+                  </div>
+                  <div>
+                    <Dialog.Title className="text-base font-bold text-panel-ink leading-tight">
+                      {editing ? "Editar Cliente" : "Nuevo Cliente"}
+                    </Dialog.Title>
+                    <Dialog.Description className="text-xs text-panel-ink-soft mt-0.5">
+                      {editing ? "Actualiza los datos de contacto" : "Completa los datos de contacto"}
+                    </Dialog.Description>
+                  </div>
+                </div>
                 <Dialog.Close asChild>
-                  <button type="button" className="text-panel-ink-soft">
-                    <X className="w-5 h-5" />
+                  <button
+                    type="button"
+                    className="text-panel-ink-soft hover:text-panel-ink hover:bg-panel-bg rounded-lg p-1.5 transition-colors shrink-0"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </Dialog.Close>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Nombre completo"
-                    {...register("name")}
-                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                      errors.name
-                        ? "border-red-400 focus:ring-red-300"
-                        : "border-panel-border focus:ring-brown-dark/30"
-                    }`}
-                  />
-                  {errors.name && (
-                    <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>
-                  )}
-                </div>
+              {/* Body */}
+              <div className="px-6 py-5 space-y-4 overflow-y-auto">
+                <FormInput
+                  label="Nombre completo"
+                  icon={User}
+                  required
+                  placeholder="Ej. María Fernández"
+                  error={errors.name?.message}
+                  {...register("name")}
+                />
 
-                <div>
-                  <input
-                    type="text"
-                    placeholder="WhatsApp (solo números, ej. 70123456)"
-                    {...register("phone")}
-                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                      errors.phone
-                        ? "border-red-400 focus:ring-red-300"
-                        : "border-panel-border focus:ring-brown-dark/30"
-                    }`}
-                  />
-                  {errors.phone && (
-                    <p className="text-red-600 text-xs mt-1">{errors.phone.message}</p>
-                  )}
-                </div>
+                <FormInput
+                  label="WhatsApp"
+                  icon={Phone}
+                  required
+                  hint="solo números"
+                  placeholder="70123456"
+                  inputMode="numeric"
+                  error={errors.phone?.message}
+                  {...register("phone")}
+                />
 
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Email (opcional)"
-                    {...register("email")}
-                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                      errors.email
-                        ? "border-red-400 focus:ring-red-300"
-                        : "border-panel-border focus:ring-brown-dark/30"
-                    }`}
-                  />
-                  {errors.email && (
-                    <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
-                  )}
-                </div>
+                <FormInput
+                  label="Email"
+                  icon={Mail}
+                  hint="opcional"
+                  type="email"
+                  placeholder="maria@correo.com"
+                  error={errors.email?.message}
+                  {...register("email")}
+                />
 
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Dirección (opcional)"
-                    {...register("address")}
-                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                  />
-                </div>
+                <FormInput
+                  label="Dirección"
+                  icon={MapPin}
+                  hint="opcional"
+                  placeholder="Zona, calle, referencia..."
+                  {...register("address")}
+                />
 
-                <div>
-                  <textarea
-                    placeholder="Notas internas (opcional)"
-                    {...register("notes")}
-                    rows={3}
-                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                  />
-                </div>
+                <FormTextarea
+                  label="Notas internas"
+                  hint="opcional"
+                  placeholder="Preferencias, detalles útiles para futuras ventas..."
+                  rows={3}
+                  {...register("notes")}
+                />
               </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg disabled:opacity-50"
-              >
-                <Save className="w-4 h-4 inline mr-2" />
-                {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear Cliente"}
-              </button>
+              {/* Footer */}
+              <div className="flex gap-2 px-6 py-4 border-t border-panel-border bg-panel-bg/50">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="flex-1 text-sm font-semibold text-panel-ink-soft hover:text-panel-ink py-2.5 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-[2] flex items-center justify-center gap-2 bg-brown-dark hover:bg-ink text-cream font-semibold text-sm py-2.5 rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear Cliente"}
+                </button>
+              </div>
             </form>
           </Dialog.Content>
         </Dialog.Portal>
