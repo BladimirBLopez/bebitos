@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, Trash2, Edit, X, Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
+import Select from "@/components/ui/Select";
 import { useToast } from "@/lib/toast-context";
 
 export default function AdminUsuariosPage() {
@@ -192,18 +193,12 @@ export default function AdminUsuariosPage() {
                     className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
                   />
                 )}
-                <div className="w-full border border-panel-border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-brown-dark/30">
-                  <label className="text-xs text-panel-ink-soft">Rol</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full outline-none bg-transparent"
-                  >
-                    {roles.map((role) => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Rol"
+                  value={formData.role}
+                  onChange={(value) => setFormData({ ...formData, role: value })}
+                  options={roles.map((role) => ({ value: role, label: role }))}
+                />
               </div>
 
               <button

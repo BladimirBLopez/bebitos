@@ -8,6 +8,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import MetricCard from "@/components/dashboard/MetricCard";
 import BalanceChart from "@/components/dashboard/BalanceChart";
 import GastosPieChart from "@/components/dashboard/GastosPieChart";
+import Select from "@/components/ui/Select";
 import { useToast } from "@/lib/toast-context";
 import { GASTO_CATEGORIES } from "@/lib/types";
 
@@ -261,18 +262,12 @@ export default function ContabilidadPage() {
                   required
                   className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
                 />
-                <div className="w-full border border-panel-border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-brown-dark/30">
-                  <label className="text-xs text-panel-ink-soft">Categoría</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full outline-none bg-transparent"
-                  >
-                    {GASTO_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Categoría"
+                  value={formData.category}
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  options={GASTO_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+                />
                 <input
                   type="number"
                   step="0.01"

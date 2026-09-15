@@ -7,6 +7,7 @@ import { Search, Plus, ImageOff, Trash2, Check, ChevronUp, ChevronDown } from "l
 import ConfirmModal from "./ConfirmModal";
 import ToggleSwitch from "./ToggleSwitch";
 import PageHeader from "./PageHeader";
+import Select from "./ui/Select";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -167,18 +168,16 @@ export default function ProductsListClient({
             className="w-full bg-white border border-brown/15 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brown/40"
           />
         </div>
-        <select
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            setPage(1);
-          }}
-          className="bg-white border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-        >
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <div className="w-full sm:w-48">
+          <Select
+            value={category}
+            onChange={(value) => {
+              setCategory(value);
+              setPage(1);
+            }}
+            options={categories.map((c) => ({ value: c, label: c }))}
+          />
+        </div>
       </div>
 
       {filtersActive && (
