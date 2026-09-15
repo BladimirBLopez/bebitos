@@ -9,6 +9,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.19.3",
@@ -26,9 +27,11 @@
     "next": "15.1.11",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-hook-form": "^7.88.0",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
