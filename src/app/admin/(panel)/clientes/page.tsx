@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, Trash2, Edit, X, Save, MessageCircle, Search } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
+import { clienteSchema, ClienteFormValues } from "@/lib/schemas/cliente";
 
 type Cliente = {
   id: string;
@@ -17,7 +20,7 @@ type Cliente = {
   createdAt: string;
 };
 
-const emptyForm = { name: "", phone: "", email: "", address: "", notes: "" };
+const emptyForm: ClienteFormValues = { name: "", phone: "", email: "", address: "", notes: "" };
 
 export default function AdminClientesPage() {
   const { showToast } = useToast();
@@ -28,8 +31,17 @@ export default function AdminClientesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [toDelete, setToDelete] = useState<Cliente | null>(null);
-  const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ClienteFormValues>({
+    resolver: zodResolver(clienteSchema),
+    defaultValues: emptyForm,
+  });
 
   async function fetchClientes() {
     setLoading(true);
@@ -52,15 +64,34 @@ export default function AdminClientesPage() {
     fetchClientes();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function openNewModal() {
+    setEditing(null);
+    setError("");
+    reset(emptyForm);
+    setShowModal(true);
+  }
+
+  function openEditModal(cliente: Cliente) {
+    setEditing(cliente);
+    setError("");
+    reset({
+      name: cliente.name,
+      phone: cliente.phone,
+      email: cliente.email || "",
+      address: cliente.address || "",
+      notes: cliente.notes || "",
+    });
+    setShowModal(true);
+  }
+
+  async function onSubmit(values: ClienteFormValues) {
     setError("");
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/clientes${editing ? `/${editing.id}` : ""}`, {
         method: editing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(values),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -70,7 +101,7 @@ export default function AdminClientesPage() {
       }
       setShowModal(false);
       setEditing(null);
-      setFormData(emptyForm);
+      reset(emptyForm);
       showToast(editing ? "Cliente actualizado" : "Cliente creado", "success");
       fetchClientes();
     } catch {
@@ -114,12 +145,7 @@ export default function AdminClientesPage() {
         meta={loading ? "Cargando..." : `${clientes.length} cliente${clientes.length === 1 ? "" : "s"} registrado${clientes.length === 1 ? "" : "s"}`}
         action={
           <button
-            onClick={() => {
-              setEditing(null);
-              setFormData(emptyForm);
-              setError("");
-              setShowModal(true);
-            }}
+            onClick={openNewModal}
             className="flex items-center gap-2 bg-brown-dark hover:bg-ink text-cream text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -185,18 +211,7 @@ export default function AdminClientesPage() {
                   WhatsApp
                 </a>
                 <button
-                  onClick={() => {
-                    setEditing(cliente);
-                    setFormData({
-                      name: cliente.name,
-                      phone: cliente.phone,
-                      email: cliente.email || "",
-                      address: cliente.address || "",
-                      notes: cliente.notes || "",
-                    });
-                    setError("");
-                    setShowModal(true);
-                  }}
+                  onClick={() => openEditModal(cliente)}
                   className="flex items-center gap-1 text-sm text-brown-dark hover:bg-panel-bg p-2 rounded"
                 >
                   <Edit className="w-4 h-4" />
@@ -217,7 +232,7 @@ export default function AdminClientesPage() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
           <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl p-6 max-h-[90vh] overflow-y-auto focus:outline-none">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit(onSubmit)}>
               <div className="flex items-center justify-between mb-4">
                 <Dialog.Title className="text-lg font-bold text-panel-ink">
                   {editing ? "Editar Cliente" : "Nuevo Cliente"}
@@ -230,43 +245,71 @@ export default function AdminClientesPage() {
               </div>
 
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nombre completo"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                />
-                <input
-                  type="text"
-                  placeholder="WhatsApp (solo números, ej. 70123456)"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                />
-                <input
-                  type="email"
-                  placeholder="Email (opcional)"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                />
-                <input
-                  type="text"
-                  placeholder="Dirección (opcional)"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                />
-                <textarea
-                  placeholder="Notas internas (opcional)"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
-                />
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Nombre completo"
+                    {...register("name")}
+                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                      errors.name
+                        ? "border-red-400 focus:ring-red-300"
+                        : "border-panel-border focus:ring-brown-dark/30"
+                    }`}
+                  />
+                  {errors.name && (
+                    <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    placeholder="WhatsApp (solo números, ej. 70123456)"
+                    {...register("phone")}
+                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                      errors.phone
+                        ? "border-red-400 focus:ring-red-300"
+                        : "border-panel-border focus:ring-brown-dark/30"
+                    }`}
+                  />
+                  {errors.phone && (
+                    <p className="text-red-600 text-xs mt-1">{errors.phone.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email (opcional)"
+                    {...register("email")}
+                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                      errors.email
+                        ? "border-red-400 focus:ring-red-300"
+                        : "border-panel-border focus:ring-brown-dark/30"
+                    }`}
+                  />
+                  {errors.email && (
+                    <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Dirección (opcional)"
+                    {...register("address")}
+                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  />
+                </div>
+
+                <div>
+                  <textarea
+                    placeholder="Notas internas (opcional)"
+                    {...register("notes")}
+                    rows={3}
+                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  />
+                </div>
               </div>
 
               <button
