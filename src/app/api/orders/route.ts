@@ -94,19 +94,11 @@ export async function POST(req: NextRequest) {
           total,
           status: "pendiente",
           origin: "online",
+          stockDeducted: false,
           items: { create: orderItemsData },
         },
         include: { items: true },
       });
-
-      for (const item of items) {
-        const product = productMap.get(item.productId)!;
-        const newStock = product.stock - item.quantity;
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: newStock, inStock: newStock > 0 },
-        });
-      }
 
       return newOrder;
     });

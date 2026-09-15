@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
           total,
           status: "pendiente",
           origin: "manual",
+          stockDeducted: true,
           clienteId: cliente.id,
           items: { create: orderItemsData },
         },

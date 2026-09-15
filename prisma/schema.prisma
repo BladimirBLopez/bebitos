@@ -83,18 +83,19 @@ model GiftResource {
 }
 
 model Order {
-  id         String       @id @default(cuid())
-  customer   String
-  email      String?
-  phone      String
-  total      Float
-  status     OrderStatus  @default(pendiente)
-  origin     OrderOrigin  @default(manual)
-  items      OrderItem[]
-  clienteId  String?
-  cliente    Cliente?     @relation(fields: [clienteId], references: [id])
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  customer      String
+  email         String?
+  phone         String
+  total         Float
+  status        OrderStatus  @default(pendiente)
+  origin        OrderOrigin  @default(manual)
+  stockDeducted Boolean      @default(false)
+  items         OrderItem[]
+  clienteId     String?
+  cliente       Cliente?     @relation(fields: [clienteId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model OrderItem {

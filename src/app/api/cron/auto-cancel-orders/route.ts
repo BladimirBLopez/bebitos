@@ -22,15 +22,17 @@ export async function GET(req: NextRequest) {
 
   for (const order of pedidosVencidos) {
     await prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity }, inStock: true },
-        });
+      if (order.stockDeducted) {
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity }, inStock: true },
+          });
+        }
       }
       await tx.order.update({
         where: { id: order.id },
-        data: { status: "cancelado" },
+        data: { status: "cancelado", stockDeducted: false },
       });
     });
     cancelados++;

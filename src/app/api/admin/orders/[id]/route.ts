@@ -46,42 +46,47 @@ export async function PATCH(
         );
       }
 
-      if (status === "cancelado") {
+      let newStockDeducted = existing.stockDeducted;
+
+      // Confirmar un pedido que todavía no había reservado stock (pedidos online
+      // pendientes no reservan nada hasta que se confirman) => reservar ahora.
+      if (status === "confirmado" && !existing.stockDeducted) {
+        for (const item of existing.items) {
+          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          if (!product || product.stock < item.quantity) {
+            throw new Error(
+              `Stock insuficiente para confirmar "${item.productName}" (disponible: ${product?.stock ?? 0})`
+            );
+          }
+        }
+        for (const item of existing.items) {
+          const updated = await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { inStock: updated.stock > 0 },
+          });
+        }
+        newStockDeducted = true;
+      }
+
+      // Cancelar: si el pedido tenía stock reservado, devolverlo. Si nunca lo tomó
+      // (online todavía pendiente), no hay nada que devolver.
+      if (status === "cancelado" && existing.stockDeducted) {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },
             data: { stock: { increment: item.quantity }, inStock: true },
           });
         }
-      }
-
-      if (existing.status === "cancelado") {
-        for (const item of existing.items) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
-          if (!product || product.stock < item.quantity) {
-            throw new Error(
-              `Stock insuficiente para reactivar "${item.productName}"`
-            );
-          }
-        }
-        for (const item of existing.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } },
-          });
-          const updated = await tx.product.findUnique({ where: { id: item.productId } });
-          if (updated) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { inStock: updated.stock > 0 },
-            });
-          }
-        }
+        newStockDeducted = false;
       }
 
       return tx.order.update({
         where: { id },
-        data: { status },
+        data: { status, stockDeducted: newStockDeducted },
         include: { items: true },
       });
     });
@@ -109,7 +114,7 @@ export async function DELETE(
         throw new Error("Pedido no encontrado");
       }
 
-      if (existing.status !== "cancelado") {
+      if (existing.stockDeducted) {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },
