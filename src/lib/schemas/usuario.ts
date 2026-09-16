@@ -21,7 +21,7 @@ export function usuarioSchema(isEditing: boolean) {
           .or(z.literal(""))
           .refine((v) => !v || v.length >= 6, "Mínimo 6 caracteres")
       : z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-    role: z.enum(USER_ROLES, { errorMap: () => ({ message: "Selecciona un rol" }) }),
+    role: z.enum(USER_ROLES, { error: "Selecciona un rol" }),
   });
 }
 
