@@ -21,45 +21,47 @@ import {
   Globe,
   Link2,
 } from "lucide-react";
+import { useCurrentUser } from "@/lib/user-context";
 
 const groups = [
   {
     label: null as string | null,
-    links: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    links: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false }],
   },
   {
     label: "Finanzas",
     links: [
-      { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
-      { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardCheck },
-      { href: "/admin/contabilidad", label: "Contabilidad", icon: Wallet },
+      { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart, adminOnly: false },
+      { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardCheck, adminOnly: false },
+      { href: "/admin/contabilidad", label: "Contabilidad", icon: Wallet, adminOnly: true },
     ],
   },
   {
     label: "Personas",
     links: [
-      { href: "/admin/clientes", label: "Clientes", icon: Contact },
-      { href: "/admin/leads", label: "Leads", icon: ClipboardList },
-      { href: "/admin/usuarios", label: "Usuarios", icon: Users },
+      { href: "/admin/clientes", label: "Clientes", icon: Contact, adminOnly: false },
+      { href: "/admin/leads", label: "Leads", icon: ClipboardList, adminOnly: false },
+      { href: "/admin/usuarios", label: "Usuarios", icon: Users, adminOnly: true },
     ],
   },
   {
     label: "Catálogo",
     links: [
-      { href: "/admin/productos", label: "Productos", icon: Package },
-      { href: "/admin/inventario", label: "Inventario", icon: Box },
-      { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag },
+      { href: "/admin/productos", label: "Productos", icon: Package, adminOnly: false },
+      { href: "/admin/inventario", label: "Inventario", icon: Box, adminOnly: false },
+      { href: "/admin/categorias", label: "Categorías", icon: ShoppingBag, adminOnly: false },
     ],
   },
   {
     label: "Sistema",
-    links: [{ href: "/admin/configuracion", label: "Configuración", icon: Settings }],
+    links: [{ href: "/admin/configuracion", label: "Configuración", icon: Settings, adminOnly: true }],
   },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { role } = useCurrentUser();
 
   const isActive = (href: string) =>
     pathname === href || pathname?.startsWith(href + "/");
@@ -69,9 +71,16 @@ export default function AdminSidebar() {
     window.location.href = "/admin/login";
   }
 
+  const visibleGroups = groups
+    .map((group) => ({
+      ...group,
+      links: group.links.filter((link) => !link.adminOnly || role === "ADMIN"),
+    }))
+    .filter((group) => group.links.length > 0);
+
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
     <nav className="space-y-5">
-      {groups.map((group, gi) => (
+      {visibleGroups.map((group, gi) => (
         <div key={gi}>
           {group.label && (
             <p className="px-3 mb-1.5 text-xs font-semibold text-panel-ink-soft/70">

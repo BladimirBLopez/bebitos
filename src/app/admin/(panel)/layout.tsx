@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import PwaRegister from "@/components/PwaRegister";
 import { ToastProvider } from "@/lib/toast-context";
+import { UserProvider } from "@/lib/user-context";
 import { requireAuth } from "@/lib/auth";
+import type { Role } from "@/lib/roles";
 
 export const metadata: Metadata = {
   title: "Bebitos Admin",
@@ -29,7 +31,6 @@ export default async function AdminPanelLayout({
 }: {
   children: ReactNode;
 }) {
-  // Verificar sesión
   const user = await requireAuth();
 
   if (!user) {
@@ -37,14 +38,23 @@ export default async function AdminPanelLayout({
   }
 
   return (
-    <ToastProvider>
-      <PwaRegister />
-      <div className="admin-panel min-h-screen bg-panel-bg flex flex-col sm:flex-row">
-        <AdminSidebar />
-        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-5xl pb-32">
-          {children}
-        </main>
-      </div>
-    </ToastProvider>
+    <UserProvider
+      user={{
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as Role,
+      }}
+    >
+      <ToastProvider>
+        <PwaRegister />
+        <div className="admin-panel min-h-screen bg-panel-bg flex flex-col sm:flex-row">
+          <AdminSidebar />
+          <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 max-w-5xl pb-32">
+            {children}
+          </main>
+        </div>
+      </ToastProvider>
+    </UserProvider>
   );
 }
