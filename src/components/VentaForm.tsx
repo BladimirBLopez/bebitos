@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark } from "lucide-react";
 import PageHeader from "./PageHeader";
@@ -55,10 +55,14 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
   const [error, setError] = useState("");
   const [clienteMatch, setClienteMatch] = useState<ClienteMatch | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered =
+    search.trim() === ""
+      ? []
+      : products
+          .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+          .slice(0, 8);
 
   const total = useMemo(
     () => cart.reduce((sum, line) => sum + line.price * line.quantity, 0),
@@ -113,6 +117,8 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
         { productId: product.id, name: product.name, price, quantity: 1, maxStock: product.stock },
       ];
     });
+    setSearch("");
+    searchInputRef.current?.focus();
   }
 
   function changeQty(productId: string, delta: number) {
@@ -192,18 +198,25 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
           <div className="relative mb-4">
             <Search className="w-4 h-4 text-panel-ink-soft absolute left-3 top-1/2 -translate-y-1/2" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Buscar producto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              autoFocus
               className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
             />
           </div>
 
           <div className="space-y-2 max-h-[420px] overflow-y-auto">
-            {filtered.length === 0 && (
+            {search.trim() === "" && (
+              <p className="text-sm text-panel-ink-soft text-center py-8">
+                Escribe el nombre del producto para buscarlo
+              </p>
+            )}
+            {search.trim() !== "" && filtered.length === 0 && (
               <p className="text-sm text-panel-ink-soft text-center py-6">
-                No hay productos con stock disponible.
+                No se encontraron productos con stock disponible.
               </p>
             )}
             {filtered.map((p) => {
