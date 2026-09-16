@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireWriteAccess } from "@/lib/permissions";
 
 export async function PUT(req: NextRequest) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   const { items } = await req.json();
 
   if (!Array.isArray(items)) {
