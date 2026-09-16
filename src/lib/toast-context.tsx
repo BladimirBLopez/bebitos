@@ -10,12 +10,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <Toaster
         position="bottom-right"
+        richColors
+        closeButton
         toastOptions={{
           classNames: {
-            toast:
-              "rounded-xl! border! border-panel-border! shadow-lg! bg-panel-surface! text-panel-ink! font-medium! text-sm!",
-            success: "bg-green-dark! text-white! border-green-dark!",
-            error: "bg-red-500! text-white! border-red-500!",
+            toast: "rounded-xl! font-medium! text-sm!",
           },
         }}
       />
