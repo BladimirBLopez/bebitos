@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import PwaRegister from "@/components/PwaRegister";
+import HelpButton from "@/components/HelpButton";
 import { ToastProvider } from "@/lib/toast-context";
 import { UserProvider } from "@/lib/user-context";
 import { requireAuth } from "@/lib/auth";
@@ -54,6 +55,7 @@ export default async function AdminPanelLayout({
             {children}
           </main>
         </div>
+        <HelpButton />
       </ToastProvider>
     </UserProvider>
   );
