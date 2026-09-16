@@ -8,7 +8,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pendiente: ["confirmado", "cancelado"],
   confirmado: ["enviado", "entregado", "cancelado"],
   enviado: ["entregado", "cancelado"],
-  entregado: [],
+  entregado: ["cancelado"],
   cancelado: ["pendiente"],
 };
 

@@ -115,6 +115,8 @@ export function validateGiftResource(data: unknown): { valid: boolean; error?: s
   return { valid: true };
 }
 
+export const PAYMENT_METHODS = ["efectivo", "qr", "transferencia"] as const;
+
 export function validateOrder(data: unknown): { valid: boolean; error?: string } {
   if (!data || typeof data !== "object") {
     return { valid: false, error: "Datos inválidos" };
@@ -134,6 +136,9 @@ export function validateOrder(data: unknown): { valid: boolean; error?: string }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) {
       return { valid: false, error: "El email no es válido" };
     }
+  }
+  if (!d.paymentMethod || typeof d.paymentMethod !== "string" || !PAYMENT_METHODS.includes(d.paymentMethod as typeof PAYMENT_METHODS[number])) {
+    return { valid: false, error: "Selecciona un método de pago" };
   }
   if (!Array.isArray(d.items) || d.items.length === 0) {
     return { valid: false, error: "Agrega al menos un producto" };

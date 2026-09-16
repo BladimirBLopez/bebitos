@@ -20,6 +20,10 @@ export async function GET() {
   }
 }
 
+// Esta ruta solo la usa el formulario de Ventas (venta directa/mostrador).
+// A diferencia de un pedido online, una venta directa ya está resuelta en
+// el momento: se entrega el producto ahí mismo, así que nace "entregada"
+// y con el stock ya descontado, sin pasar por "pendiente".
 export async function POST(req: NextRequest) {
   const user = await requireWriteAccess();
   if (!user) {
@@ -91,8 +95,9 @@ export async function POST(req: NextRequest) {
           email,
           phone,
           total,
-          status: "pendiente",
+          status: "entregado",
           origin: "manual",
+          paymentMethod: data.paymentMethod,
           stockDeducted: true,
           clienteId: cliente.id,
           items: { create: orderItemsData },
