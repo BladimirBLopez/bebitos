@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { validateCliente } from "@/lib/validation";
+import { requireWriteAccess } from "@/lib/permissions";
 
 export async function GET() {
   try {
@@ -18,6 +19,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const data = await req.json();
 

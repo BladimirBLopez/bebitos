@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireWriteAccess, requireDeleteAccess } from "@/lib/permissions";
 
 const VALID_STATUSES = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
-// Qué estados puede alcanzar un pedido desde cada estado actual.
-// confirmado puede ir directo a entregado (venta entregada en mano, sin envío).
-// entregado es final. cancelado solo puede reactivarse a pendiente.
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pendiente: ["confirmado", "cancelado"],
   confirmado: ["enviado", "entregado", "cancelado"],
@@ -18,6 +16,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
     const { status } = await req.json();
@@ -48,8 +51,6 @@ export async function PATCH(
 
       let newStockDeducted = existing.stockDeducted;
 
-      // Confirmar un pedido que todavía no había reservado stock (pedidos online
-      // pendientes no reservan nada hasta que se confirman) => reservar ahora.
       if (status === "confirmado" && !existing.stockDeducted) {
         for (const item of existing.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
@@ -72,8 +73,6 @@ export async function PATCH(
         newStockDeducted = true;
       }
 
-      // Cancelar: si el pedido tenía stock reservado, devolverlo. Si nunca lo tomó
-      // (online todavía pendiente), no hay nada que devolver.
       if (status === "cancelado" && existing.stockDeducted) {
         for (const item of existing.items) {
           await tx.product.update({
@@ -102,6 +101,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await requireDeleteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
 

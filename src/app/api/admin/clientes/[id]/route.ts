@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateCliente } from "@/lib/validation";
+import { requireWriteAccess, requireDeleteAccess } from "@/lib/permissions";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
     const data = await req.json();
@@ -38,6 +44,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await requireDeleteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
     await prisma.cliente.delete({ where: { id } });

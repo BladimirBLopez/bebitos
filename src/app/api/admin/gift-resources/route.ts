@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateGiftResource } from "@/lib/validation";
+import { requireWriteAccess } from "@/lib/permissions";
 
 export async function GET() {
   const resources = await prisma.giftResource.findMany({ orderBy: { order: "asc" } });
@@ -8,6 +9,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   const data = await req.json();
 
   const validation = validateGiftResource(data);
@@ -29,6 +35,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   const { items } = await req.json();
 
   if (!Array.isArray(items)) {

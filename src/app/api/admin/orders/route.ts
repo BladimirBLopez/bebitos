@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { validateOrder } from "@/lib/validation";
+import { requireWriteAccess } from "@/lib/permissions";
 
 export async function GET() {
   try {
@@ -20,6 +21,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await requireWriteAccess();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   const data = await req.json();
 
   const validation = validateOrder(data);
@@ -72,7 +78,6 @@ export async function POST(req: NextRequest) {
       const customerName = data.customer.trim();
       const email = data.email?.trim() || null;
 
-      // Buscar cliente existente por teléfono, o crearlo si no existe
       let cliente = await tx.cliente.findFirst({ where: { phone } });
       if (!cliente) {
         cliente = await tx.cliente.create({
