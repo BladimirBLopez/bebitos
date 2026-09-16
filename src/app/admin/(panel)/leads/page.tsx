@@ -5,6 +5,8 @@ import { Download, Trash2, MessageCircle, UserPlus } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 
 type Lead = {
   id: string;
@@ -17,6 +19,8 @@ type Lead = {
 
 export default function LeadsPage() {
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canRemove = canDelete(role);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<Lead | null>(null);
@@ -89,7 +93,6 @@ export default function LeadsPage() {
     showToast("Generando PDF...", "success");
 
     try {
-      // Usar la versión CDN para evitar problemas
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
       script.onload = () => {
@@ -103,15 +106,12 @@ export default function LeadsPage() {
           const colorMarron = [121, 85, 72];
           const colorCrema = [255, 248, 225];
 
-          // HEADER
           doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
           doc.rect(0, 0, pageWidth, 8, "F");
 
-          // Logo (sin clip para evitar errores)
           const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
           doc.addImage(logoUrl, "PNG", margin, 11, 16, 16);
 
-          // Título
           doc.setFontSize(20);
           doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
           doc.text("Bebitos", margin + 20, 24);
@@ -119,7 +119,6 @@ export default function LeadsPage() {
           doc.setTextColor(100, 100, 100);
           doc.text("Reporte de Leads", margin + 20, 31);
 
-          // INFO
           doc.setFontSize(8);
           doc.setTextColor(80, 80, 80);
           const fecha = new Date().toLocaleDateString("es-BO", {
@@ -130,7 +129,6 @@ export default function LeadsPage() {
           doc.text(`Generado: ${fecha}`, margin, 44);
           doc.text(`Total de leads: ${leads.length}`, margin, 50);
 
-          // TABLA
           const headers = ["#", "Nombre", "WhatsApp", "Edad", "Fecha"];
           const rows = leads.map((lead, index) => [
             String(index + 1),
@@ -143,7 +141,6 @@ export default function LeadsPage() {
           let y = 58;
           const colWidths = [10, 50, 35, 30, 35];
 
-          // Cabecera
           doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
           doc.roundedRect(margin, y, pageWidth - margin * 2, 7, 1, 1, "F");
           doc.setTextColor(255, 255, 255);
@@ -154,7 +151,6 @@ export default function LeadsPage() {
             x += colWidths[i];
           });
 
-          // Filas
           doc.setTextColor(50, 50, 50);
           doc.setFontSize(7);
           rows.forEach((row, i) => {
@@ -170,7 +166,6 @@ export default function LeadsPage() {
             });
           });
 
-          // FOOTER
           const finalY = y + 12;
           doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
           doc.setLineWidth(0.5);
@@ -290,13 +285,15 @@ export default function LeadsPage() {
                 <UserPlus className="w-3.5 h-3.5" />
                 {converting === lead.id ? "..." : "Convertir"}
               </button>
-              <button
-                onClick={() => setToDelete(lead)}
-                className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
-                title="Borrar"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {canRemove && (
+                <button
+                  onClick={() => setToDelete(lead)}
+                  className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
+                  title="Borrar"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>

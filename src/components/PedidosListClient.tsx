@@ -7,6 +7,8 @@ import { Plus, ChevronDown, ChevronUp, Trash2, MessageCircle } from "lucide-reac
 import PageHeader from "./PageHeader";
 import ConfirmModal from "./ConfirmModal";
 import { useToast } from "@/lib/toast-context";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 
 type OrderItem = {
   id: string;
@@ -65,6 +67,8 @@ const VARIANT_STYLES: Record<string, string> = {
 export default function PedidosListClient({ orders: initialOrders }: { orders: Order[] }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canRemove = canDelete(role);
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("Todos");
   const [search, setSearch] = useState("");
@@ -269,13 +273,15 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                             {action.label}
                           </button>
                         ))}
-                        <button
-                          onClick={() => setToDelete(order)}
-                          className="text-red-400 hover:text-red-500"
-                          aria-label="Eliminar pedido"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canRemove && (
+                          <button
+                            onClick={() => setToDelete(order)}
+                            className="text-red-400 hover:text-red-500"
+                            aria-label="Eliminar pedido"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

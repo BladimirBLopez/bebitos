@@ -23,6 +23,8 @@ import PageHeader from "@/components/PageHeader";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
 import { clienteSchema, ClienteFormValues } from "@/lib/schemas/cliente";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 import { FormInput, FormTextarea } from "@/components/form/FormField";
 
 type Cliente = {
@@ -39,6 +41,8 @@ const emptyForm: ClienteFormValues = { name: "", phone: "", email: "", address: 
 
 export default function AdminClientesPage() {
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canRemove = canDelete(role);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -231,12 +235,14 @@ export default function AdminClientesPage() {
                 >
                   <Edit className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => setToDelete(cliente)}
-                  className="flex items-center gap-1 text-sm text-red-600 hover:bg-red-50 p-2 rounded"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canRemove && (
+                  <button
+                    onClick={() => setToDelete(cliente)}
+                    className="flex items-center gap-1 text-sm text-red-600 hover:bg-red-50 p-2 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -248,7 +254,6 @@ export default function AdminClientesPage() {
           <Dialog.Overlay className="fixed inset-0 bg-ink/40 backdrop-blur-[2px] z-50" />
           <Dialog.Content className="fixed z-[51] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-panel-surface rounded-2xl shadow-xl max-h-[90vh] flex flex-col focus:outline-none overflow-hidden">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col min-h-0">
-              {/* Header */}
               <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b border-panel-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-brown-dark/10 flex items-center justify-center shrink-0">
@@ -273,7 +278,6 @@ export default function AdminClientesPage() {
                 </Dialog.Close>
               </div>
 
-              {/* Body */}
               <div className="px-6 py-5 space-y-4 overflow-y-auto">
                 <FormInput
                   label="Nombre completo"
@@ -322,7 +326,6 @@ export default function AdminClientesPage() {
                 />
               </div>
 
-              {/* Footer */}
               <div className="flex gap-2 px-6 py-4 border-t border-panel-border bg-panel-bg/50">
                 <Dialog.Close asChild>
                   <button

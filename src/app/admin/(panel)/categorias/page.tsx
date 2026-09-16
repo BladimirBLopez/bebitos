@@ -10,6 +10,8 @@ import ConfirmModal from "@/components/ConfirmModal";
 import PageHeader from "@/components/PageHeader";
 import { FormInput } from "@/components/form/FormField";
 import { categoriaSchema, CategoriaFormValues } from "@/lib/schemas/categoria";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 
 type Category = { id: string; name: string; order: number };
 
@@ -117,6 +119,8 @@ function EditCategoryModal({
 
 export default function CategoriasPage() {
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canRemove = canDelete(role);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -278,12 +282,14 @@ export default function CategoriasPage() {
               >
                 <Pencil className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setToDelete(c)}
-                className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-500 shrink-0"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {canRemove && (
+                <button
+                  onClick={() => setToDelete(c)}
+                  className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-500 shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>

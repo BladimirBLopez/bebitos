@@ -9,6 +9,8 @@ import ToggleSwitch from "./ToggleSwitch";
 import PageHeader from "./PageHeader";
 import Select from "./ui/Select";
 import { useToast } from "@/lib/toast-context";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 
 const CLOUD_NAME = "dkq95jus0";
 
@@ -37,6 +39,8 @@ export default function ProductsListClient({
 }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canRemove = canDelete(role);
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
@@ -203,12 +207,14 @@ export default function ProductsListClient({
           >
             Desactivar
           </button>
-          <button
-            onClick={() => setBulkAction("eliminar")}
-            className="bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-          >
-            Eliminar
-          </button>
+          {canRemove && (
+            <button
+              onClick={() => setBulkAction("eliminar")}
+              className="bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+            >
+              Eliminar
+            </button>
+          )}
         </div>
       )}
 
@@ -306,13 +312,15 @@ export default function ProductsListClient({
                   />
                 </div>
 
-                <button
-                  onClick={() => setToDelete(p)}
-                  className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
-                  title="Borrar"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canRemove && (
+                  <button
+                    onClick={() => setToDelete(p)}
+                    className="text-red-300 hover:text-red-500 transition-colors p-1.5 shrink-0"
+                    title="Borrar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             );
           })}
