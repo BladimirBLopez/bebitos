@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark } from "lucide-react";
+import Link from "next/link";
+import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark, CheckCircle2, ArrowRight } from "lucide-react";
 import PageHeader from "./PageHeader";
 import { useToast } from "@/lib/toast-context";
 
@@ -13,6 +13,12 @@ const PAYMENT_METHODS = [
   { value: "qr", label: "QR", icon: QrCode },
   { value: "transferencia", label: "Transferencia", icon: Landmark },
 ] as const;
+
+const PAYMENT_LABELS: Record<string, string> = {
+  efectivo: "Efectivo",
+  qr: "QR",
+  transferencia: "Transferencia",
+};
 
 type ProductOption = {
   id: string;
@@ -41,8 +47,16 @@ type ClienteMatch = {
   lastOrderAt: string | null;
 };
 
+type CompletedSale = {
+  orderId: string;
+  items: CartLine[];
+  total: number;
+  customer: string;
+  phone: string;
+  paymentMethod: string;
+};
+
 export default function VentaForm({ products }: { products: ProductOption[] }) {
-  const router = useRouter();
   const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
@@ -55,6 +69,7 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
   const [error, setError] = useState("");
   const [clienteMatch, setClienteMatch] = useState<ClienteMatch | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);
+  const [completedSale, setCompletedSale] = useState<CompletedSale | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const filtered =
@@ -139,6 +154,18 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
     setCart((prev) => prev.filter((l) => l.productId !== productId));
   }
 
+  function resetForm() {
+    setCart([]);
+    setCustomer("");
+    setPhone("");
+    setEmail("");
+    setPaymentMethod("");
+    setClienteMatch(null);
+    setError("");
+    setCompletedSale(null);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -174,12 +201,70 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
       }
 
       showToast("Venta registrada correctamente", "success");
-      router.push("/admin/pedidos");
-      router.refresh();
-    } catch (err) {
+      setCompletedSale({
+        orderId: data.id,
+        items: cart,
+        total,
+        customer,
+        phone,
+        paymentMethod,
+      });
+      setSubmitting(false);
+    } catch {
       setError("Error de conexión");
       setSubmitting(false);
     }
+  }
+
+  if (completedSale) {
+    return (
+      <div>
+        <PageHeader title="Nueva venta" meta="Registra un pedido y descuenta el stock automáticamente" />
+
+        <div className="max-w-lg mx-auto bg-panel-surface border border-panel-border rounded-xl p-6 text-center">
+          <div className="w-14 h-14 rounded-full bg-green/15 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 className="w-7 h-7 text-green-dark" />
+          </div>
+          <h2 className="font-display font-bold text-xl text-panel-ink mb-1">
+            Venta registrada
+          </h2>
+          <p className="text-sm text-panel-ink-soft mb-5">
+            {completedSale.customer} · {PAYMENT_LABELS[completedSale.paymentMethod]}
+          </p>
+
+          <div className="text-left bg-panel-bg rounded-lg p-4 mb-5">
+            {completedSale.items.map((line) => (
+              <div key={line.productId} className="flex items-center justify-between text-sm py-1">
+                <span className="text-panel-ink">
+                  {line.quantity}× {line.name}
+                </span>
+                <span className="text-panel-ink-soft">
+                  Bs. {(line.price * line.quantity).toFixed(2)}
+                </span>
+              </div>
+            ))}
+            <div className="flex items-center justify-between pt-2 mt-2 border-t border-panel-border">
+              <span className="font-semibold text-panel-ink text-sm">Total</span>
+              <span className="font-bold text-brown-dark">Bs. {completedSale.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={resetForm}
+            className="w-full bg-green hover:bg-green-dark text-white font-semibold text-sm py-3 rounded-lg transition-colors mb-3"
+          >
+            Registrar otra venta
+          </button>
+          <Link
+            href="/admin/pedidos"
+            className="inline-flex items-center gap-1 text-sm text-panel-ink-soft hover:text-panel-ink"
+          >
+            Ver este pedido en Pedidos <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
