@@ -2,11 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark } from "lucide-react";
 import PageHeader from "./PageHeader";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
+
+const PAYMENT_METHODS = [
+  { value: "efectivo", label: "Efectivo", icon: Banknote },
+  { value: "qr", label: "QR", icon: QrCode },
+  { value: "transferencia", label: "Transferencia", icon: Landmark },
+] as const;
 
 type ProductOption = {
   id: string;
@@ -44,6 +50,7 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
   const [customer, setCustomer] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [clienteMatch, setClienteMatch] = useState<ClienteMatch | null>(null);
@@ -134,6 +141,10 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
       setError("Agrega al menos un producto al carrito");
       return;
     }
+    if (!paymentMethod) {
+      setError("Selecciona el método de pago");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -144,6 +155,7 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
           customer,
           phone,
           email: email || undefined,
+          paymentMethod,
           items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
         }),
       });
@@ -351,6 +363,31 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
               />
+            </div>
+
+            <div>
+              <label className="text-xs text-panel-ink-soft block mb-1.5">Método de pago *</label>
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENT_METHODS.map((m) => {
+                  const Icon = m.icon;
+                  const active = paymentMethod === m.value;
+                  return (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(m.value)}
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-lg border text-xs font-medium transition-colors ${
+                        active
+                          ? "bg-brown-dark text-cream border-brown-dark"
+                          : "bg-panel-bg text-panel-ink-soft border-panel-border hover:bg-panel-border/40"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <button
