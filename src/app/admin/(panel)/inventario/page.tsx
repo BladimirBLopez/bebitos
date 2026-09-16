@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Box, Plus, Minus, X, Save } from "lucide-react";
+import { Box, Plus, Minus, X, Save, AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 export default function AdminInventarioPage() {
@@ -12,6 +12,7 @@ export default function AdminInventarioPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [stockToAdd, setStockToAdd] = useState(0);
+  const [threshold, setThreshold] = useState(5);
 
   async function fetchProducts() {
     setLoading(true);
@@ -44,11 +45,11 @@ export default function AdminInventarioPage() {
       const res = await fetch(`/api/admin/products/${selectedProduct.id}/stock`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock: stockToAdd }),
+        body: JSON.stringify({ stock: stockToAdd, lowStockThreshold: threshold }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error al hacer de stock");
+        setError(data.error || "Error al actualizar el stock");
         return;
       }
       setShowModal(false);
@@ -86,30 +87,40 @@ export default function AdminInventarioPage() {
           <p className="text-panel-ink-soft">Cargando...</p>
         ) : (
           <>
-            {products.map((product) => (
-              <div key={product.id} className="bg-panel-surface rounded-xl border border-panel-border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <p className="font-sans font-bold text-panel-ink">{product.name}</p>
-                  <p className="text-sm text-panel-ink-soft">{product.category}</p>
+            {products.map((product) => {
+              const isLow = product.stock > 0 && product.stock <= (product.lowStockThreshold ?? 5);
+              return (
+                <div key={product.id} className="bg-panel-surface rounded-xl border border-panel-border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="font-sans font-bold text-panel-ink">{product.name}</p>
+                    <p className="text-sm text-panel-ink-soft">{product.category}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {isLow && (
+                      <span className="flex items-center gap-1 text-[11px] font-medium bg-amber-soft text-amber px-2 py-0.5 rounded-full">
+                        <AlertTriangle className="w-3 h-3" />
+                        Stock bajo
+                      </span>
+                    )}
+                    <p className={`font-bold ${product.inStock ? "text-green-600" : "text-red-600"}`}>
+                      {product.stock} en stock
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setStockToAdd(product.stock);
+                        setThreshold(product.lowStockThreshold ?? 5);
+                        setShowModal(true);
+                      }}
+                      className="flex items-center gap-1 text-sm text-brown-dark hover:bg-panel-bg p-2 rounded"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Actualizar
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <p className={`font-bold ${product.inStock ? "text-green-600" : "text-red-600"}`}>
-                    {product.stock} en stock
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setStockToAdd(0);
-                      setShowModal(true);
-                    }}
-                    className="flex items-center gap-1 text-sm text-brown-dark hover:bg-panel-bg p-2 rounded"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Actualizar
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
@@ -128,20 +139,21 @@ export default function AdminInventarioPage() {
                 </Dialog.Close>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <p className="text-sm text-panel-ink-soft">{selectedProduct?.name}</p>
-                <div className="relative">
+                <div>
+                  <label className="text-xs font-medium text-ink/60 block mb-1">Stock actual</label>
                   <input
                     type="number"
                     value={stockToAdd}
-                    onChange={(e) => setStockToAdd(parseInt(e.target.value))}
+                    onChange={(e) => setStockToAdd(parseInt(e.target.value) || 0)}
                     className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
                     placeholder="Nuevo stock"
                   />
                   <div className="flex gap-2 mt-2">
                     <button
                       type="button"
-                      onClick={() => setStockToAdd((prev) => prev - 1)}
+                      onClick={() => setStockToAdd((prev) => Math.max(0, prev - 1))}
                       className="flex items-center gap-1 text-sm text-panel-ink-soft bg-panel-bg p-2 rounded"
                     >
                       <Minus className="w-4 h-4" />
@@ -157,6 +169,22 @@ export default function AdminInventarioPage() {
                     </button>
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-xs font-medium text-ink/60 block mb-1">
+                    Avisarme cuando quede en (unidades)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={threshold}
+                    onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
+                    className="w-full border border-panel-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
+                  />
+                  <p className="text-[11px] text-ink/40 mt-1">
+                    Aparecerá como "stock bajo" en el Dashboard cuando llegue a este número o menos.
+                  </p>
+                </div>
               </div>
 
               <button
@@ -164,7 +192,7 @@ export default function AdminInventarioPage() {
                 className="w-full mt-4 bg-brown-dark hover:bg-ink text-cream font-semibold py-2.5 rounded-lg"
               >
                 <Save className="w-4 h-4 inline mr-2" />
-                Actualizar
+                Guardar
               </button>
             </form>
           </Dialog.Content>

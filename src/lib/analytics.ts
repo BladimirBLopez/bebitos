@@ -9,6 +9,8 @@ export type DashboardStats = {
   totalRevenue: number;
   enPromo: number;
   sinStock: number;
+  pendingOrders: number;
+  lowStockProducts: { id: string; name: string; stock: number }[];
   recentOrders: {
     id: string;
     customer: string;
@@ -48,7 +50,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue,
     enPromo,
     sinStock,
+    pendingOrders,
     recentOrders,
+    stockCandidates,
   ] = await Promise.all([
     prisma.product.count(),
     prisma.lead.count(),
@@ -59,6 +63,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }),
     prisma.product.count({ where: { isPromo: true } }),
     prisma.product.count({ where: { inStock: false } }),
+    prisma.order.count({ where: { status: "pendiente" } }),
     prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
@@ -70,7 +75,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         createdAt: true,
       },
     }),
+    prisma.product.findMany({
+      where: { stock: { gt: 0 } },
+      select: { id: true, name: true, stock: true, lowStockThreshold: true },
+      orderBy: { stock: "asc" },
+    }),
   ]);
+
+  // Productos con stock por debajo de su propio umbral (se filtra en JS
+  // porque Prisma no compara dos columnas de la misma fila directamente)
+  const lowStockProducts = stockCandidates
+    .filter((p) => p.stock <= p.lowStockThreshold)
+    .slice(0, 8)
+    .map((p) => ({ id: p.id, name: p.name, stock: p.stock }));
 
   // Ventas por mes (últimos 6 meses)
   const sixMonthsAgo = new Date();
@@ -189,6 +206,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue: totalRevenue._sum.total || 0,
     enPromo,
     sinStock,
+    pendingOrders,
+    lowStockProducts,
     recentOrders,
     salesByMonth: formattedSales,
     topProducts,

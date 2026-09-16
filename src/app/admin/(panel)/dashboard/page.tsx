@@ -4,6 +4,7 @@ import MetricCard from "@/components/dashboard/MetricCard";
 import SalesChart from "@/components/dashboard/SalesChart";
 import TopProductsChart from "@/components/dashboard/TopProductsChart";
 import LeadsPieChart from "@/components/dashboard/LeadsPieChart";
+import AlertBanner from "@/components/dashboard/AlertBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export default async function DashboardPage() {
         <h1 className="text-3xl font-bold text-panel-ink">Panel de Control</h1>
         <p className="text-panel-ink-soft mt-1">Vista general de tu tienda Bebitos</p>
       </div>
+      <AlertBanner pendingOrders={stats.pendingOrders} lowStockProducts={stats.lowStockProducts} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <MetricCard
