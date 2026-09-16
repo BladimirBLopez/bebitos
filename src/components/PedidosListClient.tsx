@@ -24,6 +24,7 @@ type Order = {
   phone: string;
   total: number;
   status: string;
+  origin: string;
   items: OrderItem[];
   createdAt: string | Date;
 };
@@ -36,6 +37,16 @@ const STATUS_STYLES: Record<string, string> = {
   enviado: "bg-ink-soft-bg text-ink",
   entregado: "bg-green-soft text-green-dark",
   cancelado: "bg-red-soft text-red",
+};
+
+const ORIGIN_LABELS: Record<string, string> = {
+  manual: "🏪 Venta directa",
+  online: "🌐 Pedido online",
+};
+
+const ORIGIN_STYLES: Record<string, string> = {
+  manual: "bg-panel-bg text-panel-ink-soft",
+  online: "bg-panel-bg text-panel-ink-soft",
 };
 
 type Action = { label: string; status: string; variant: "primary" | "secondary" | "danger" };
@@ -71,6 +82,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const canRemove = canDelete(role);
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("Todos");
+  const [originFilter, setOriginFilter] = useState("Todos");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<Order | null>(null);
@@ -78,12 +90,16 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
+  const manualCount = orders.filter((o) => o.origin === "manual").length;
+  const onlineCount = orders.filter((o) => o.origin === "online").length;
+
   const filtered = orders.filter((o) => {
     const matchesStatus = statusFilter === "Todos" || o.status === statusFilter;
+    const matchesOrigin = originFilter === "Todos" || o.origin === originFilter;
     const q = search.trim().toLowerCase();
     const matchesSearch =
       q === "" || o.customer.toLowerCase().includes(q) || o.phone.includes(q);
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesOrigin && matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -138,7 +154,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
     <div>
       <PageHeader
         title="Pedidos"
-        meta={`${orders.length} pedido${orders.length === 1 ? "" : "s"} registrado${orders.length === 1 ? "" : "s"}`}
+        meta={`${orders.length} pedido${orders.length === 1 ? "" : "s"} · ${manualCount} en tienda, ${onlineCount} online`}
         action={
           <Link
             href="/admin/ventas"
@@ -160,6 +176,29 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
           placeholder="Buscar por cliente o teléfono..."
           className="w-full bg-panel-surface border border-panel-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
         />
+      </div>
+
+      <div className="flex gap-2 flex-wrap mb-2">
+        {[
+          { value: "Todos", label: "Todos" },
+          { value: "manual", label: "🏪 En tienda" },
+          { value: "online", label: "🌐 Online" },
+        ].map((o) => (
+          <button
+            key={o.value}
+            onClick={() => {
+              setOriginFilter(o.value);
+              setPage(1);
+            }}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+              originFilter === o.value
+                ? "bg-panel-ink text-white"
+                : "bg-panel-surface text-panel-ink-soft border border-panel-border hover:bg-panel-bg"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex gap-2 flex-wrap mb-4">
@@ -203,14 +242,19 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                     <p className="text-sm font-semibold text-panel-ink truncate">
                       {order.customer}
                     </p>
-                    <p className="text-xs text-panel-ink-soft">
-                      {new Date(order.createdAt).toLocaleDateString("es", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}{" "}
-                      · {order.items.length} producto{order.items.length === 1 ? "" : "s"}
-                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${ORIGIN_STYLES[order.origin] || "bg-panel-bg text-panel-ink-soft"}`}>
+                        {ORIGIN_LABELS[order.origin] || order.origin}
+                      </span>
+                      <p className="text-xs text-panel-ink-soft">
+                        {new Date(order.createdAt).toLocaleDateString("es", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}{" "}
+                        · {order.items.length} producto{order.items.length === 1 ? "" : "s"}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span
