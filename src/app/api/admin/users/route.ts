@@ -3,15 +3,15 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAdminOnly } from "@/lib/permissions";
 
 export async function GET() {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+  const user = await requireAdminOnly();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para ver esta sección" }, { status: 403 });
+  }
 
+  try {
     const users = await prisma.user.findMany({
       select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
     });
@@ -25,12 +25,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+  const currentUser = await requireAdminOnly();
+  if (!currentUser) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
 
+  try {
     const { name, email, password, role } = await req.json();
 
     if (!name || !email || !password) {

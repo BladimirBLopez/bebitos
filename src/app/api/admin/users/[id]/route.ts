@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAdminOnly } from "@/lib/permissions";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+  const currentUser = await requireAdminOnly();
+  if (!currentUser) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
 
+  try {
     const { id } = await params;
     const { name, email, password, role } = await req.json();
 
@@ -43,12 +43,12 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+  const currentUser = await requireAdminOnly();
+  if (!currentUser) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
 
+  try {
     const { id } = await params;
 
     if (currentUser.id === id) {
