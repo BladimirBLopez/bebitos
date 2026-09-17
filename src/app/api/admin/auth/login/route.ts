@@ -40,10 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email y contraseña requeridos" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    const isValid = user && user.active ? await bcrypt.compare(password, user.password) : false;
-
-    if (!isValid) {
+    async function registerFailedAttempt() {
       const windowExpired =
         !existingAttempt || now.getTime() - existingAttempt.firstAttempt.getTime() > WINDOW_MS;
 
@@ -59,8 +56,22 @@ export async function POST(req: NextRequest) {
           data: { attempts: { increment: 1 } },
         });
       }
+    }
 
+    // Chequeo explícito y temprano: a partir de acá TypeScript sabe que
+    // "user" no es null en el resto de la función.
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || !user.active) {
+      await registerFailedAttempt();
       // Mensaje único a propósito: no revela si el correo existe o no.
+      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      await registerFailedAttempt();
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
