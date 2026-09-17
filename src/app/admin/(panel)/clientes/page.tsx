@@ -26,6 +26,7 @@ import { clienteSchema, ClienteFormValues } from "@/lib/schemas/cliente";
 import { useCurrentUser } from "@/lib/user-context";
 import { canDelete } from "@/lib/roles";
 import { FormInput, FormTextarea } from "@/components/form/FormField";
+import { SkeletonRow } from "@/components/ui/Skeleton";
 
 type Cliente = {
   id: string;
@@ -191,7 +192,11 @@ export default function AdminClientesPage() {
       )}
 
       {loading ? (
-        <p className="text-panel-ink-soft text-sm">Cargando...</p>
+        <div className="grid gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
         <p className="text-panel-ink-soft text-sm text-center py-10">
           {clientes.length === 0
