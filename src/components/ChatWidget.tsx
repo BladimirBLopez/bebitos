@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
+import { X, Send, Loader2 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string; time: string };
 
@@ -15,6 +15,14 @@ const GREETING: Message = {
   content: "¡Hola! 👋 Soy el asistente de Bebitos. Preguntame por precios, stock o cualquier producto de la tienda.",
   time: nowLabel(),
 };
+
+function WhatsAppIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="currentColor">
+      <path d="M16.004 3.2c-7.07 0-12.8 5.73-12.8 12.8 0 2.26.6 4.38 1.63 6.22L3.2 28.8l6.77-1.6a12.73 12.73 0 0 0 6.03 1.53h.01c7.07 0 12.8-5.73 12.8-12.8s-5.73-12.73-12.81-12.73zm0 23.15h-.01a10.5 10.5 0 0 1-5.36-1.47l-.38-.23-3.99.94.95-3.88-.25-.4a10.44 10.44 0 0 1-1.6-5.57c0-5.79 4.7-10.5 10.49-10.5 2.8 0 5.43 1.1 7.41 3.08a10.4 10.4 0 0 1 3.08 7.42c0 5.79-4.71 10.61-10.34 10.61zm5.75-7.85c-.32-.16-1.87-.92-2.16-1.03-.29-.1-.5-.16-.71.16-.21.32-.81 1.03-1 1.24-.18.21-.37.24-.68.08-.32-.16-1.34-.49-2.55-1.57-.94-.84-1.58-1.87-1.76-2.19-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.18.21-.32.32-.53.11-.21.05-.4-.03-.55-.08-.16-.71-1.71-.98-2.34-.26-.62-.52-.54-.71-.55h-.6c-.21 0-.55.08-.84.4-.29.32-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.51 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.87-.76 2.13-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.6-.37z" />
+    </svg>
+  );
+}
 
 export default function ChatWidget() {
   const pathname = usePathname();
@@ -80,37 +88,35 @@ export default function ChatWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-[200] flex flex-col items-end gap-3">
       {open && (
-        <div className="w-[calc(100vw-2rem)] max-w-sm h-[75dvh] max-h-[560px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-black/5">
-          {/* Header estilo WhatsApp Business */}
-          <div className="bg-[#075E54] px-4 py-3 flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
+        <div className="w-[calc(100vw-2rem)] max-w-sm h-[75dvh] max-h-[560px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 flex flex-col overflow-hidden">
+          <div className="bg-[#008069] px-4 py-3 flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+              <WhatsAppIcon className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm leading-tight truncate">Asistente Bebitos</p>
-              <p className="text-white/70 text-[11px] leading-tight">en línea</p>
+              <p className="text-white/75 text-[11px] leading-tight">en línea</p>
             </div>
             <button
               onClick={() => setOpen(false)}
               aria-label="Cerrar chat"
-              className="text-white/80 hover:text-white p-1 shrink-0"
+              className="text-white/85 hover:text-white p-1 shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Fondo de conversación tipo WhatsApp */}
           <div
             ref={scrollRef}
             className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1.5"
-            style={{ backgroundColor: "#ECE5DD" }}
+            style={{ backgroundColor: "#E5DDD5" }}
           >
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm leading-snug shadow-sm ${
                     m.role === "user"
-                      ? "bg-[#DCF8C6] text-[#111b21] rounded-tr-none"
+                      ? "bg-[#D9FDD3] text-[#111b21] rounded-tr-none"
                       : "bg-white text-[#111b21] rounded-tl-none"
                   }`}
                 >
@@ -134,23 +140,22 @@ export default function ChatWidget() {
             )}
           </div>
 
-          {/* Handoff a WhatsApp, dentro del propio chat */}
           {whatsapp && (
             <a
               href={`https://wa.me/${whatsapp.startsWith("591") ? whatsapp : "591" + whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-3 mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-[#075E54] bg-[#075E54]/10 hover:bg-[#075E54]/20 rounded-full py-1.5 transition-colors shrink-0"
+              className="mx-3 mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#008069] bg-[#25D366]/15 hover:bg-[#25D366]/25 rounded-full py-1.5 transition-colors shrink-0"
             >
+              <WhatsAppIcon className="w-3.5 h-3.5" />
               Prefiero hablar por WhatsApp
             </a>
           )}
 
-          {/* Input estilo WhatsApp */}
           <form
             onSubmit={sendMessage}
             className="flex items-center gap-2 p-2.5 shrink-0"
-            style={{ backgroundColor: "#F0F0F0" }}
+            style={{ backgroundColor: "#F0F2F5" }}
           >
             <input
               value={input}
@@ -174,9 +179,9 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Cerrar chat" : "Abrir chat"}
-        className="w-14 h-14 rounded-full bg-[#25D366] text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+        className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center hover:scale-105 transition-transform"
       >
-        {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {open ? <X className="w-7 h-7" /> : <WhatsAppIcon className="w-8 h-8" />}
       </button>
     </div>
   );
