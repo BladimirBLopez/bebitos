@@ -77,6 +77,16 @@ function formatPrice(price: number) {
   return `Bs. ${Number(price).toFixed(0)}`;
 }
 
+function StoreLogoBadge() {
+  return (
+    <div className="h-10 min-w-[86px] px-3 rounded-2xl bg-[#F8F2EA] border border-white/20 flex items-center justify-center shadow-sm">
+      <span className="font-display text-[20px] leading-none font-semibold text-[#B58B72] tracking-tight">
+        Bebitos
+      </span>
+    </div>
+  );
+}
+
 export default function ChatWidget() {
   const pathname = usePathname();
 
@@ -234,9 +244,7 @@ export default function ChatWidget() {
 
           {/* CABECERA */}
           <div className="bg-[#008069] px-4 py-3 flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
-              <WhatsAppIcon className="w-6 h-6 text-white" />
-            </div>
+            <StoreLogoBadge />
 
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm leading-tight">
@@ -440,10 +448,26 @@ export default function ChatWidget() {
               href={whatsappUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-3 mt-2 py-1.5 rounded-full bg-[#25D366]/15 text-[#008069] flex items-center justify-center gap-1.5 text-[11px] font-semibold shrink-0"
+              className="mx-3 mt-2 px-3 py-2.5 rounded-2xl bg-white border border-[#25D366]/20 shadow-sm flex items-center justify-between gap-3 shrink-0 hover:bg-[#FAFFFB] transition-colors"
             >
-              <WhatsAppIcon className="w-3.5 h-3.5" />
-              Hablar con una persona
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <WhatsAppIcon className="w-4.5 h-4.5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[12px] font-bold text-[#111b21] leading-tight">
+                    Hablar con una persona
+                  </p>
+                  <p className="text-[10px] text-[#008069]/80 leading-tight mt-0.5">
+                    Atención por WhatsApp
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-8 h-8 rounded-full bg-[#25D366]/12 flex items-center justify-center shrink-0">
+                <ChevronRight className="w-4 h-4 text-[#008069]" />
+              </div>
             </a>
           )}
 
