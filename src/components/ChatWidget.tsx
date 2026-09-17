@@ -2,18 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { X, Send, Loader2, ChevronRight, Tag } from "lucide-react";
+import {
+  X,
+  Send,
+  Loader2,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
+
+const CLOUD_NAME = "dkq95jus0";
 
 type ChatProduct = {
-  name: string;
   slug: string;
+  name: string;
+  image: string;
   price: number;
   originalPrice: number | null;
   isPromo: boolean;
-  image: string;
-  category: string;
-  description: string;
-  stock: number;
+  showPrice: boolean;
 };
 
 type Message = {
@@ -21,6 +27,7 @@ type Message = {
   content: string;
   time: string;
   products?: ChatProduct[];
+  hasMore?: boolean;
 };
 
 function nowLabel() {
@@ -33,27 +40,50 @@ function nowLabel() {
 const GREETING: Message = {
   role: "assistant",
   content:
-    "¡Hola! 👋 Soy el asistente de Bebitos. ¿Qué estás buscando para tu bebé?",
+    "¡Hola! 👋 ¿Qué estás buscando para tu bebé?",
   time: nowLabel(),
 };
 
-function WhatsAppIcon({ className = "" }: { className?: string }) {
+function WhatsAppIcon({
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 32 32" className={className} fill="currentColor">
-      <path d="M16.004 3.2c-7.07 0-12.8 5.73-12.8 12.8 0 2.26.6 4.38 1.63 6.22L3.2 28.8l6.77-1.6a12.73 12.73 0 0 0 6.03 1.53h.01c7.07 0 12.8-5.73 12.8-12.8s-5.73-12.73-12.81-12.73zm0 23.15h-.01a10.5 10.5 0 0 1-5.36-1.47l-.38-.23-3.99.94.95-3.88-.25-.4a10.44 10.44 0 0 1-1.6-5.57c0-5.79 4.7-10.5 10.49-10.5 2.8 0 5.43 1.1 7.41 3.08a10.4 10.4 0 0 1 3.08 7.42c0 5.79-4.71 10.61-10.34 10.61zm5.75-7.85c-.32-.16-1.87-.92-2.16-1.03-.29-.1-.5-.16-.71.16-.21.32-.81 1.03-1 1.24-.18.21-.37.24-.68.08-.32-.16-1.34-.49-2.55-1.57-.94-.84-1.58-1.87-1.76-2.19-.18-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.18.21-.32.32-.53.11-.21.05-.4-.03-.55-.08-.16-.71-1.71-.98-2.34-.26-.62-.52-.54-.71-.55h-.6c-.21 0-.55.08-.84.4-.29.32-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.51 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.87-.76 2.13-1.5.26-.74.26-1.37.18-1.5-.08-.13-.29-.21-.6-.37z" />
+    <svg
+      viewBox="0 0 32 32"
+      className={className}
+      fill="currentColor"
+    >
+      <path d="M16.004 3.2c-7.07 0-12.8 5.73-12.8 12.8 0 2.26.6 4.38 1.63 6.22L3.2 28.8l6.77-1.6a12.73 12.73 0 0 0 6.03 1.53h.01c7.07 0 12.8-5.73 12.8-12.8s-5.73-12.73-12.81-12.73zm0 23.15h-.01a10.5 10.5 0 0 1-5.36-1.47l-.38-.23-3.99.94.95-3.88-.25-.4a10.44 10.44 0 0 1-1.6-5.57c0-5.79 4.7-10.5 10.49-10.5 2.8 0 5.43 1.1 7.41 3.08a10.4 10.4 0 0 1 3.08 7.42c0 5.79-4.71 10.61-10.34 10.61z" />
     </svg>
   );
 }
 
-function formatPrice(value: number) {
-  return `Bs. ${Number(value).toFixed(0)}`;
+function getImageUrl(image: string) {
+  if (!image) return "";
+
+  if (
+    image.startsWith("http://") ||
+    image.startsWith("https://")
+  ) {
+    return image;
+  }
+
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_180,h_180,c_fill,f_auto,q_auto/${image}`;
+}
+
+function formatPrice(price: number) {
+  return `Bs. ${Number(price).toFixed(0)}`;
 }
 
 export default function ChatWidget() {
   const pathname = usePathname();
 
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [messages, setMessages] =
+    useState<Message[]>([GREETING]);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
@@ -63,7 +93,9 @@ export default function ChatWidget() {
   useEffect(() => {
     fetch("/api/public/settings")
       .then((res) => res.json())
-      .then((data) => setWhatsapp(data.whatsapp || ""))
+      .then((data) =>
+        setWhatsapp(data.whatsapp || "")
+      )
       .catch(() => {});
   }, []);
 
@@ -72,37 +104,42 @@ export default function ChatWidget() {
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, open, loading]);
+  }, [messages, loading, open]);
 
   useEffect(() => {
     if (!open) return;
 
-    const bodyOverflow = document.body.style.overflow;
-    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow =
+      document.body.style.overflow;
+
+    const htmlOverflow =
+      document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.overflow =
+      "hidden";
 
     return () => {
       document.body.style.overflow = bodyOverflow;
-      document.documentElement.style.overflow = htmlOverflow;
+      document.documentElement.style.overflow =
+        htmlOverflow;
     };
   }, [open]);
 
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
-  function buildWhatsappHref(productName?: string) {
+  function whatsappUrl() {
     if (!whatsapp) return "#";
 
     const number = whatsapp.startsWith("591")
       ? whatsapp
       : `591${whatsapp}`;
 
-    const text = productName
-      ? `Hola Bebitos 👋 Me interesa "${productName}". ¿Me brindan más información?`
-      : "Hola Bebitos 👋 Quiero información sobre sus productos.";
-
-    return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(
+      "Hola Bebitos 👋 Vengo desde el asistente de la tienda y quisiera recibir ayuda."
+    )}`;
   }
 
   async function sendText(text: string) {
@@ -124,48 +161,57 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: nextMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: nextMessages.map(
+            ({ role, content }) => ({
+              role,
+              content,
+            })
+          ),
         }),
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok) {
-        setMessages((m) => [
-          ...m,
+      if (!response.ok) {
+        setMessages((current) => [
+          ...current,
           {
             role: "assistant",
-            content: data.error || "No pude responder. Intenta nuevamente.",
+            content:
+              data.error ||
+              "No pude responder. Intenta nuevamente.",
             time: nowLabel(),
           },
         ]);
+
         return;
       }
 
-      setMessages((m) => [
-        ...m,
+      setMessages((current) => [
+        ...current,
         {
           role: "assistant",
           content: data.reply,
           time: nowLabel(),
-          products: Array.isArray(data.products) ? data.products : [],
+          products: Array.isArray(data.products)
+            ? data.products
+            : [],
+          hasMore: Boolean(data.hasMore),
         },
       ]);
     } catch {
-      setMessages((m) => [
-        ...m,
+      setMessages((current) => [
+        ...current,
         {
           role: "assistant",
-          content: "Hubo un problema de conexión. Intenta nuevamente.",
+          content:
+            "Hubo un problema de conexión. Intenta nuevamente.",
           time: nowLabel(),
         },
       ]);
@@ -174,9 +220,11 @@ export default function ChatWidget() {
     }
   }
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    await sendText(input);
+  function sendMessage(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
+    sendText(input);
   }
 
   return (
@@ -184,17 +232,19 @@ export default function ChatWidget() {
       {open && (
         <div className="w-[calc(100vw-2rem)] max-w-sm h-[58dvh] min-h-[420px] max-h-[500px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 flex flex-col overflow-hidden">
 
+          {/* CABECERA */}
           <div className="bg-[#008069] px-4 py-3 flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
               <WhatsAppIcon className="w-6 h-6 text-white" />
             </div>
 
-            <div className="flex-1">
-              <p className="text-white font-semibold text-sm">
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm leading-tight">
                 Asistente Bebitos
               </p>
-              <p className="text-white/75 text-[11px]">
-                en línea
+
+              <p className="text-white/75 text-[11px] mt-0.5">
+                Asistente virtual
               </p>
             </div>
 
@@ -207,148 +257,169 @@ export default function ChatWidget() {
             </button>
           </div>
 
+          {/* CONVERSACIÓN */}
           <div
             ref={scrollRef}
             className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3"
-            style={{ backgroundColor: "#E5DDD5" }}
+            style={{
+              backgroundColor: "#E9E2DC",
+            }}
           >
-            {messages.map((m, i) => (
-              <div key={i} className="space-y-2">
-
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className="space-y-2"
+              >
+                {/* MENSAJE */}
                 <div
                   className={`flex ${
-                    m.role === "user"
+                    message.role === "user"
                       ? "justify-end"
                       : "justify-start"
                   }`}
                 >
                   <div
-                    className={`max-w-[84%] rounded-2xl px-3 py-2 text-sm leading-snug shadow-sm ${
-                      m.role === "user"
+                    className={`max-w-[82%] px-3 py-2 rounded-2xl shadow-sm ${
+                      message.role === "user"
                         ? "bg-[#D9FDD3] rounded-tr-sm"
                         : "bg-white rounded-tl-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-line">
-                      {m.content}
+                    <p className="text-[13px] leading-snug text-[#111b21] whitespace-pre-line">
+                      {message.content}
                     </p>
 
-                    <p className="text-[9px] text-black/35 mt-1 text-right">
-                      {m.time}
+                    <p className="text-[9px] text-black/30 text-right mt-1">
+                      {message.time}
                     </p>
                   </div>
                 </div>
 
-                {m.role === "assistant" &&
-                  m.products &&
-                  m.products.length > 0 && (
-                    <div className="max-w-[94%] bg-white rounded-2xl shadow-sm overflow-hidden">
+                {/* PRODUCTOS */}
+                {message.role === "assistant" &&
+                  message.products &&
+                  message.products.length > 0 && (
+                    <div className="max-w-[94%] bg-white rounded-2xl shadow-sm border border-black/[0.04] overflow-hidden">
 
-                      <div className="px-3 pt-3 pb-1 flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-[#008069]" />
-                        <p className="text-[11px] font-bold text-[#008069] uppercase tracking-wide">
-                          Productos encontrados
-                        </p>
+                      <div className="px-3 py-2 flex items-center gap-1.5 border-b border-black/[0.05]">
+                        <Sparkles className="w-3.5 h-3.5 text-[#008069]" />
+
+                        <span className="text-[10px] uppercase tracking-wide font-bold text-[#008069]">
+                          Recomendados
+                        </span>
                       </div>
 
-                      <div className="divide-y divide-black/5">
-                        {m.products.map((product, index) => (
-                          <a
-                            key={`${product.slug}-${index}`}
-                            href={`/producto/${product.slug}`}
-                            className="flex items-center gap-3 px-3 py-2.5 hover:bg-black/[0.02] active:bg-black/[0.04]"
-                          >
-                            <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#f4f4f4] shrink-0">
-                              {product.image ? (
-                                <img
-                                  src={product.image}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[9px] text-black/30">
-                                  Bebitos
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start gap-1.5">
-                                <p className="font-semibold text-[12px] leading-tight text-[#111b21] line-clamp-2">
-                                  {product.name}
-                                </p>
+                      <div className="divide-y divide-black/[0.06]">
+                        {message.products.map(
+                          (product) => (
+                            <a
+                              key={product.slug}
+                              href={`/producto/${product.slug}`}
+                              className="flex items-center gap-3 p-2.5 active:bg-black/[0.035]"
+                            >
+                              {/* FOTO */}
+                              <div className="relative w-[58px] h-[58px] rounded-xl overflow-hidden bg-[#F7F3EC] shrink-0">
+                                {product.image ? (
+                                  <img
+                                    src={getImageUrl(
+                                      product.image
+                                    )}
+                                    alt={
+                                      product.name
+                                    }
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[9px] text-black/25 text-center">
+                                    Sin foto
+                                  </div>
+                                )}
 
                                 {product.isPromo && (
-                                  <span className="shrink-0 bg-[#82c62c] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                                  <span className="absolute top-1 left-1 bg-[#7FBF2D] text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full">
                                     OFERTA
                                   </span>
                                 )}
                               </div>
 
-                              <div className="flex items-center gap-2 mt-1">
-                                <p className="text-[13px] font-bold text-[#008069]">
-                                  {formatPrice(product.price)}
+                              {/* INFO */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] leading-[1.25] font-semibold text-[#29211D] line-clamp-2">
+                                  {product.name}
                                 </p>
 
-                                {product.originalPrice && (
-                                  <p className="text-[10px] text-black/30 line-through">
-                                    {formatPrice(product.originalPrice)}
-                                  </p>
-                                )}
+                                <div className="flex items-baseline gap-1.5 mt-1.5">
+                                  {product.showPrice ? (
+                                    <>
+                                      <span className="text-[14px] font-bold text-[#008069]">
+                                        {formatPrice(
+                                          product.price
+                                        )}
+                                      </span>
+
+                                      {product.originalPrice && (
+                                        <span className="text-[9px] text-black/30 line-through">
+                                          {formatPrice(
+                                            product.originalPrice
+                                          )}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-[11px] font-semibold text-[#008069]">
+                                      Consultar precio
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span className="inline-block text-[9px] text-[#629A42] font-medium mt-0.5">
+                                  Disponible
+                                </span>
                               </div>
 
-                              <p className="text-[9px] text-[#579447] mt-0.5">
-                                Disponible
-                              </p>
-                            </div>
-
-                            <ChevronRight className="w-4 h-4 text-black/25 shrink-0" />
-                          </a>
-                        ))}
+                              <div className="w-7 h-7 rounded-full bg-[#008069]/[0.08] flex items-center justify-center shrink-0">
+                                <ChevronRight className="w-4 h-4 text-[#008069]" />
+                              </div>
+                            </a>
+                          )
+                        )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 p-2.5 bg-[#fafafa]">
+                      {message.hasMore && (
                         <button
                           type="button"
-                          onClick={() => sendText("Muéstrame más opciones")}
-                          className="text-[11px] font-semibold bg-white border border-black/10 rounded-xl py-2"
+                          onClick={() =>
+                            sendText(
+                              "Muéstrame más opciones"
+                            )
+                          }
+                          className="w-full py-2.5 text-[11px] font-bold text-[#008069] bg-[#008069]/[0.045] border-t border-black/[0.04]"
                         >
-                          Ver más
+                          Ver más opciones
                         </button>
-
-                        <a
-                          href={buildWhatsappHref(
-                            m.products.length === 1
-                              ? m.products[0].name
-                              : undefined
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] font-semibold bg-[#25D366] text-white rounded-xl py-2 text-center flex items-center justify-center gap-1"
-                        >
-                          <WhatsAppIcon className="w-3 h-3" />
-                          Consultar
-                        </a>
-                      </div>
+                      )}
                     </div>
                   )}
               </div>
             ))}
 
+            {/* ATAJOS SOLO AL INICIO */}
             {messages.length === 1 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-1.5">
                 {[
-                  "Ver ofertas",
+                  "Ofertas",
                   "Alimentación",
                   "Accesorios",
-                ].map((label) => (
+                ].map((option) => (
                   <button
-                    key={label}
+                    key={option}
                     type="button"
-                    onClick={() => sendText(label)}
-                    className="bg-white border border-[#008069]/20 text-[#008069] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-sm"
+                    onClick={() =>
+                      sendText(option)
+                    }
+                    className="bg-white text-[#008069] text-[11px] font-semibold px-3 py-1.5 rounded-full border border-[#008069]/15 shadow-sm"
                   >
-                    {label}
+                    {option}
                   </button>
                 ))}
               </div>
@@ -356,42 +427,48 @@ export default function ChatWidget() {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white rounded-2xl px-3.5 py-2.5 shadow-sm">
-                  <Loader2 className="w-4 h-4 text-black/40 animate-spin" />
+                <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#008069]" />
                 </div>
               </div>
             )}
           </div>
 
+          {/* WHATSAPP HUMANO */}
           {whatsapp && (
             <a
-              href={buildWhatsappHref()}
+              href={whatsappUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-3 mt-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#008069] bg-[#25D366]/15 rounded-full py-1.5 shrink-0"
+              className="mx-3 mt-2 py-1.5 rounded-full bg-[#25D366]/15 text-[#008069] flex items-center justify-center gap-1.5 text-[11px] font-semibold shrink-0"
             >
               <WhatsAppIcon className="w-3.5 h-3.5" />
               Hablar con una persona
             </a>
           )}
 
+          {/* INPUT */}
           <form
             onSubmit={sendMessage}
-            className="flex items-center gap-2 p-2.5 shrink-0 bg-[#F0F2F5]"
+            className="p-2.5 flex items-center gap-2 bg-[#F0F2F5] shrink-0"
           >
             <input
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
               placeholder="Escribe un mensaje"
               disabled={loading}
-              className="flex-1 min-w-0 border-none rounded-full px-4 py-2.5 text-sm outline-none bg-white"
+              className="flex-1 min-w-0 bg-white rounded-full px-4 py-2.5 text-sm outline-none border-none"
             />
 
             <button
               type="submit"
-              disabled={loading || !input.trim()}
+              disabled={
+                loading || !input.trim()
+              }
               aria-label="Enviar"
-              className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center disabled:opacity-40"
+              className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center disabled:opacity-40 shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -399,11 +476,12 @@ export default function ChatWidget() {
         </div>
       )}
 
+      {/* BOTÓN CERRADO */}
       {!open && (
         <div className="flex items-center gap-2">
           <button
             onClick={() => setOpen(true)}
-            className="bg-white text-[#111b21] text-sm font-semibold px-4 py-2.5 rounded-2xl shadow-lg ring-1 ring-black/5"
+            className="bg-white text-[#29211D] text-sm font-semibold px-4 py-2.5 rounded-2xl shadow-lg ring-1 ring-black/5"
           >
             ¿Te ayudo en algo?
           </button>
@@ -411,7 +489,7 @@ export default function ChatWidget() {
           <button
             onClick={() => setOpen(true)}
             aria-label="Abrir chat"
-            className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center"
+            className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.28)] ring-4 ring-white flex items-center justify-center"
           >
             <WhatsAppIcon className="w-8 h-8" />
           </button>
