@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
+import ChatWidget from "@/components/ChatWidget";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
@@ -50,6 +51,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <CartProvider>{children}</CartProvider>
+        <ChatWidget />
       </body>
     </html>
   );
