@@ -12,6 +12,7 @@ import {
   Plus,
   X,
   Trash2,
+  Barcode,
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
@@ -39,6 +40,7 @@ type ProductFormData = {
   isPromo: boolean;
   isNew: boolean;
   promoPrice: string;
+  barcode: string;
 };
 
 const empty: ProductFormData = {
@@ -54,6 +56,7 @@ const empty: ProductFormData = {
   isPromo: false,
   isNew: false,
   promoPrice: "",
+  barcode: "",
 };
 
 function getStatus(f: ProductFormData): StatusOption {
@@ -334,6 +337,31 @@ export default function ProductForm({
                 />
               </div>
             </div>
+            <div>
+              <label className="text-xs font-medium text-ink/60 block mb-1 flex items-center justify-between">
+                <span>Código de barras</span>
+                <button
+                  type="button"
+                  onClick={() => update({ barcode: `BEB-${Date.now().toString().slice(-6)}` })}
+                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline font-normal normal-case"
+                >
+                  Generar código interno
+                </button>
+              </label>
+              <div className="relative">
+                <Barcode className="w-4 h-4 text-ink/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={form.barcode}
+                  onChange={(e) => update({ barcode: e.target.value })}
+                  placeholder="Escanealo con el lector o escribilo a mano"
+                  className="w-full border border-brown/15 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brown/40"
+                />
+              </div>
+              <p className="text-[11px] text-ink/40 mt-1">
+                Opcional. Si el producto ya trae código de fábrica, escaneálo acá (el lector escribe solo). Si no tiene, tocá "Generar código interno".
+              </p>
+            </div>
+
           </div>
         </SectionCard>
 

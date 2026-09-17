@@ -20,25 +20,36 @@ export async function PUT(
     return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
-  const product = await prisma.product.update({
-    where: { id },
-    data: {
-      slug: data.slug,
-      name: data.name,
-      description: data.description,
-      features: data.features,
-      price: parseFloat(data.price),
-      category: data.category,
-      colors: data.colors,
-      images: data.images,
-      inStock: data.inStock,
-      isPromo: data.isPromo,
-      isNew: data.isNew || false,
-      promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-    },
-  });
+  try {
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        slug: data.slug,
+        name: data.name,
+        description: data.description,
+        features: data.features,
+        price: parseFloat(data.price),
+        category: data.category,
+        colors: data.colors,
+        images: data.images,
+        inStock: data.inStock,
+        isPromo: data.isPromo,
+        isNew: data.isNew || false,
+        promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
+        barcode: data.barcode && data.barcode.trim() ? data.barcode.trim() : null,
+      },
+    });
 
-  return NextResponse.json(product);
+    return NextResponse.json(product);
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return NextResponse.json(
+        { error: "Ese código de barras ya está en uso por otro producto" },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
 }
 
 export async function DELETE(

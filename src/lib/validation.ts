@@ -45,6 +45,12 @@ export function validateProduct(data: unknown): { valid: boolean; error?: string
     return { valid: false, error: "Formato de imágenes inválido" };
   }
 
+  if (d.barcode !== undefined && d.barcode !== null && d.barcode !== "") {
+    if (typeof d.barcode !== "string" || d.barcode.trim().length < 3 || d.barcode.trim().length > 50) {
+      return { valid: false, error: "El código de barras debe tener entre 3 y 50 caracteres" };
+    }
+  }
+
   return { valid: true };
 }
 

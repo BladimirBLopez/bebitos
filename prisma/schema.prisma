@@ -35,6 +35,7 @@ model Product {
   colors      Json
   images      String[]
   stock       Int      @default(0)
+  barcode     String?  @unique
   lowStockThreshold Int      @default(5)
   inStock     Boolean  @default(false)
   isPromo     Boolean  @default(false)
