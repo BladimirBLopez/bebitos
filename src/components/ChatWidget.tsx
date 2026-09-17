@@ -134,7 +134,7 @@ export default function ChatWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-[200] flex flex-col items-end gap-3">
       {open && (
-        <div className="w-[calc(100vw-2rem)] max-w-sm h-[75dvh] max-h-[560px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 flex flex-col overflow-hidden">
+        <div className="w-[calc(100vw-2rem)] max-w-sm h-[58dvh] min-h-[420px] max-h-[500px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 flex flex-col overflow-hidden">
           <div className="bg-[#008069] px-4 py-3 flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
               <WhatsAppIcon className="w-6 h-6 text-white" />
