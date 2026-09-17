@@ -57,6 +57,21 @@ export default function ChatWidget() {
     });
   }, [messages, open, loading]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+    };
+  }, [open]);
+
   if (pathname?.startsWith("/admin")) return null;
 
   async function sendMessage(e: React.FormEvent) {
@@ -241,28 +256,24 @@ export default function ChatWidget() {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        {!open && (
+      {!open && (
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setOpen(true)}
             className="bg-white text-[#111b21] text-sm font-semibold px-4 py-2.5 rounded-2xl shadow-lg ring-1 ring-black/5 hover:scale-[1.02] transition-transform"
           >
             ¿Te ayudo en algo?
           </button>
-        )}
 
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Cerrar chat" : "Abrir chat"}
-          className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center hover:scale-105 transition-transform"
-        >
-          {open ? (
-            <X className="w-7 h-7" />
-          ) : (
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Abrir chat"
+            className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center hover:scale-105 transition-transform"
+          >
             <WhatsAppIcon className="w-8 h-8" />
-          )}
-        </button>
-      </div>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
