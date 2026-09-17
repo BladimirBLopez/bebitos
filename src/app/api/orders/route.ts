@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 type CartItemInput = { productId: string; quantity: number };
 
@@ -34,6 +35,18 @@ function validateCartItems(
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = await checkRateLimit(req, "orders", 8, 15 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: `Demasiados pedidos seguidos. Intenta de nuevo en ${rateLimit.retryAfterMinutes} minuto${
+          rateLimit.retryAfterMinutes === 1 ? "" : "s"
+        }.`,
+      },
+      { status: 429 }
+    );
+  }
+
   const data = await req.json();
 
   const validation = validateCartItems(data);

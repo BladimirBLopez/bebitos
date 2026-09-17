@@ -152,3 +152,10 @@ model LoginAttempt {
   attempts     Int      @default(1)
   firstAttempt DateTime @default(now())
 }
+
+model RateLimit {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  attempts     Int      @default(1)
+  firstAttempt DateTime @default(now())
+}
