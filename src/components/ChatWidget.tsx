@@ -4,15 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { X, Send, Loader2 } from "lucide-react";
 
-type Message = { role: "user" | "assistant"; content: string; time: string };
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  time: string;
+};
 
 function nowLabel() {
-  return new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+  return new Date().toLocaleTimeString("es", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 const GREETING: Message = {
   role: "assistant",
-  content: "¡Hola! 👋 Soy el asistente de Bebitos. Preguntame por precios, stock o cualquier producto de la tienda.",
+  content:
+    "¡Hola! 👋 Soy el asistente de Bebitos. Preguntame por precios, stock o cualquier producto de la tienda.",
   time: nowLabel(),
 };
 
@@ -26,11 +34,13 @@ function WhatsAppIcon({ className = "" }: { className?: string }) {
 
 export default function ChatWidget() {
   const pathname = usePathname();
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,17 +51,30 @@ export default function ChatWidget() {
   }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, open, loading]);
 
   if (pathname?.startsWith("/admin")) return null;
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
+
     const text = input.trim();
+
     if (!text || loading) return;
 
-    const nextMessages = [...messages, { role: "user" as const, content: text, time: nowLabel() }];
+    const nextMessages = [
+      ...messages,
+      {
+        role: "user" as const,
+        content: text,
+        time: nowLabel(),
+      },
+    ];
+
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -59,26 +82,49 @@ export default function ChatWidget() {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          messages: nextMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data.error || "No pude responder, intenta de nuevo.", time: nowLabel() },
+          {
+            role: "assistant",
+            content: data.error || "No pude responder, intenta de nuevo.",
+            time: nowLabel(),
+          },
         ]);
+
         return;
       }
 
-      setMessages((m) => [...m, { role: "assistant", content: data.reply, time: nowLabel() }]);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: data.reply,
+          time: nowLabel(),
+        },
+      ]);
     } catch {
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: "Hubo un problema de conexión. Intenta de nuevo en un momento.", time: nowLabel() },
+        {
+          role: "assistant",
+          content:
+            "Hubo un problema de conexión. Intenta de nuevo en un momento.",
+          time: nowLabel(),
+        },
       ]);
     } finally {
       setLoading(false);
@@ -93,10 +139,17 @@ export default function ChatWidget() {
             <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
               <WhatsAppIcon className="w-6 h-6 text-white" />
             </div>
+
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm leading-tight truncate">Asistente Bebitos</p>
-              <p className="text-white/75 text-[11px] leading-tight">en línea</p>
+              <p className="text-white font-semibold text-sm leading-tight truncate">
+                Asistente Bebitos
+              </p>
+
+              <p className="text-white/75 text-[11px] leading-tight">
+                en línea
+              </p>
             </div>
+
             <button
               onClick={() => setOpen(false)}
               aria-label="Cerrar chat"
@@ -112,7 +165,12 @@ export default function ChatWidget() {
             style={{ backgroundColor: "#E5DDD5" }}
           >
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={i}
+                className={`flex ${
+                  m.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
                   className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm leading-snug shadow-sm ${
                     m.role === "user"
@@ -121,9 +179,12 @@ export default function ChatWidget() {
                   }`}
                 >
                   <p>{m.content}</p>
+
                   <p
                     className={`text-[10px] mt-0.5 text-right ${
-                      m.role === "user" ? "text-[#4a7a3a]/70" : "text-black/40"
+                      m.role === "user"
+                        ? "text-[#4a7a3a]/70"
+                        : "text-black/40"
                     }`}
                   >
                     {m.time}
@@ -131,6 +192,7 @@ export default function ChatWidget() {
                 </div>
               </div>
             ))}
+
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white rounded-lg rounded-tl-none px-3.5 py-2.5 shadow-sm">
@@ -142,7 +204,9 @@ export default function ChatWidget() {
 
           {whatsapp && (
             <a
-              href={`https://wa.me/${whatsapp.startsWith("591") ? whatsapp : "591" + whatsapp}`}
+              href={`https://wa.me/${
+                whatsapp.startsWith("591") ? whatsapp : "591" + whatsapp
+              }`}
               target="_blank"
               rel="noopener noreferrer"
               className="mx-3 mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#008069] bg-[#25D366]/15 hover:bg-[#25D366]/25 rounded-full py-1.5 transition-colors shrink-0"
@@ -164,6 +228,7 @@ export default function ChatWidget() {
               disabled={loading}
               className="flex-1 border-none rounded-full px-4 py-2.5 text-sm outline-none bg-white disabled:opacity-60"
             />
+
             <button
               type="submit"
               disabled={loading || !input.trim()}
@@ -176,13 +241,28 @@ export default function ChatWidget() {
         </div>
       )}
 
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Cerrar chat" : "Abrir chat"}
-        className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center hover:scale-105 transition-transform"
-      >
-        {open ? <X className="w-7 h-7" /> : <WhatsAppIcon className="w-8 h-8" />}
-      </button>
+      <div className="flex items-center gap-2">
+        {!open && (
+          <button
+            onClick={() => setOpen(true)}
+            className="bg-white text-[#111b21] text-sm font-semibold px-4 py-2.5 rounded-2xl shadow-lg ring-1 ring-black/5 hover:scale-[1.02] transition-transform"
+          >
+            ¿Te ayudo en algo?
+          </button>
+        )}
+
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Cerrar chat" : "Abrir chat"}
+          className="w-16 h-16 rounded-full bg-[#25D366] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-4 ring-white flex items-center justify-center hover:scale-105 transition-transform"
+        >
+          {open ? (
+            <X className="w-7 h-7" />
+          ) : (
+            <WhatsAppIcon className="w-8 h-8" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }
