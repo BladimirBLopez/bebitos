@@ -13,10 +13,12 @@ import {
   X,
   Trash2,
   Barcode,
+  Layers,
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
 import Select from "./ui/Select";
+import { FormInput, FormTextarea } from "./form/FormField";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -89,6 +91,9 @@ function SectionCard({
     </div>
   );
 }
+
+const inlineInputClass =
+  "flex-1 border border-panel-border rounded-lg px-3 py-2.5 text-sm outline-none bg-panel-bg focus:ring-2 focus:ring-brown-dark/20 focus:border-brown-dark/40 transition-colors";
 
 const STATUS_OPTIONS: { value: StatusOption; label: string; emoji: string }[] = [
   { value: "normal", label: "Normal", emoji: "" },
@@ -220,6 +225,14 @@ export default function ProductForm({
     update({ images: form.images.filter((_, idx) => idx !== i) });
   }
 
+  function makeMainImage(i: number) {
+    if (i === 0) return;
+    const next = [...form.images];
+    const [chosen] = next.splice(i, 1);
+    next.unshift(chosen);
+    update({ images: next });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -276,38 +289,194 @@ export default function ProductForm({
       <button
         type="button"
         onClick={handleBack}
-        className="text-sm text-brown-dark/60 hover:text-brown-dark mb-4"
+        className="text-sm text-brown-dark/60 hover:text-brown-dark mb-3"
       >
         ← Volver a productos
       </button>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
-        <SectionCard icon={Info} title="Información básica">
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="text-xs font-medium text-ink/60 block mb-1">
-                Nombre del producto
-              </label>
-              <input
+      <h1 className="text-xl font-bold text-panel-ink mb-5">
+        {form.id ? `Editando: ${form.name || "producto"}` : "Nuevo producto"}
+      </h1>
+
+      <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-4 max-w-5xl">
+        {/* Columna principal */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          <SectionCard icon={Info} title="Información básica">
+            <div className="flex flex-col gap-4">
+              <FormInput
+                label="Nombre del producto"
+                required
+                placeholder="Ej. Body de algodón manga larga"
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                required
               />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-ink/60 block mb-1">
-                Descripción
-              </label>
-              <textarea
+              <FormTextarea
+                label="Descripción"
+                required
+                placeholder="Describe el producto para tus clientes..."
+                rows={3}
                 value={form.description}
                 onChange={(e) => update({ description: e.target.value })}
-                className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                rows={3}
-                required
               />
             </div>
-            <div className="grid sm:grid-cols-2 gap-3">
+          </SectionCard>
+
+          <SectionCard icon={Camera} title="Fotos">
+            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-brown/20 rounded-xl py-4 text-sm text-ink/50 cursor-pointer hover:border-brown/40 transition-colors">
+              <Camera className="w-4 h-4" />
+              {uploading ? "Subiendo..." : "Toca para subir una foto"}
+              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+            </label>
+            <p className="text-[11px] text-ink/40 mt-2">
+              📐 Fotos cuadradas (1:1) se ven mejor. La primera foto es la que aparece como principal en tu catálogo.
+            </p>
+            <div className="flex gap-3 flex-wrap mt-3">
+              {form.images.map((img, i) => (
+                <div key={i} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => makeMainImage(i)}
+                    className="block"
+                    title={i === 0 ? "Foto principal" : "Tocar para hacer principal"}
+                  >
+                    <img
+                      src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_140,h_140,c_fill/${img}`}
+                      alt=""
+                      className={`w-20 h-20 object-cover rounded-xl ${i === 0 ? "ring-2 ring-brown-dark" : "opacity-80 hover:opacity-100"}`}
+                    />
+                  </button>
+                  {i === 0 && (
+                    <span className="absolute -top-1.5 -left-1.5 bg-brown-dark text-cream text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                      Principal
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute -top-1.5 -right-1.5 bg-red-400 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard icon={Tag} title="Características">
+            <div className="flex gap-2 mb-3">
+              <input
+                value={featureInput}
+                onChange={(e) => {
+                  setFeatureInput(e.target.value);
+                  if (e.target.value.trim()) setDirty(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addFeature();
+                  }
+                }}
+                className={inlineInputClass}
+                placeholder="Ej: Silicona 100% segura"
+              />
+              <button
+                type="button"
+                onClick={addFeature}
+                className="bg-brown-dark text-white w-10 rounded-lg flex items-center justify-center shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {form.features.map((f, i) => (
+                <div key={i} className="flex items-center justify-between bg-panel-bg rounded-lg px-3 py-2 text-sm text-panel-ink">
+                  {f}
+                  <button type="button" onClick={() => removeFeature(i)} className="text-ink/30 hover:text-red-400">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard icon={Palette} title="Colores disponibles">
+            <div className="flex gap-2 flex-wrap mb-3">
+              {[
+                { name: "Verde", hex: "#85BF35" },
+                { name: "Rosado", hex: "#F5A3C7" },
+                { name: "Celeste", hex: "#8FC7E8" },
+                { name: "Amarillo", hex: "#F5D547" },
+                { name: "Blanco", hex: "#F5F0E8" },
+                { name: "Gris", hex: "#B0AFA8" },
+              ].map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => update({ colors: [...form.colors, preset] })}
+                  className="flex items-center gap-1.5 bg-panel-surface border border-panel-border hover:border-brown-dark/30 rounded-full pl-1.5 pr-3 py-1 text-xs transition-colors"
+                >
+                  <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.hex }} />
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-3 items-center">
+              <input
+                value={colorName}
+                onChange={(e) => {
+                  setColorName(e.target.value);
+                  if (e.target.value.trim()) setDirty(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addColor();
+                  }
+                }}
+                className={inlineInputClass}
+                placeholder="Otro color..."
+              />
+              <input
+                type="color"
+                value={colorHex}
+                onChange={(e) => setColorHex(e.target.value)}
+                className="w-11 h-11 rounded-lg shrink-0"
+              />
+              <button
+                type="button"
+                onClick={addColor}
+                className="bg-brown-dark text-white w-10 h-11 rounded-lg flex items-center justify-center shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {form.colors.map((c, i) => (
+                <div key={i} className="flex items-center gap-1.5 bg-panel-bg rounded-full pl-1 pr-2.5 py-1 text-sm text-panel-ink">
+                  <span className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
+                  {c.name}
+                  <button type="button" onClick={() => removeColor(i)} className="text-ink/30 hover:text-red-400 ml-1">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* Barra lateral */}
+        <div className="w-full lg:w-72 shrink-0 flex flex-col gap-4">
+          <SectionCard icon={Layers} title="Estado y categoría">
+            <div className="flex flex-col gap-3">
+              <Select
+                label="Estado del producto"
+                value={status}
+                onChange={(value) => setStatus(value as StatusOption)}
+                options={STATUS_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
+                }))}
+              />
               <div>
                 <Select
                   label="Categoría"
@@ -324,193 +493,19 @@ export default function ProductForm({
                   Gestionar categorías
                 </button>
               </div>
-
-              <div>
-                <Select
-                  label="Estado del producto"
-                  value={status}
-                  onChange={(value) => setStatus(value as StatusOption)}
-                  options={STATUS_OPTIONS.map((opt) => ({
-                    value: opt.value,
-                    label: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
-                  }))}
-                />
-              </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-ink/60 block mb-1 flex items-center justify-between">
-                <span>Código de barras</span>
-                <button
-                  type="button"
-                  onClick={() => update({ barcode: `BEB-${Date.now().toString().slice(-6)}` })}
-                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline font-normal normal-case"
-                >
-                  Generar código interno
-                </button>
-              </label>
-              <div className="relative">
-                <Barcode className="w-4 h-4 text-ink/30 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  value={form.barcode}
-                  onChange={(e) => update({ barcode: e.target.value })}
-                  placeholder="Escanealo con el lector o escribilo a mano"
-                  className="w-full border border-brown/15 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                />
-              </div>
-              <p className="text-[11px] text-ink/40 mt-1">
-                Opcional. Si el producto ya trae código de fábrica, escaneálo acá (el lector escribe solo). Si no tiene, tocá "Generar código interno".
-              </p>
-            </div>
+          </SectionCard>
 
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={Camera} title="Fotos">
-          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-brown/20 rounded-xl py-4 text-sm text-ink/50 cursor-pointer hover:border-brown/40 transition-colors">
-            <Camera className="w-4 h-4" />
-            {uploading ? "Subiendo..." : "Toca para subir una foto"}
-            <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
-          </label>
-          <p className="text-[11px] text-ink/40 mt-2">
-            📐 Para mejor apariencia sube fotos cuadradas (1:1) — evita fotos horizontales.
-          </p>
-          <div className="flex gap-2 flex-wrap mt-3">
-            {form.images.map((img, i) => (
-              <div key={i} className="relative">
-                <img
-                  src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill/${img}`}
-                  alt=""
-                  className="w-16 h-16 object-cover rounded-xl"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  className="absolute -top-1.5 -right-1.5 bg-red-400 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={Tag} title="Características">
-          <div className="flex gap-2 mb-3">
-            <input
-              value={featureInput}
-              onChange={(e) => {
-                setFeatureInput(e.target.value);
-                if (e.target.value.trim()) setDirty(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addFeature();
-                }
-              }}
-              className="flex-1 border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              placeholder="Ej: Silicona 100% segura"
-            />
-            <button
-              type="button"
-              onClick={addFeature}
-              className="bg-brown-dark text-white w-10 rounded-xl flex items-center justify-center shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {form.features.map((f, i) => (
-              <div key={i} className="flex items-center justify-between bg-cream rounded-lg px-3 py-2 text-sm">
-                {f}
-                <button type="button" onClick={() => removeFeature(i)} className="text-ink/30 hover:text-red-400">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={Palette} title="Colores disponibles">
-          <div className="flex gap-2 flex-wrap mb-3">
-            {[
-              { name: "Verde", hex: "#85BF35" },
-              { name: "Rosado", hex: "#F5A3C7" },
-              { name: "Celeste", hex: "#8FC7E8" },
-              { name: "Amarillo", hex: "#F5D547" },
-              { name: "Blanco", hex: "#F5F0E8" },
-              { name: "Gris", hex: "#B0AFA8" },
-            ].map((preset) => (
-              <button
-                key={preset.name}
-                type="button"
-                onClick={() => update({ colors: [...form.colors, preset] })}
-                className="flex items-center gap-1.5 bg-white border border-brown/15 hover:border-brown/30 rounded-full pl-1.5 pr-3 py-1 text-xs transition-colors"
-              >
-                <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.hex }} />
-                {preset.name}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 mb-3 items-center">
-            <input
-              value={colorName}
-              onChange={(e) => {
-                setColorName(e.target.value);
-                if (e.target.value.trim()) setDirty(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addColor();
-                }
-              }}
-              className="flex-1 border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-              placeholder="Otro color..."
-            />
-            <input
-              type="color"
-              value={colorHex}
-              onChange={(e) => setColorHex(e.target.value)}
-              className="w-11 h-11 rounded-xl shrink-0"
-            />
-            <button
-              type="button"
-              onClick={addColor}
-              className="bg-brown-dark text-white w-10 h-11 rounded-xl flex items-center justify-center shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {form.colors.map((c, i) => (
-              <div key={i} className="flex items-center gap-1.5 bg-cream rounded-full pl-1 pr-2.5 py-1 text-sm">
-                <span className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
-                {c.name}
-                <button type="button" onClick={() => removeColor(i)} className="text-ink/30 hover:text-red-400 ml-1">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={DollarSign} title="Precio">
-          <div className={`grid gap-4 mb-4 ${status === "oferta" && showPrices ? "sm:grid-cols-2" : ""}`}>
-            <div>
+          <SectionCard icon={DollarSign} title="Precio">
+            <div className="flex flex-col gap-3">
               {showPrices ? (
-                <>
-                  <label className="text-xs font-medium text-ink/60 block mb-1">
-                    Precio (BOB)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.price}
-                    onChange={(e) => update({ price: e.target.value })}
-                    className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
-                    required
-                  />
-                </>
+                <FormInput
+                  label="Precio (BOB)"
+                  type="number"
+                  required
+                  value={form.price}
+                  onChange={(e) => update({ price: e.target.value })}
+                />
               ) : (
                 <p className="text-[11px] text-ink/40">
                   Los precios no se muestran en tu tienda. Actívalos en{" "}
@@ -520,31 +515,46 @@ export default function ProductForm({
                   para poder asignarle uno a este producto.
                 </p>
               )}
-            </div>
-
-            {status === "oferta" && showPrices && (
-              <div>
-                <label className="text-xs font-medium text-ink/60 block mb-1">
-                  Precio de oferta (BOB)
-                </label>
-                <input
+              {status === "oferta" && showPrices && (
+                <FormInput
+                  label="Precio de oferta (BOB)"
                   type="number"
                   value={form.promoPrice}
                   onChange={(e) => update({ promoPrice: e.target.value })}
-                  className="w-full border border-brown/15 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brown/40"
                 />
-              </div>
-            )}
-          </div>
-        </SectionCard>
+              )}
+            </div>
+          </SectionCard>
 
-        <div className="h-16" />
+          <SectionCard icon={Barcode} title="Código de barras">
+            <FormInput
+              label="Código"
+              icon={Barcode}
+              hint="opcional"
+              placeholder="Escanealo o escribilo"
+              value={form.barcode}
+              onChange={(e) => update({ barcode: e.target.value })}
+            />
+            <button
+              type="button"
+              onClick={() => update({ barcode: `BEB-${Date.now().toString().slice(-6)}` })}
+              className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
+            >
+              Generar código interno
+            </button>
+            <p className="text-[11px] text-ink/40 mt-2">
+              Si el producto ya trae código de fábrica, escaneálo con el lector (escribe solo). Si no tiene, generá uno propio.
+            </p>
+          </SectionCard>
+        </div>
+
+        <div className="h-16 w-full" />
         <div className="fixed bottom-0 left-0 right-0 sm:left-56 bg-white border-t border-brown/10 p-3 z-30">
-          <div className="max-w-xl mx-auto flex items-center gap-3">
+          <div className="max-w-5xl mx-auto flex items-center gap-3">
             <button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-green hover:bg-green-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-60"
+              className="flex-1 sm:flex-none sm:px-10 bg-green hover:bg-green-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-60"
             >
               {saving ? "Guardando..." : "Guardar producto"}
             </button>
