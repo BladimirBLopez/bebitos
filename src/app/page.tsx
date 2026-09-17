@@ -2,7 +2,6 @@ import Link from "next/link";
 import { SearchX } from "lucide-react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import WhatsAppFloat from "@/components/WhatsAppFloat";
 import CategoryFilter from "@/components/CategoryFilter";
 import PromoCarousel from "@/components/PromoCarousel";
 import Testimonials from "@/components/Testimonials";
@@ -109,7 +108,6 @@ export default async function Home({
         businessHours={settings?.businessHours}
         categories={categories}
       />
-      <WhatsAppFloat whatsapp={settings?.whatsapp} />
     </div>
   );
 }

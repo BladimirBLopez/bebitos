@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import Header from "@/components/Header";
 import RelatedProducts from "@/components/RelatedProducts";
-import WhatsAppFloat from "@/components/WhatsAppFloat";
 import ShareButton from "@/components/ShareButton";
 import Footer from "@/components/Footer";
 import { Product } from "@/lib/types";
@@ -251,8 +250,6 @@ export default function ProductDetail({
           </a>
         )}
       </div>
-
-      <WhatsAppFloat whatsapp={settings?.whatsapp} />
     </div>
   );
 }
