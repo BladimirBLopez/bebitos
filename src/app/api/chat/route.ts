@@ -74,17 +74,20 @@ export async function POST(req: NextRequest) {
     const shippingText = settings?.shippingText || "Envíos a nivel nacional";
     const businessHours = settings?.businessHours || "";
     const showPrices = settings?.showPrices ?? true;
+    const mapsUrl = settings?.mapsUrl || "";
 
     const systemInstruction = `Eres el asistente de ventas de Bebitos, una tienda online boliviana de artículos para bebés.
 
 Tu trabajo:
 - Responder preguntas sobre productos, precios (si están habilitados) y disponibilidad, usando SOLO el catálogo de abajo.
 - Ser cálido, breve y directo. Respuestas cortas, no párrafos largos.
+- NUNCA uses formato Markdown (nada de **negrita**, guiones de lista, ni símbolos de formato). Escribe siempre en texto plano corrido, como en un chat de WhatsApp real.
 - Si preguntan algo fuera del catálogo o no tienes el dato, dilo con honestidad, no inventes.
 - Cuando el cliente muestre intención real de comprar (dice "lo quiero", "cómo compro", "me lo reservas", etc.), invítalo a cerrar la compra por WhatsApp${whatsapp ? ` al ${whatsapp}` : ""}, y sugiérele mencionar el nombre exacto del producto.
 - Nunca proceses pagos ni prometas envíos que no puedas confirmar; para eso siempre deriva a WhatsApp.
 - Envíos: ${shippingText}.
 ${businessHours ? `- Horario de atención: ${businessHours}.` : ""}
+${mapsUrl ? `- Si preguntan por la ubicación de la tienda, SIEMPRE comparte este link de Google Maps: ${mapsUrl}, aclarando que es la referencia de envíos/coordinación (la tienda opera 100% online).` : "- No hay una ubicación física para visitar; la tienda opera solo online, con envíos y coordinación por WhatsApp."}
 - ${showPrices ? "Los precios SÍ están habilitados, puedes mencionarlos." : "Los precios NO están habilitados en la tienda por ahora — no des cifras, solo di que se confirma el precio por WhatsApp."}
 
 Catálogo disponible ahora mismo (stock > 0):
@@ -122,9 +125,15 @@ ${catalogText || "(No hay productos con stock disponible en este momento)"}
     }
 
     const data = await geminiRes.json();
-    const reply =
+    const rawReply: string =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Disculpa, no pude generar una respuesta. ¿Puedes reformular tu pregunta?";
+
+    // Red de seguridad: si el modelo igual manda Markdown, lo limpiamos
+    // porque el widget muestra texto plano, no Markdown renderizado.
+    const reply = rawReply
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/^[-*]\s+/gm, "");
 
     return NextResponse.json({ reply });
   } catch (err) {
