@@ -1,22 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import VentaForm from "@/components/VentaForm";
+import VentasReportClient from "@/components/VentasReportClient";
 
 export const dynamic = "force-dynamic";
 
+// Todo lo que cuenta como venta real: confirmado, enviado o entregado.
+// Se incluyen también las anuladas (para que el reporte sea transparente),
+// pero el componente las excluye de los totales.
 export default async function AdminVentasPage() {
-  const products = await prisma.product.findMany({
-    where: { stock: { gt: 0 } },
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      price: true,
-      promoPrice: true,
-      isPromo: true,
-      stock: true,
-      images: true,
-    },
+  const sales = await prisma.order.findMany({
+    where: { status: { in: ["confirmado", "enviado", "entregado"] } },
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  return <VentaForm products={products} />;
+  return <VentasReportClient sales={sales} />;
 }

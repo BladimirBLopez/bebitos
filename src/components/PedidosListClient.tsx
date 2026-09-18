@@ -189,7 +189,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
         meta={`${orders.length} pedido${orders.length === 1 ? "" : "s"} · ${manualCount} en tienda, ${onlineCount} online`}
         action={
           <Link
-            href="/admin/ventas"
+            href="/admin/ventas/nueva"
             className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
