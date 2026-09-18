@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   Plus,
   Download,
@@ -10,6 +11,9 @@ import {
   ChevronUp,
   Store,
   Globe2,
+  SlidersHorizontal,
+  X,
+  CalendarDays,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import PageHeader from "./PageHeader";
@@ -35,30 +39,20 @@ type Sale = {
   total: number;
   status: string;
   origin: string;
+
   paymentMethod: string | null;
   paymentStatus: string;
   paidAt: string | Date | null;
+
   deliveredAt: string | Date | null;
+
   anulado: boolean;
   anuladoEn: string | Date | null;
   motivoAnulacion: string | null;
+
   items: OrderItem[];
   createdAt: string | Date;
 };
-
-const ORIGIN_OPTIONS = [
-  { value: "Todos", label: "Todos" },
-  { value: "manual", label: "🏪 Mostrador" },
-  { value: "online", label: "🌐 Online" },
-];
-
-const PAYMENT_OPTIONS = [
-  { value: "Todos", label: "Todos" },
-  { value: "efectivo", label: "Efectivo" },
-  { value: "qr", label: "QR" },
-  { value: "transferencia", label: "Transferencia" },
-  { value: "sin_registrar", label: "Sin registrar" },
-];
 
 const PAYMENT_LABELS: Record<string, string> = {
   efectivo: "Efectivo",
@@ -66,12 +60,25 @@ const PAYMENT_LABELS: Record<string, string> = {
   transferencia: "Transferencia",
 };
 
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pendiente: "Pendiente",
+  pagado: "Pagado",
+  reembolsado: "Reembolsado",
+};
+
+const QUICK_FILTERS = [
+  { value: "todos", label: "Todos" },
+  { value: "pendiente", label: "Por cobrar" },
+  { value: "pagado", label: "Pagados" },
+  { value: "anulado", label: "Anulados" },
+];
+
 function paymentLabel(sale: Sale) {
   if (!sale.paymentMethod) return "No registrado";
   return PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod;
 }
 
-function reference(operationNumber: number) {
+function operationLabel(operationNumber: number) {
   return String(operationNumber).padStart(6, "0");
 }
 
@@ -79,11 +86,25 @@ function saleDate(sale: Sale) {
   return new Date(sale.deliveredAt ?? sale.createdAt);
 }
 
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  pendiente: "Pendiente",
-  pagado: "Pagado",
-  reembolsado: "Reembolsado",
-};
+function formatDate(value: string | Date) {
+  return new Date(value).toLocaleDateString("es-BO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatInputDate(value: string) {
+  if (!value) return "";
+  return new Date(value + "T00:00:00").toLocaleDateString(
+    "es-BO",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
+}
 
 export default function VentasReportClient({
   sales,
@@ -95,25 +116,80 @@ export default function VentasReportClient({
   const canEdit = canWrite(role);
 
   const [localSales, setLocalSales] = useState(sales);
+
   const [search, setSearch] = useState("");
+  const [quickFilter, setQuickFilter] = useState("todos");
+
   const [originFilter, setOriginFilter] = useState("Todos");
   const [paymentFilter, setPaymentFilter] = useState("Todos");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
+
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const [draftQuick, setDraftQuick] = useState("todos");
+  const [draftOrigin, setDraftOrigin] = useState("Todos");
+  const [draftPayment, setDraftPayment] = useState("Todos");
+  const [draftDesde, setDraftDesde] = useState("");
+  const [draftHasta, setDraftHasta] = useState("");
+
   const [exporting, setExporting] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [toAnular, setToAnular] = useState<Sale | null>(null);
+
+  const [expanded, setExpanded] = useState<Set<string>>(
+    new Set()
+  );
+
+  const [toAnular, setToAnular] = useState<Sale | null>(
+    null
+  );
+
   const [toPay, setToPay] = useState<Sale | null>(null);
-  const [paymentSaving, setPaymentSaving] = useState(false);
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("Todos");
+
+  const [paymentSaving, setPaymentSaving] =
+    useState(false);
+
   const [page, setPage] = useState(1);
 
   const PAGE_SIZE = 20;
 
   const filtered = useMemo(() => {
     return localSales.filter((sale) => {
+      const q = search.trim().toLowerCase();
+
+      const matchesSearch =
+        q === "" ||
+        sale.customer.toLowerCase().includes(q) ||
+        sale.phone.includes(q) ||
+        operationLabel(sale.operationNumber).includes(
+          q.replace("#", "")
+        );
+
+      let matchesQuick = true;
+
+      if (quickFilter === "pendiente") {
+        matchesQuick =
+          !sale.anulado &&
+          sale.paymentStatus === "pendiente";
+      }
+
+      if (quickFilter === "pagado") {
+        matchesQuick =
+          !sale.anulado &&
+          sale.paymentStatus === "pagado";
+      }
+
+      if (quickFilter === "anulado") {
+        matchesQuick = sale.anulado;
+      }
+
+      if (quickFilter === "reembolsado") {
+        matchesQuick =
+          sale.paymentStatus === "reembolsado";
+      }
+
       const matchesOrigin =
-        originFilter === "Todos" || sale.origin === originFilter;
+        originFilter === "Todos" ||
+        sale.origin === originFilter;
 
       const matchesPayment =
         paymentFilter === "Todos"
@@ -122,46 +198,38 @@ export default function VentasReportClient({
             ? !sale.paymentMethod
             : sale.paymentMethod === paymentFilter;
 
-      const q = search.trim().toLowerCase();
-
-      const matchesSearch =
-        q === "" ||
-        sale.customer.toLowerCase().includes(q) ||
-        sale.phone.includes(q) ||
-        reference(sale.operationNumber).includes(q.replace("#", ""));
-
       const date = saleDate(sale);
 
       const matchesDesde =
-        !desde || date >= new Date(desde + "T00:00:00");
+        !desde ||
+        date >= new Date(desde + "T00:00:00");
 
       const matchesHasta =
-        !hasta || date <= new Date(hasta + "T23:59:59");
-
-      const matchesPaymentStatus =
-        paymentStatusFilter === "Todos" ||
-        sale.paymentStatus === paymentStatusFilter;
+        !hasta ||
+        date <= new Date(hasta + "T23:59:59");
 
       return (
+        matchesSearch &&
+        matchesQuick &&
         matchesOrigin &&
         matchesPayment &&
-        matchesPaymentStatus &&
-        matchesSearch &&
         matchesDesde &&
         matchesHasta
       );
     });
   }, [
     localSales,
+    search,
+    quickFilter,
     originFilter,
     paymentFilter,
-    search,
     desde,
     hasta,
-    paymentStatusFilter,
   ]);
 
-  const valid = filtered.filter((sale) => !sale.anulado);
+  const valid = filtered.filter(
+    (sale) => !sale.anulado
+  );
 
   const totalVendido = valid.reduce(
     (sum, sale) => sum + sale.total,
@@ -169,32 +237,25 @@ export default function VentasReportClient({
   );
 
   const totalCobrado = valid
-    .filter((sale) => sale.paymentStatus === "pagado")
-    .reduce((sum, sale) => sum + sale.total, 0);
-
-  const totalPendiente = valid
-    .filter((sale) => sale.paymentStatus === "pendiente")
-    .reduce((sum, sale) => sum + sale.total, 0);
-
-  const totalAnulado = filtered
-    .filter((sale) => sale.anulado)
-    .reduce((sum, sale) => sum + sale.total, 0);
-
-  const totalEfectivo = valid
-    .filter((sale) => sale.paymentMethod === "efectivo")
-    .reduce((sum, sale) => sum + sale.total, 0);
-
-  const totalDigital = valid
     .filter(
-      (sale) =>
-        sale.paymentMethod === "qr" ||
-        sale.paymentMethod === "transferencia"
+      (sale) => sale.paymentStatus === "pagado"
     )
     .reduce((sum, sale) => sum + sale.total, 0);
 
-  const totalSinMetodo = valid
-    .filter((sale) => !sale.paymentMethod)
+  const totalPendiente = valid
+    .filter(
+      (sale) => sale.paymentStatus === "pendiente"
+    )
     .reduce((sum, sale) => sum + sale.total, 0);
+
+  const anuladas = filtered.filter(
+    (sale) => sale.anulado
+  );
+
+  const totalAnulado = anuladas.reduce(
+    (sum, sale) => sum + sale.total,
+    0
+  );
 
   const totalPages = Math.max(
     1,
@@ -208,6 +269,12 @@ export default function VentasReportClient({
     currentPage * PAGE_SIZE
   );
 
+  const activeFilterCount =
+    (quickFilter !== "todos" ? 1 : 0) +
+    (originFilter !== "Todos" ? 1 : 0) +
+    (paymentFilter !== "Todos" ? 1 : 0) +
+    (desde || hasta ? 1 : 0);
+
   function toggleExpanded(id: string) {
     setExpanded((previous) => {
       const next = new Set(previous);
@@ -217,6 +284,99 @@ export default function VentasReportClient({
 
       return next;
     });
+  }
+
+  function openFilters() {
+    setDraftQuick(quickFilter);
+    setDraftOrigin(originFilter);
+    setDraftPayment(paymentFilter);
+    setDraftDesde(desde);
+    setDraftHasta(hasta);
+    setFilterOpen(true);
+  }
+
+  function applyFilters() {
+    setQuickFilter(draftQuick);
+    setOriginFilter(draftOrigin);
+    setPaymentFilter(draftPayment);
+    setDesde(draftDesde);
+    setHasta(draftHasta);
+    setPage(1);
+    setFilterOpen(false);
+  }
+
+  function clearFilters() {
+    setQuickFilter("todos");
+    setOriginFilter("Todos");
+    setPaymentFilter("Todos");
+    setDesde("");
+    setHasta("");
+
+    setDraftQuick("todos");
+    setDraftOrigin("Todos");
+    setDraftPayment("Todos");
+    setDraftDesde("");
+    setDraftHasta("");
+
+    setPage(1);
+    setFilterOpen(false);
+  }
+
+  async function registerPayment(method: string) {
+    if (!toPay) return;
+
+    setPaymentSaving(true);
+
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${toPay.id}/payment`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentStatus: "pagado",
+            paymentMethod: method,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(
+          data.error ||
+            "No se pudo registrar el pago",
+          "error"
+        );
+        return;
+      }
+
+      setLocalSales((current) =>
+        current.map((sale) =>
+          sale.id === toPay.id
+            ? {
+                ...sale,
+                paymentStatus: data.paymentStatus,
+                paymentMethod: data.paymentMethod,
+                paidAt: data.paidAt,
+              }
+            : sale
+        )
+      );
+
+      setToPay(null);
+
+      showToast(
+        "Cobro registrado correctamente",
+        "success"
+      );
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setPaymentSaving(false);
+    }
   }
 
   async function handleAnular(motivo: string) {
@@ -238,7 +398,8 @@ export default function VentasReportClient({
 
       if (!res.ok) {
         showToast(
-          data.error || "No se pudo anular la venta",
+          data.error ||
+            "No se pudo anular la venta",
           "error"
         );
         return;
@@ -251,8 +412,10 @@ export default function VentasReportClient({
                 ...sale,
                 anulado: true,
                 anuladoEn: data.anuladoEn,
-                motivoAnulacion: data.motivoAnulacion,
-                paymentStatus: data.paymentStatus,
+                motivoAnulacion:
+                  data.motivoAnulacion,
+                paymentStatus:
+                  data.paymentStatus,
                 paidAt: data.paidAt,
               }
             : sale
@@ -270,60 +433,10 @@ export default function VentasReportClient({
     }
   }
 
-  async function registerPayment(method: string) {
-    if (!toPay) return;
-
-    setPaymentSaving(true);
-
-    try {
-      const res = await fetch(
-        `/api/admin/orders/${toPay.id}/payment`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentStatus: "pagado",
-            paymentMethod: method,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        showToast(
-          data.error || "No se pudo registrar el pago",
-          "error"
-        );
-        return;
-      }
-
-      setLocalSales((current) =>
-        current.map((sale) =>
-          sale.id === toPay.id
-            ? {
-                ...sale,
-                paymentStatus: data.paymentStatus,
-                paymentMethod: data.paymentMethod,
-                paidAt: data.paidAt,
-              }
-            : sale
-        )
-      );
-
-      setToPay(null);
-      showToast("Pago registrado correctamente", "success");
-    } catch {
-      showToast("Error de conexión", "error");
-    } finally {
-      setPaymentSaving(false);
-    }
-  }
-
   function exportPDF() {
     if (filtered.length === 0) {
       showToast(
-        "No hay ventas para exportar con estos filtros",
+        "No hay ventas para exportar",
         "error"
       );
       return;
@@ -338,20 +451,24 @@ export default function VentasReportClient({
         format: "a4",
       });
 
-      const pageWidth = 210;
-      const pageHeight = 297;
+      const width = 210;
+      const height = 297;
       const margin = 14;
 
-      function shortText(value: unknown, max: number) {
+      function shortText(
+        value: unknown,
+        max: number
+      ) {
         const text = String(value ?? "");
+
         return text.length > max
           ? text.slice(0, max - 1) + "…"
           : text;
       }
 
-      function drawHeader() {
+      function header() {
         doc.setFillColor(46, 125, 50);
-        doc.rect(0, 0, pageWidth, 8, "F");
+        doc.rect(0, 0, width, 8, "F");
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(20);
@@ -361,15 +478,20 @@ export default function VentasReportClient({
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.setTextColor(90, 90, 90);
-        doc.text("Reporte de Ventas", margin, 29);
+        doc.text(
+          "Reporte de ventas",
+          margin,
+          29
+        );
       }
 
-      function drawTableHeader(y: number) {
+      function tableHeader(y: number) {
         doc.setFillColor(46, 125, 50);
+
         doc.roundedRect(
           margin,
           y,
-          pageWidth - margin * 2,
+          width - margin * 2,
           8,
           1,
           1,
@@ -377,52 +499,60 @@ export default function VentasReportClient({
         );
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(6.7);
         doc.setTextColor(255, 255, 255);
 
-        doc.text("Ref.", margin + 2, y + 5);
-        doc.text("Fecha", margin + 19, y + 5);
-        doc.text("Cliente", margin + 43, y + 5);
-        doc.text("Canal", margin + 94, y + 5);
-        doc.text("Pago", margin + 121, y + 5);
-        doc.text("Total", margin + 150, y + 5);
-        doc.text("Estado", margin + 171, y + 5);
+        doc.text("Venta", margin + 2, y + 5);
+        doc.text("Entrega", margin + 22, y + 5);
+        doc.text("Cliente", margin + 48, y + 5);
+        doc.text("Canal", margin + 98, y + 5);
+        doc.text("Pago", margin + 123, y + 5);
+        doc.text("Total", margin + 151, y + 5);
+        doc.text("Estado", margin + 172, y + 5);
       }
 
-      drawHeader();
-
-      const fecha = new Date().toLocaleDateString("es-BO", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
+      header();
 
       doc.setFontSize(8);
       doc.setTextColor(80, 80, 80);
 
-      doc.text(`Generado: ${fecha}`, margin, 40);
       doc.text(
-        `Ventas válidas: ${valid.length}`,
+        `Generado: ${new Date().toLocaleDateString(
+          "es-BO"
+        )}`,
+        margin,
+        40
+      );
+
+      doc.text(
+        `Ventas netas: Bs. ${totalVendido.toFixed(
+          2
+        )}`,
         margin,
         46
       );
+
       doc.text(
-        `Total vendido: Bs. ${totalVendido.toFixed(2)}`,
+        `Cobrado: Bs. ${totalCobrado.toFixed(
+          2
+        )} · Por cobrar: Bs. ${totalPendiente.toFixed(
+          2
+        )}`,
         margin,
         52
       );
 
       let y = 62;
 
-      drawTableHeader(y);
+      tableHeader(y);
       y += 8;
 
       filtered.forEach((sale, index) => {
-        if (y > pageHeight - 22) {
+        if (y > height - 22) {
           doc.addPage();
-          drawHeader();
+          header();
           y = 36;
-          drawTableHeader(y);
+          tableHeader(y);
           y += 8;
         }
 
@@ -431,64 +561,91 @@ export default function VentasReportClient({
           doc.rect(
             margin,
             y,
-            pageWidth - margin * 2,
+            width - margin * 2,
             7,
             "F"
           );
         }
 
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
+        doc.setFont(
+          "helvetica",
+          "normal"
+        );
 
-        if (sale.anulado) {
-          doc.setTextColor(190, 55, 55);
-        } else {
-          doc.setTextColor(55, 55, 55);
-        }
+        doc.setFontSize(6.6);
 
-        doc.text(reference(sale.operationNumber), margin + 2, y + 4.8);
+        doc.setTextColor(
+          sale.anulado ? 190 : 55,
+          sale.anulado ? 55 : 55,
+          sale.anulado ? 55 : 55
+        );
+
         doc.text(
-          saleDate(sale).toLocaleDateString("es-BO"),
-          margin + 19,
+          `#${operationLabel(
+            sale.operationNumber
+          )}`,
+          margin + 2,
           y + 4.8
         );
+
         doc.text(
-          shortText(sale.customer, 22),
-          margin + 43,
+          saleDate(sale).toLocaleDateString(
+            "es-BO"
+          ),
+          margin + 22,
           y + 4.8
         );
+
+        doc.text(
+          shortText(sale.customer, 21),
+          margin + 48,
+          y + 4.8
+        );
+
         doc.text(
           sale.origin === "manual"
             ? "Mostrador"
             : "Online",
-          margin + 94,
+          margin + 98,
           y + 4.8
         );
+
         doc.text(
-          shortText(paymentLabel(sale), 14),
-          margin + 121,
+          shortText(
+            sale.anulado
+              ? "Reembolsado"
+              : PAYMENT_STATUS_LABELS[
+                  sale.paymentStatus
+                ] || sale.paymentStatus,
+            13
+          ),
+          margin + 123,
           y + 4.8
         );
+
         doc.text(
           `Bs. ${sale.total.toFixed(2)}`,
-          margin + 150,
+          margin + 151,
           y + 4.8
         );
+
         doc.text(
-          sale.anulado ? "Anulada" : "Válida",
-          margin + 171,
+          sale.anulado
+            ? "Anulada"
+            : "Válida",
+          margin + 172,
           y + 4.8
         );
 
         y += 7;
       });
 
-      const fileDate = new Date()
+      const date = new Date()
         .toISOString()
         .slice(0, 10);
 
       doc.save(
-        `reporte-ventas-bebitos-${fileDate}.pdf`
+        `reporte-ventas-bebitos-${date}.pdf`
       );
 
       showToast(
@@ -496,7 +653,11 @@ export default function VentasReportClient({
         "success"
       );
     } catch (error) {
-      console.error("Error generando PDF:", error);
+      console.error(
+        "Error generando PDF:",
+        error
+      );
+
       showToast(
         "No se pudo generar el PDF",
         "error"
@@ -510,7 +671,11 @@ export default function VentasReportClient({
     <div>
       <PageHeader
         title="Ventas"
-        meta={`${valid.length} venta${valid.length === 1 ? "" : "s"} válida${valid.length === 1 ? "" : "s"} · Bs. ${totalVendido.toFixed(2)} vendido`}
+        meta={`${valid.length} venta${
+          valid.length === 1 ? "" : "s"
+        } neta${
+          valid.length === 1 ? "" : "s"
+        } · Bs. ${totalVendido.toFixed(2)}`}
         action={
           <div className="flex gap-2">
             <button
@@ -518,7 +683,7 @@ export default function VentasReportClient({
               disabled={exporting}
               className="flex items-center gap-1.5 bg-panel-surface border border-panel-border hover:bg-panel-bg text-panel-ink text-sm font-medium px-3 py-2.5 rounded-lg disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               {exporting ? "Generando..." : "PDF"}
             </button>
 
@@ -533,95 +698,110 @@ export default function VentasReportClient({
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
-        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">
-            Ventas
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-4">
+          <p className="text-xs text-panel-ink-soft">
+            Ventas netas
           </p>
-          <p className="text-base font-bold text-brown-dark">
+
+          <p className="text-lg font-bold text-brown-dark mt-1">
             Bs. {totalVendido.toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-4">
+          <p className="text-xs text-panel-ink-soft">
             Cobrado
           </p>
-          <p className="text-base font-bold text-green-dark">
+
+          <p className="text-lg font-bold text-green-dark mt-1">
             Bs. {totalCobrado.toFixed(2)}
-          </p>
-          <p className="text-[9px] text-panel-ink-soft mt-1">
-            Efectivo {totalEfectivo.toFixed(2)} · Digital {totalDigital.toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-4">
+          <p className="text-xs text-panel-ink-soft">
             Por cobrar
           </p>
-          <p className="text-base font-bold text-amber">
+
+          <p className="text-lg font-bold text-amber mt-1">
             Bs. {totalPendiente.toFixed(2)}
           </p>
         </div>
 
-        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">
-            Anulado
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-4">
+          <p className="text-xs text-panel-ink-soft">
+            Anulaciones
           </p>
-          <p className="text-base font-bold text-red-500">
+
+          <p className="text-lg font-bold text-red-500 mt-1">
             Bs. {totalAnulado.toFixed(2)}
+          </p>
+
+          <p className="text-[10px] text-panel-ink-soft mt-0.5">
+            {anuladas.length} operación
+            {anuladas.length === 1 ? "" : "es"}
           </p>
         </div>
       </div>
 
-      <div className="relative mb-3">
-        <Search className="w-4 h-4 text-panel-ink-soft absolute left-3 top-1/2 -translate-y-1/2" />
-
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Buscar cliente, teléfono o referencia..."
-          className="w-full bg-panel-surface border border-panel-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
-        />
-      </div>
-
       <div className="flex gap-2 mb-3">
-        <input
-          type="date"
-          value={desde}
-          onChange={(e) => {
-            setDesde(e.target.value);
-            setPage(1);
-          }}
-          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none"
-        />
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-panel-ink-soft absolute left-3 top-1/2 -translate-y-1/2" />
 
-        <input
-          type="date"
-          value={hasta}
-          onChange={(e) => {
-            setHasta(e.target.value);
-            setPage(1);
-          }}
-          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none"
-        />
-      </div>
-
-      <div className="flex gap-2 flex-wrap mb-2">
-        {ORIGIN_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => {
-              setOriginFilter(option.value);
+          <input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
               setPage(1);
             }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full ${
-              originFilter === option.value
-                ? "bg-panel-ink text-white"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
+            placeholder="Buscar cliente, teléfono o Nº venta..."
+            className="w-full bg-panel-surface border border-panel-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={openFilters}
+          className={`shrink-0 flex items-center gap-1.5 border rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+            activeFilterCount > 0
+              ? "bg-brown-dark text-cream border-brown-dark"
+              : "bg-panel-surface text-panel-ink border-panel-border"
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+
+          <span className="hidden sm:inline">
+            Filtros
+          </span>
+
+          {activeFilterCount > 0 && (
+            <span className="min-w-5 h-5 px-1 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+        {QUICK_FILTERS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => {
+              setQuickFilter(option.value);
+              setPage(1);
+            }}
+            className={`shrink-0 text-xs font-semibold px-3.5 py-2 rounded-full border transition-colors ${
+              quickFilter === option.value
+                ? option.value === "anulado"
+                  ? "bg-red-500 text-white border-red-500"
+                  : option.value === "pendiente"
+                    ? "bg-amber text-white border-amber"
+                    : option.value === "pagado"
+                      ? "bg-green-dark text-white border-green-dark"
+                      : "bg-panel-ink text-white border-panel-ink"
+                : "bg-panel-surface text-panel-ink-soft border-panel-border"
             }`}
           >
             {option.label}
@@ -629,48 +809,87 @@ export default function VentasReportClient({
         ))}
       </div>
 
-      <div className="flex gap-2 flex-wrap mb-2">
-        {["Todos", "pagado", "pendiente", "reembolsado"].map((status) => (
-          <button
-            key={status}
-            onClick={() => {
-              setPaymentStatusFilter(status);
-              setPage(1);
-            }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full capitalize ${
-              paymentStatusFilter === status
-                ? "bg-green-dark text-white"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
-            }`}
-          >
-            {status === "Todos" ? "Todos los pagos" : status}
-          </button>
-        ))}
-      </div>
+      {(originFilter !== "Todos" ||
+        paymentFilter !== "Todos" ||
+        desde ||
+        hasta) && (
+        <div className="flex gap-2 flex-wrap items-center mb-4">
+          {originFilter !== "Todos" && (
+            <button
+              onClick={() => {
+                setOriginFilter("Todos");
+                setPage(1);
+              }}
+              className="flex items-center gap-1 bg-panel-bg border border-panel-border rounded-full px-2.5 py-1 text-[11px] text-panel-ink-soft"
+            >
+              {originFilter === "manual"
+                ? "Mostrador"
+                : "Online"}
+              <X className="w-3 h-3" />
+            </button>
+          )}
 
-      <div className="flex gap-2 flex-wrap mb-4">
-        {PAYMENT_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => {
-              setPaymentFilter(option.value);
-              setPage(1);
-            }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full ${
-              paymentFilter === option.value
-                ? "bg-brown-dark text-cream"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+          {paymentFilter !== "Todos" && (
+            <button
+              onClick={() => {
+                setPaymentFilter("Todos");
+                setPage(1);
+              }}
+              className="flex items-center gap-1 bg-panel-bg border border-panel-border rounded-full px-2.5 py-1 text-[11px] text-panel-ink-soft"
+            >
+              {paymentFilter === "sin_registrar"
+                ? "Sin método"
+                : PAYMENT_LABELS[
+                    paymentFilter
+                  ] || paymentFilter}
+              <X className="w-3 h-3" />
+            </button>
+          )}
+
+          {(desde || hasta) && (
+            <button
+              onClick={() => {
+                setDesde("");
+                setHasta("");
+                setPage(1);
+              }}
+              className="flex items-center gap-1 bg-panel-bg border border-panel-border rounded-full px-2.5 py-1 text-[11px] text-panel-ink-soft"
+            >
+              <CalendarDays className="w-3 h-3" />
+
+              {desde
+                ? formatInputDate(desde)
+                : "Inicio"}{" "}
+              –{" "}
+              {hasta
+                ? formatInputDate(hasta)
+                : "Hoy"}
+
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-panel-ink-soft text-center py-10">
-          No hay ventas con estos filtros.
-        </p>
+        <div className="text-center py-12">
+          <p className="text-sm font-semibold text-panel-ink">
+            No encontramos ventas
+          </p>
+
+          <p className="text-xs text-panel-ink-soft mt-1">
+            Prueba cambiando la búsqueda o los filtros.
+          </p>
+
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="text-xs font-semibold text-brown-dark mt-3"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {paginated.map((sale) => {
@@ -712,23 +931,43 @@ export default function VentasReportClient({
                         {sale.customer}
                       </p>
 
-                      {sale.anulado && (
+                      {sale.anulado ? (
                         <span className="text-[9px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                           ANULADA
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                            sale.paymentStatus ===
+                            "pagado"
+                              ? "bg-green-soft text-green-dark"
+                              : "bg-amber-soft text-amber"
+                          }`}
+                        >
+                          {sale.paymentStatus ===
+                          "pagado"
+                            ? "PAGADO"
+                            : "POR COBRAR"}
                         </span>
                       )}
                     </div>
 
                     <p className="text-[11px] text-panel-ink-soft mt-0.5">
-                      Venta #{reference(sale.operationNumber)} ·{" "}
-                      {saleDate(
-                        sale
-                      ).toLocaleDateString("es-BO", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}{" "}
-                      · {paymentLabel(sale)}
+                      Venta #
+                      {operationLabel(
+                        sale.operationNumber
+                      )}{" "}
+                      · {formatDate(saleDate(sale))}
+                    </p>
+
+                    <p className="text-[11px] text-panel-ink-soft mt-0.5">
+                      {sale.origin === "manual"
+                        ? "Mostrador"
+                        : "Online"}{" "}
+                      ·{" "}
+                      {sale.paymentMethod
+                        ? paymentLabel(sale)
+                        : "Método no registrado"}
                     </p>
                   </div>
 
@@ -743,30 +982,26 @@ export default function VentasReportClient({
                       Bs. {sale.total.toFixed(2)}
                     </p>
 
-                    <p className="text-[10px] text-panel-ink-soft">
-                      {sale.origin === "manual"
-                        ? "Mostrador"
-                        : "Online"}
-                    </p>
+                    {isOpen ? (
+                      <ChevronUp className="w-4 h-4 text-panel-ink-soft ml-auto mt-2" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-panel-ink-soft ml-auto mt-2" />
+                    )}
                   </div>
-
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-panel-ink-soft" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-panel-ink-soft" />
-                  )}
                 </button>
 
                 {isOpen && (
                   <div className="border-t border-panel-border p-4">
-                    <div className="grid sm:grid-cols-2 gap-3 mb-4 text-xs">
+                    <div className="grid sm:grid-cols-2 gap-4 mb-4 text-xs">
                       <div>
                         <p className="text-panel-ink-soft">
                           Cliente
                         </p>
-                        <p className="font-semibold text-panel-ink">
+
+                        <p className="font-semibold text-panel-ink mt-0.5">
                           {sale.customer}
                         </p>
+
                         <p className="text-panel-ink-soft">
                           {sale.phone}
                         </p>
@@ -776,21 +1011,35 @@ export default function VentasReportClient({
                         <p className="text-panel-ink-soft">
                           Operación
                         </p>
-                        <p className="font-semibold text-panel-ink">
+
+                        <p className="font-semibold text-panel-ink mt-0.5">
                           {sale.origin === "manual"
                             ? "Venta de mostrador"
                             : "Pedido online entregado"}
                         </p>
-                        <p className="text-panel-ink-soft">
-                          Pago: {PAYMENT_STATUS_LABELS[sale.paymentStatus] || sale.paymentStatus}
-                          {sale.paymentMethod ? ` · ${paymentLabel(sale)}` : ""}
+
+                        <p className="text-panel-ink-soft mt-1">
+                          Entregada:{" "}
+                          {formatDate(saleDate(sale))}
                         </p>
-                        <p className="text-panel-ink-soft mt-0.5">
-                          Entregada: {saleDate(sale).toLocaleDateString("es-BO")}
+
+                        <p className="text-panel-ink-soft mt-1">
+                          Pago:{" "}
+                          {PAYMENT_STATUS_LABELS[
+                            sale.paymentStatus
+                          ] ||
+                            sale.paymentStatus}
+                          {sale.paymentMethod
+                            ? ` · ${paymentLabel(
+                                sale
+                              )}`
+                            : ""}
                         </p>
+
                         {sale.paidAt && (
-                          <p className="text-panel-ink-soft mt-0.5">
-                            Cobrado: {new Date(sale.paidAt).toLocaleDateString("es-BO")}
+                          <p className="text-panel-ink-soft mt-1">
+                            Cobrado:{" "}
+                            {formatDate(sale.paidAt)}
                           </p>
                         )}
                       </div>
@@ -821,35 +1070,20 @@ export default function VentasReportClient({
                         <span className="font-semibold text-panel-ink">
                           Total
                         </span>
+
                         <span className="font-bold text-brown-dark">
                           Bs. {sale.total.toFixed(2)}
                         </span>
                       </div>
                     </div>
 
-                    {!sale.anulado &&
-                      sale.paymentStatus === "pendiente" &&
-                      canEdit && (
-                        <div className="flex justify-end mt-3">
-                          <button
-                            type="button"
-                            onClick={() => setToPay(sale)}
-                            className="text-xs font-semibold bg-brown-dark text-cream px-3 py-2 rounded-lg"
-                          >
-                            Registrar cobro
-                          </button>
-                        </div>
-                      )}
-
                     {sale.anulado ? (
                       <div className="mt-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-xs text-red-600">
                         <p className="font-semibold">
                           Venta anulada
                           {sale.anuladoEn &&
-                            ` · ${new Date(
+                            ` · ${formatDate(
                               sale.anuladoEn
-                            ).toLocaleDateString(
-                              "es-BO"
                             )}`}
                         </p>
 
@@ -861,7 +1095,20 @@ export default function VentasReportClient({
                       </div>
                     ) : (
                       canEdit && (
-                        <div className="flex justify-end mt-3">
+                        <div className="flex flex-wrap justify-end gap-2 mt-3">
+                          {sale.paymentStatus ===
+                            "pendiente" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setToPay(sale)
+                              }
+                              className="text-xs font-semibold bg-brown-dark text-cream px-3 py-2 rounded-lg"
+                            >
+                              Registrar cobro
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() =>
@@ -886,8 +1133,8 @@ export default function VentasReportClient({
         <div className="flex items-center justify-center gap-3 mt-4">
           <button
             onClick={() =>
-              setPage((p) =>
-                Math.max(1, p - 1)
+              setPage((value) =>
+                Math.max(1, value - 1)
               )
             }
             disabled={currentPage === 1}
@@ -902,8 +1149,11 @@ export default function VentasReportClient({
 
           <button
             onClick={() =>
-              setPage((p) =>
-                Math.min(totalPages, p + 1)
+              setPage((value) =>
+                Math.min(
+                  totalPages,
+                  value + 1
+                )
               )
             }
             disabled={
@@ -916,24 +1166,248 @@ export default function VentasReportClient({
         </div>
       )}
 
+      <Dialog.Root
+        open={filterOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            openFilters();
+          } else {
+            setFilterOpen(false);
+          }
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[60] bg-ink/45 backdrop-blur-[2px]" />
+
+          <Dialog.Content className="fixed z-[61] bottom-0 left-0 right-0 sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-lg bg-panel-surface rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto focus:outline-none">
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-panel-border sticky top-0 bg-panel-surface z-10">
+              <div>
+                <Dialog.Title className="font-bold text-panel-ink">
+                  Filtrar ventas
+                </Dialog.Title>
+
+                <Dialog.Description className="text-xs text-panel-ink-soft mt-0.5">
+                  Ajusta solo lo que necesites.
+                </Dialog.Description>
+              </div>
+
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-lg text-panel-ink-soft hover:bg-panel-bg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <div className="p-5 space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-panel-ink mb-2">
+                  Estado
+                </p>
+
+                <select
+                  value={draftQuick}
+                  onChange={(event) =>
+                    setDraftQuick(
+                      event.target.value
+                    )
+                  }
+                  className="w-full border border-panel-border bg-panel-surface rounded-xl px-3 py-3 text-sm text-panel-ink outline-none"
+                >
+                  <option value="todos">
+                    Todos
+                  </option>
+                  <option value="pendiente">
+                    Por cobrar
+                  </option>
+                  <option value="pagado">
+                    Pagados
+                  </option>
+                  <option value="anulado">
+                    Anulados
+                  </option>
+                  <option value="reembolsado">
+                    Reembolsados
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-panel-ink mb-2">
+                  Período
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-panel-ink-soft block mb-1.5">
+                      Desde
+                    </label>
+
+                    <div className="border border-panel-border rounded-xl px-3 py-2 bg-panel-surface">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-panel-ink-soft shrink-0" />
+
+                        <input
+                          type="date"
+                          value={draftDesde}
+                          onChange={(event) =>
+                            setDraftDesde(
+                              event.target.value
+                            )
+                          }
+                          className="w-full min-w-0 bg-transparent text-sm text-panel-ink outline-none"
+                        />
+                      </div>
+
+                      <p className="text-[10px] text-panel-ink-soft mt-1">
+                        {draftDesde
+                          ? formatInputDate(
+                              draftDesde
+                            )
+                          : "Sin fecha inicial"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-panel-ink-soft block mb-1.5">
+                      Hasta
+                    </label>
+
+                    <div className="border border-panel-border rounded-xl px-3 py-2 bg-panel-surface">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-panel-ink-soft shrink-0" />
+
+                        <input
+                          type="date"
+                          value={draftHasta}
+                          onChange={(event) =>
+                            setDraftHasta(
+                              event.target.value
+                            )
+                          }
+                          className="w-full min-w-0 bg-transparent text-sm text-panel-ink outline-none"
+                        />
+                      </div>
+
+                      <p className="text-[10px] text-panel-ink-soft mt-1">
+                        {draftHasta
+                          ? formatInputDate(
+                              draftHasta
+                            )
+                          : "Sin fecha final"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-panel-ink mb-2">
+                  Canal
+                </p>
+
+                <select
+                  value={draftOrigin}
+                  onChange={(event) =>
+                    setDraftOrigin(
+                      event.target.value
+                    )
+                  }
+                  className="w-full border border-panel-border bg-panel-surface rounded-xl px-3 py-3 text-sm text-panel-ink outline-none"
+                >
+                  <option value="Todos">
+                    Todos los canales
+                  </option>
+                  <option value="manual">
+                    Mostrador
+                  </option>
+                  <option value="online">
+                    Online
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-panel-ink mb-2">
+                  Método de pago
+                </p>
+
+                <select
+                  value={draftPayment}
+                  onChange={(event) =>
+                    setDraftPayment(
+                      event.target.value
+                    )
+                  }
+                  className="w-full border border-panel-border bg-panel-surface rounded-xl px-3 py-3 text-sm text-panel-ink outline-none"
+                >
+                  <option value="Todos">
+                    Todos los métodos
+                  </option>
+                  <option value="efectivo">
+                    Efectivo
+                  </option>
+                  <option value="qr">
+                    QR
+                  </option>
+                  <option value="transferencia">
+                    Transferencia
+                  </option>
+                  <option value="sin_registrar">
+                    Sin registrar
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-panel-surface border-t border-panel-border p-4 flex gap-2">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="flex-1 text-sm font-semibold text-panel-ink-soft py-2.5 rounded-xl border border-panel-border"
+              >
+                Limpiar
+              </button>
+
+              <button
+                type="button"
+                onClick={applyFilters}
+                className="flex-[2] text-sm font-semibold bg-brown-dark text-cream py-2.5 rounded-xl"
+              >
+                Aplicar filtros
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       <PaymentModal
         open={!!toPay}
         orderLabel={
           toPay
-            ? `Venta #${reference(toPay.operationNumber)} · ${toPay.customer}`
+            ? `Venta #${operationLabel(
+                toPay.operationNumber
+              )} · ${toPay.customer}`
             : ""
         }
         total={toPay?.total || 0}
         saving={paymentSaving}
         onConfirm={registerPayment}
-        onCancel={() => !paymentSaving && setToPay(null)}
+        onCancel={() =>
+          !paymentSaving && setToPay(null)
+        }
       />
 
       <AnularModal
         open={!!toAnular}
         orderLabel={
           toAnular
-            ? `${toAnular.customer} · Bs. ${toAnular.total.toFixed(2)}`
+            ? `Venta #${operationLabel(
+                toAnular.operationNumber
+              )} · ${toAnular.customer}`
             : ""
         }
         onConfirm={handleAnular}
