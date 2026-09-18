@@ -1,109 +1,190 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  Info,
-  Tag,
-  Palette,
+  useEffect,
+  useMemo,
+  useState,
+  type ElementType,
+  type ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
+
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Barcode,
+  Box,
   Camera,
   DollarSign,
-  Plus,
-  X,
-  Trash2,
-  Barcode,
+  Info,
   Layers,
+  Palette,
+  Plus,
+  Save,
+  Tag,
+  Trash2,
   TrendingUp,
+  X,
 } from "lucide-react";
+
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
 import Select from "./ui/Select";
-import { FormInput, FormTextarea } from "./form/FormField";
+import ToggleSwitch from "./ToggleSwitch";
+import {
+  FormInput,
+  FormTextarea,
+} from "./form/FormField";
+
 import { useToast } from "@/lib/toast-context";
+import { useCurrentUser } from "@/lib/user-context";
+import { canDelete } from "@/lib/roles";
 
 const CLOUD_NAME = "dkq95jus0";
 const UPLOAD_PRESET = "bebitos_admin";
 
-type ColorInput = { name: string; hex: string };
-type Category = { id: string; name: string };
-type StatusOption = "normal" | "nuevo" | "agotado" | "oferta";
+type ColorInput = {
+  name: string;
+  hex: string;
+};
+
+type Category = {
+  id: string;
+  name: string;
+};
 
 type ProductFormData = {
   id?: string;
+
   slug: string;
   name: string;
   description: string;
+
   features: string[];
+
   price: string;
+  cost: string;
+
   category: string;
+
   colors: ColorInput[];
   images: string[];
+
+  stock: string;
+  lowStockThreshold: string;
+
   inStock: boolean;
+
   isPromo: boolean;
-  isNew: boolean;
   promoPrice: string;
+
+  isNew: boolean;
+
   barcode: string;
-  cost: string;
 };
 
 const empty: ProductFormData = {
   slug: "",
   name: "",
   description: "",
+
   features: [],
+
   price: "",
+  cost: "",
+
   category: "",
+
   colors: [],
   images: [],
-  inStock: true,
+
+  stock: "0",
+  lowStockThreshold: "5",
+
+  inStock: false,
+
   isPromo: false,
-  isNew: false,
   promoPrice: "",
+
+  isNew: false,
+
   barcode: "",
-  cost: "",
 };
 
-function getStatus(f: ProductFormData): StatusOption {
-  if (!f.inStock) return "agotado";
-  if (f.isPromo) return "oferta";
-  if (f.isNew) return "nuevo";
-  return "normal";
-}
+const COLOR_PRESETS = [
+  {
+    name: "Verde",
+    hex: "#85BF35",
+  },
+  {
+    name: "Rosado",
+    hex: "#F5A3C7",
+  },
+  {
+    name: "Celeste",
+    hex: "#8FC7E8",
+  },
+  {
+    name: "Amarillo",
+    hex: "#F5D547",
+  },
+  {
+    name: "Blanco",
+    hex: "#F5F0E8",
+  },
+  {
+    name: "Gris",
+    hex: "#B0AFA8",
+  },
+];
 
 function SectionCard({
   icon: Icon,
   title,
+  description,
   children,
 }: {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
-  children: React.ReactNode;
+  description?: string;
+  children: ReactNode;
 }) {
   return (
-    <div className="bg-panel-surface rounded-xl border border-panel-border p-5" style={{ boxShadow: "var(--shadow-panel)" }}>
-      <div className="flex items-center gap-2.5 mb-4">
-        <span className="w-8 h-8 rounded-lg bg-brown-dark/10 flex items-center justify-center shrink-0">
-          <Icon className="w-4 h-4 text-brown-dark" />
-        </span>
-        <h3 className="font-sans font-semibold text-panel-ink text-sm">
-          {title}
-        </h3>
+    <section
+      className="bg-panel-surface border border-panel-border rounded-2xl overflow-hidden"
+      style={{
+        boxShadow: "var(--shadow-panel)",
+      }}
+    >
+      <div className="px-5 py-4 border-b border-panel-border bg-panel-bg/40">
+        <div className="flex items-start gap-3">
+          <span className="w-9 h-9 rounded-xl bg-brown-dark/10 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 text-brown-dark" />
+          </span>
+
+          <div>
+            <h2 className="text-sm font-semibold text-panel-ink">
+              {title}
+            </h2>
+
+            {description && (
+              <p className="text-xs text-panel-ink-soft mt-0.5">
+                {description}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-      {children}
-    </div>
+
+      <div className="p-5">
+        {children}
+      </div>
+    </section>
   );
 }
 
 const inlineInputClass =
-  "flex-1 border border-panel-border rounded-lg px-3 py-2.5 text-sm outline-none bg-panel-bg focus:ring-2 focus:ring-brown-dark/20 focus:border-brown-dark/40 transition-colors";
-
-const STATUS_OPTIONS: { value: StatusOption; label: string; emoji: string }[] = [
-  { value: "normal", label: "Normal", emoji: "" },
-  { value: "nuevo", label: "Nuevo", emoji: "🆕" },
-  { value: "agotado", label: "Agotado", emoji: "😔" },
-  { value: "oferta", label: "Oferta", emoji: "🔥" },
-];
+  "flex-1 border border-panel-border rounded-xl px-3 py-2.5 text-sm outline-none bg-panel-bg text-panel-ink placeholder:text-panel-ink-soft/60 focus:ring-2 focus:ring-brown-dark/20 focus:border-brown-dark/40 transition-colors";
 
 export default function ProductForm({
   initial,
@@ -111,47 +192,234 @@ export default function ProductForm({
   initial?: Partial<ProductFormData>;
 }) {
   const router = useRouter();
+
   const { showToast } = useToast();
-  const [form, setForm] = useState<ProductFormData>({ ...empty, ...initial });
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featureInput, setFeatureInput] = useState("");
-  const [colorName, setColorName] = useState("");
-  const [colorHex, setColorHex] = useState("#85BF35");
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [unsavedWarning, setUnsavedWarning] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [showPrices, setShowPrices] = useState(true);
+
+  const { role } = useCurrentUser();
+
+  const canRemove = canDelete(role);
+
+  const [form, setForm] =
+    useState<ProductFormData>({
+      ...empty,
+      ...initial,
+    });
+
+  const [categories, setCategories] =
+    useState<Category[]>([]);
+
+  const [featureInput, setFeatureInput] =
+    useState("");
+
+  const [colorName, setColorName] =
+    useState("");
+
+  const [colorHex, setColorHex] =
+    useState("#85BF35");
+
+  const [uploading, setUploading] =
+    useState(false);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [
+    confirmDelete,
+    setConfirmDelete,
+  ] = useState(false);
+
+  const [
+    unsavedWarning,
+    setUnsavedWarning,
+  ] = useState(false);
+
+  const [dirty, setDirty] =
+    useState(false);
+
+  const [
+    categoryModalOpen,
+    setCategoryModalOpen,
+  ] = useState(false);
+
+  const isEditing = Boolean(form.id);
+
+  const stockValue = useMemo(() => {
+    const value = Number(form.stock);
+
+    if (
+      !Number.isFinite(value) ||
+      value < 0
+    ) {
+      return 0;
+    }
+
+    return value;
+  }, [form.stock]);
+
+  const thresholdValue = useMemo(() => {
+    const value = Number(
+      form.lowStockThreshold
+    );
+
+    if (
+      !Number.isFinite(value) ||
+      value < 0
+    ) {
+      return 0;
+    }
+
+    return value;
+  }, [form.lowStockThreshold]);
+
+  const priceValue = useMemo(() => {
+    const value = Number(form.price);
+
+    return Number.isFinite(value)
+      ? value
+      : 0;
+  }, [form.price]);
+
+  const promoPriceValue = useMemo(() => {
+    const value = Number(
+      form.promoPrice
+    );
+
+    return Number.isFinite(value)
+      ? value
+      : 0;
+  }, [form.promoPrice]);
+
+  const costValue = useMemo(() => {
+    const value = Number(form.cost);
+
+    return Number.isFinite(value)
+      ? value
+      : 0;
+  }, [form.cost]);
+
+  const salePrice =
+    form.isPromo &&
+    promoPriceValue > 0
+      ? promoPriceValue
+      : priceValue;
+
+  const profit =
+    salePrice > 0 &&
+    form.cost !== ""
+      ? salePrice - costValue
+      : null;
+
+  const margin =
+    profit !== null &&
+    salePrice > 0
+      ? (profit / salePrice) * 100
+      : null;
+
+  const inventoryStatus =
+    stockValue <= 0
+      ? {
+          label: "Agotado",
+          description:
+            "No hay unidades disponibles.",
+          className:
+            "bg-red-50 text-red-600 border-red-100",
+        }
+      : !form.inStock
+        ? {
+            label: "Pausado",
+            description:
+              "Tiene stock, pero no está disponible para venta.",
+            className:
+              "bg-panel-bg text-panel-ink-soft border-panel-border",
+          }
+        : stockValue <= thresholdValue
+          ? {
+              label: "Stock bajo",
+              description: `${stockValue} unidad${
+                stockValue === 1
+                  ? ""
+                  : "es"
+              } disponible${
+                stockValue === 1
+                  ? ""
+                  : "s"
+              }.`,
+              className:
+                "bg-amber-soft text-amber border-amber/20",
+            }
+          : {
+              label: "Disponible",
+              description: `${stockValue} unidades disponibles.`,
+              className:
+                "bg-green-soft text-green-dark border-green/20",
+            };
 
   useEffect(() => {
     fetch("/api/admin/categories")
-      .then((res) => res.json())
-      .then((data: Category[]) => {
-        setCategories(data);
-        if (!form.category && data.length > 0) {
-          setForm((f) => ({ ...f, category: data[0].name }));
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error();
         }
+
+        return res.json();
+      })
+      .then((data: Category[]) => {
+        if (!Array.isArray(data)) {
+          return;
+        }
+
+        setCategories(data);
+
+        if (
+          !form.category &&
+          data.length > 0
+        ) {
+          setForm((current) => ({
+            ...current,
+            category: data[0].name,
+          }));
+        }
+      })
+      .catch(() => {
+        showToast(
+          "No se pudieron cargar las categorías",
+          "error"
+        );
       });
-    fetch("/api/admin/settings")
-      .then((res) => res.json())
-      .then((data) => setShowPrices(data?.showPrices ?? true));
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    function handleBeforeUnload(e: BeforeUnloadEvent) {
-      if (dirty) {
-        e.preventDefault();
-      }
+    function handleBeforeUnload(
+      event: BeforeUnloadEvent
+    ) {
+      if (!dirty) return;
+
+      event.preventDefault();
     }
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+
+    window.addEventListener(
+      "beforeunload",
+      handleBeforeUnload
+    );
+
+    return () => {
+      window.removeEventListener(
+        "beforeunload",
+        handleBeforeUnload
+      );
+    };
   }, [dirty]);
 
-  function update(patch: Partial<ProductFormData>) {
-    setForm((f) => ({ ...f, ...patch }));
+  function update(
+    patch: Partial<ProductFormData>
+  ) {
+    setForm((current) => ({
+      ...current,
+      ...patch,
+    }));
+
     setDirty(true);
   }
 
@@ -159,474 +427,1269 @@ export default function ProductForm({
     return text
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
       .replace(/(^-|-$)/g, "");
   }
 
-  function handleNameChange(name: string) {
-    update({ name, slug: form.id ? form.slug : slugify(name) });
+  function handleNameChange(
+    name: string
+  ) {
+    update({
+      name,
+      slug: form.id
+        ? form.slug
+        : slugify(name),
+    });
   }
 
-  function setStatus(status: StatusOption) {
+  function handleInitialStockChange(
+    value: string
+  ) {
+    const next = Number(value);
+
+    const validNext =
+      Number.isFinite(next) &&
+      next >= 0
+        ? next
+        : 0;
+
     update({
-      inStock: status !== "agotado",
-      isPromo: status === "oferta",
-      isNew: status === "nuevo",
+      stock: value,
+      inStock:
+        validNext <= 0
+          ? false
+          : stockValue <= 0
+            ? true
+            : form.inStock,
     });
   }
 
   function addFeature() {
-    if (!featureInput.trim()) return;
-    update({ features: [...form.features, featureInput.trim()] });
+    const clean =
+      featureInput.trim();
+
+    if (!clean) return;
+
+    update({
+      features: [
+        ...form.features,
+        clean,
+      ],
+    });
+
     setFeatureInput("");
   }
 
-  function removeFeature(i: number) {
-    update({ features: form.features.filter((_, idx) => idx !== i) });
+  function removeFeature(
+    index: number
+  ) {
+    update({
+      features:
+        form.features.filter(
+          (_, itemIndex) =>
+            itemIndex !== index
+        ),
+    });
   }
 
-  function addColor() {
-    if (!colorName.trim()) return;
-    update({ colors: [...form.colors, { name: colorName.trim(), hex: colorHex }] });
-    setColorName("");
-  }
-
-  function removeColor(i: number) {
-    update({ colors: form.colors.filter((_, idx) => idx !== i) });
-  }
-
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", UPLOAD_PRESET);
-      formData.append("folder", "bebitos");
-
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
+  function addPresetColor(
+    preset: ColorInput
+  ) {
+    const exists =
+      form.colors.some(
+        (color) =>
+          color.name.toLowerCase() ===
+          preset.name.toLowerCase()
       );
 
-      if (!res.ok) throw new Error("Error al subir la imagen");
+    if (exists) {
+      showToast(
+        `${preset.name} ya está agregado`,
+        "success"
+      );
 
-      const data = await res.json();
-      update({ images: [...form.images, data.public_id] });
-      showToast("Foto subida correctamente", "success");
-    } catch {
-      showToast("No se pudo subir la imagen. Intenta de nuevo.", "error");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function removeImage(i: number) {
-    update({ images: form.images.filter((_, idx) => idx !== i) });
-  }
-
-  function makeMainImage(i: number) {
-    if (i === 0) return;
-    const next = [...form.images];
-    const [chosen] = next.splice(i, 1);
-    next.unshift(chosen);
-    update({ images: next });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-
-    const url = form.id
-      ? `/api/admin/products/${form.id}`
-      : "/api/admin/products";
-    const method = form.id ? "PUT" : "POST";
-
-    const payload = showPrices ? form : { ...form, price: form.price || "1" };
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    setSaving(false);
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      showToast(errorData.error || "No se pudo guardar. Revisa los datos.", "error");
       return;
     }
 
-    setDirty(false);
-    showToast(form.id ? "Producto actualizado" : "Producto creado", "success");
-    router.push("/admin/productos");
-    router.refresh();
+    update({
+      colors: [
+        ...form.colors,
+        preset,
+      ],
+    });
+  }
+
+  function addColor() {
+    const cleanName =
+      colorName.trim();
+
+    if (!cleanName) return;
+
+    const exists =
+      form.colors.some(
+        (color) =>
+          color.name.toLowerCase() ===
+          cleanName.toLowerCase()
+      );
+
+    if (exists) {
+      showToast(
+        "Ese color ya está agregado",
+        "success"
+      );
+
+      return;
+    }
+
+    update({
+      colors: [
+        ...form.colors,
+        {
+          name: cleanName,
+          hex: colorHex,
+        },
+      ],
+    });
+
+    setColorName("");
+  }
+
+  function removeColor(
+    index: number
+  ) {
+    update({
+      colors:
+        form.colors.filter(
+          (_, itemIndex) =>
+            itemIndex !== index
+        ),
+    });
+  }
+
+  async function handleImageUpload(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) return;
+
+    setUploading(true);
+
+    try {
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file
+      );
+
+      formData.append(
+        "upload_preset",
+        UPLOAD_PRESET
+      );
+
+      formData.append(
+        "folder",
+        "bebitos"
+      );
+
+      const response =
+        await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const data =
+        await response.json();
+
+      update({
+        images: [
+          ...form.images,
+          data.public_id,
+        ],
+      });
+
+      showToast(
+        "Foto subida correctamente",
+        "success"
+      );
+    } catch {
+      showToast(
+        "No se pudo subir la imagen",
+        "error"
+      );
+    } finally {
+      setUploading(false);
+
+      event.target.value = "";
+    }
+  }
+
+  function removeImage(
+    index: number
+  ) {
+    update({
+      images:
+        form.images.filter(
+          (_, itemIndex) =>
+            itemIndex !== index
+        ),
+    });
+  }
+
+  function makeMainImage(
+    index: number
+  ) {
+    if (index === 0) return;
+
+    const next =
+      [...form.images];
+
+    const [chosen] =
+      next.splice(index, 1);
+
+    next.unshift(chosen);
+
+    update({
+      images: next,
+    });
+  }
+
+  async function handleSubmit(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
+
+    if (saving || uploading) {
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const url = form.id
+        ? `/api/admin/products/${form.id}`
+        : "/api/admin/products";
+
+      const method = form.id
+        ? "PUT"
+        : "POST";
+
+      const response =
+        await fetch(url, {
+          method,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(form),
+        });
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        showToast(
+          data.error ||
+            "No se pudo guardar el producto",
+          "error"
+        );
+
+        return;
+      }
+
+      setDirty(false);
+
+      showToast(
+        form.id
+          ? "Producto actualizado"
+          : "Producto creado",
+        "success"
+      );
+
+      router.push(
+        "/admin/productos"
+      );
+
+      router.refresh();
+    } catch {
+      showToast(
+        "Error de conexión al guardar",
+        "error"
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
     if (!form.id) return;
+
     setConfirmDelete(false);
-    await fetch(`/api/admin/products/${form.id}`, { method: "DELETE" });
-    setDirty(false);
-    showToast("Producto borrado", "success");
-    router.push("/admin/productos");
-    router.refresh();
+
+    try {
+      const response =
+        await fetch(
+          `/api/admin/products/${form.id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        showToast(
+          data.error ||
+            "No se pudo borrar el producto",
+          "error"
+        );
+
+        return;
+      }
+
+      setDirty(false);
+
+      showToast(
+        "Producto borrado",
+        "success"
+      );
+
+      router.push(
+        "/admin/productos"
+      );
+
+      router.refresh();
+    } catch {
+      showToast(
+        "Error de conexión al borrar",
+        "error"
+      );
+    }
   }
 
   function handleBack() {
     if (dirty) {
       setUnsavedWarning(true);
-    } else {
-      router.push("/admin/productos");
+      return;
     }
+
+    router.push(
+      "/admin/productos"
+    );
   }
 
-  const status = getStatus(form);
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={handleBack}
-        className="text-sm text-brown-dark/60 hover:text-brown-dark mb-3"
+    <div className="max-w-6xl mx-auto pb-24">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+        <div>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-panel-ink-soft hover:text-panel-ink mb-2"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Productos
+          </button>
+
+          <h1 className="text-xl sm:text-2xl font-bold text-panel-ink">
+            {isEditing
+              ? form.name ||
+                "Editar producto"
+              : "Nuevo producto"}
+          </h1>
+
+          <p className="text-sm text-panel-ink-soft mt-1">
+            {isEditing
+              ? "Actualiza la información comercial del producto."
+              : "Completa la información para agregarlo a tu catálogo."}
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          form="product-form"
+          disabled={
+            saving ||
+            uploading
+          }
+          className="hidden sm:inline-flex items-center gap-2 bg-green hover:bg-green-dark disabled:opacity-60 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+        >
+          <Save className="w-4 h-4" />
+
+          {saving
+            ? "Guardando..."
+            : isEditing
+              ? "Guardar cambios"
+              : "Crear producto"}
+        </button>
+      </div>
+
+      <form
+        id="product-form"
+        onSubmit={handleSubmit}
+        className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start"
       >
-        ← Volver a productos
-      </button>
-
-      <h1 className="text-xl font-bold text-panel-ink mb-5">
-        {form.id ? `Editando: ${form.name || "producto"}` : "Nuevo producto"}
-      </h1>
-
-      <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-4 max-w-5xl">
-        {/* Columna principal */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          <SectionCard icon={Info} title="Información básica">
-            <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5 min-w-0">
+          <SectionCard
+            icon={Info}
+            title="Información"
+            description="Datos principales que verá el cliente."
+          >
+            <div className="space-y-4">
               <FormInput
                 label="Nombre del producto"
                 required
-                placeholder="Ej. Body de algodón manga larga"
+                maxLength={200}
+                placeholder="Ej. Set de alimentación de silicona"
                 value={form.name}
-                onChange={(e) => handleNameChange(e.target.value)}
+                onChange={(event) =>
+                  handleNameChange(
+                    event.target.value
+                  )
+                }
               />
+
               <FormTextarea
                 label="Descripción"
                 required
-                placeholder="Describe el producto para tus clientes..."
-                rows={3}
-                value={form.description}
-                onChange={(e) => update({ description: e.target.value })}
+                rows={4}
+                placeholder="Describe el producto, sus beneficios y para qué edad está recomendado..."
+                value={
+                  form.description
+                }
+                onChange={(event) =>
+                  update({
+                    description:
+                      event.target
+                        .value,
+                  })
+                }
               />
             </div>
           </SectionCard>
 
-          <SectionCard icon={Camera} title="Fotos">
-            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-brown/20 rounded-xl py-4 text-sm text-ink/50 cursor-pointer hover:border-brown/40 transition-colors">
-              <Camera className="w-4 h-4" />
-              {uploading ? "Subiendo..." : "Toca para subir una foto"}
-              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+          <SectionCard
+            icon={Camera}
+            title="Multimedia"
+            description="La primera imagen será la portada del producto."
+          >
+            <label className="min-h-28 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-panel-border rounded-2xl bg-panel-bg/40 text-panel-ink-soft cursor-pointer hover:border-brown-dark/30 hover:bg-panel-bg transition-colors">
+              <Camera className="w-5 h-5" />
+
+              <span className="text-sm font-semibold">
+                {uploading
+                  ? "Subiendo imagen..."
+                  : "Agregar imagen"}
+              </span>
+
+              <span className="text-[11px]">
+                Se recomienda formato cuadrado 1:1
+              </span>
+
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                onChange={
+                  handleImageUpload
+                }
+                className="hidden"
+              />
             </label>
-            <p className="text-[11px] text-ink/40 mt-2">
-              📐 Fotos cuadradas (1:1) se ven mejor. La primera foto es la que aparece como principal en tu catálogo.
-            </p>
-            <div className="flex gap-3 flex-wrap mt-3">
-              {form.images.map((img, i) => (
-                <div key={i} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => makeMainImage(i)}
-                    className="block"
-                    title={i === 0 ? "Foto principal" : "Tocar para hacer principal"}
+
+            {form.images.length >
+              0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+                {form.images.map(
+                  (image, index) => (
+                    <div
+                      key={`${image}-${index}`}
+                      className="relative aspect-square"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          makeMainImage(
+                            index
+                          )
+                        }
+                        className="w-full h-full"
+                        title={
+                          index === 0
+                            ? "Imagen principal"
+                            : "Usar como imagen principal"
+                        }
+                      >
+                        <img
+                          src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_240,h_240,c_fill/${image}`}
+                          alt=""
+                          className={`w-full h-full rounded-xl object-cover border ${
+                            index === 0
+                              ? "border-brown-dark ring-2 ring-brown-dark/15"
+                              : "border-panel-border"
+                          }`}
+                        />
+                      </button>
+
+                      {index === 0 && (
+                        <span className="absolute left-1.5 bottom-1.5 text-[9px] font-bold bg-brown-dark text-cream px-2 py-0.5 rounded-full">
+                          Principal
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeImage(
+                            index
+                          )
+                        }
+                        className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow"
+                        aria-label="Eliminar imagen"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={DollarSign}
+            title="Precio y rentabilidad"
+            description="Información interna de venta y costos."
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Precio de venta"
+                hint="BOB"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                placeholder="0.00"
+                value={form.price}
+                onChange={(event) =>
+                  update({
+                    price:
+                      event.target
+                        .value,
+                  })
+                }
+              />
+
+              <FormInput
+                label="Costo por unidad"
+                hint="Opcional · BOB"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.cost}
+                onChange={(event) =>
+                  update({
+                    cost:
+                      event.target
+                        .value,
+                  })
+                }
+              />
+            </div>
+
+            {form.isPromo && (
+              <div className="mt-4 max-w-sm">
+                <FormInput
+                  label="Precio de oferta"
+                  hint="BOB"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  value={
+                    form.promoPrice
+                  }
+                  onChange={(event) =>
+                    update({
+                      promoPrice:
+                        event.target
+                          .value,
+                    })
+                  }
+                />
+              </div>
+            )}
+
+            {profit !== null &&
+              salePrice > 0 && (
+              <div className="mt-4 bg-panel-bg rounded-xl p-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[11px] text-panel-ink-soft">
+                    Ganancia estimada
+                  </p>
+
+                  <p
+                    className={`text-base font-bold ${
+                      profit >= 0
+                        ? "text-green-dark"
+                        : "text-red-500"
+                    }`}
                   >
-                    <img
-                      src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_140,h_140,c_fill/${img}`}
-                      alt=""
-                      className={`w-20 h-20 object-cover rounded-xl ${i === 0 ? "ring-2 ring-brown-dark" : "opacity-80 hover:opacity-100"}`}
-                    />
-                  </button>
-                  {i === 0 && (
-                    <span className="absolute -top-1.5 -left-1.5 bg-brown-dark text-cream text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
-                      Principal
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute -top-1.5 -right-1.5 bg-red-400 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                    Bs.{" "}
+                    {profit.toFixed(
+                      2
+                    )}
+                  </p>
                 </div>
-              ))}
+
+                <div>
+                  <p className="text-[11px] text-panel-ink-soft">
+                    Margen
+                  </p>
+
+                  <p
+                    className={`text-base font-bold ${
+                      (margin || 0) >=
+                      0
+                        ? "text-panel-ink"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {margin?.toFixed(
+                      1
+                    )}
+                    %
+                  </p>
+                </div>
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={Box}
+            title="Inventario"
+            description={
+              isEditing
+                ? "El stock se controla desde el módulo de Inventario."
+                : "Define con cuántas unidades comienza este producto."
+            }
+          >
+            {!isEditing ? (
+              <div className="grid sm:grid-cols-2 gap-4">
+                <FormInput
+                  label="Stock inicial"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={
+                    form.stock
+                  }
+                  onChange={(event) =>
+                    handleInitialStockChange(
+                      event.target
+                        .value
+                    )
+                  }
+                />
+
+                <FormInput
+                  label="Avisar cuando queden"
+                  hint="unidades"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={
+                    form.lowStockThreshold
+                  }
+                  onChange={(event) =>
+                    update({
+                      lowStockThreshold:
+                        event.target
+                          .value,
+                    })
+                  }
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4 bg-panel-bg rounded-xl p-4">
+                <div>
+                  <p className="text-xs text-panel-ink-soft">
+                    Stock actual
+                  </p>
+
+                  <p className="text-xl font-bold text-panel-ink">
+                    {stockValue}{" "}
+                    <span className="text-xs font-medium text-panel-ink-soft">
+                      unidades
+                    </span>
+                  </p>
+
+                  <p className="text-[11px] text-panel-ink-soft mt-1">
+                    Alerta configurada en{" "}
+                    {
+                      thresholdValue
+                    }{" "}
+                    unidades.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      "/admin/inventario"
+                    )
+                  }
+                  className="text-xs font-semibold text-brown-dark border border-panel-border bg-panel-surface px-3 py-2 rounded-lg hover:bg-white"
+                >
+                  Gestionar
+                </button>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <FormInput
+                label="Código de barras"
+                hint="Opcional"
+                icon={Barcode}
+                maxLength={50}
+                placeholder="Escanea o escribe el código"
+                value={
+                  form.barcode
+                }
+                onChange={(event) =>
+                  update({
+                    barcode:
+                      event.target
+                        .value,
+                  })
+                }
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  update({
+                    barcode: `BEB-${Date.now()
+                      .toString()
+                      .slice(-6)}`,
+                  })
+                }
+                className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-2"
+              >
+                Generar código interno
+              </button>
             </div>
           </SectionCard>
 
-          <SectionCard icon={Tag} title="Características">
-            <div className="flex gap-2 mb-3">
+          <SectionCard
+            icon={Tag}
+            title="Características"
+            description="Agrega beneficios o especificaciones importantes."
+          >
+            <div className="flex gap-2">
               <input
-                value={featureInput}
-                onChange={(e) => {
-                  setFeatureInput(e.target.value);
-                  if (e.target.value.trim()) setDirty(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
+                value={
+                  featureInput
+                }
+                maxLength={200}
+                onChange={(event) =>
+                  setFeatureInput(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
                     addFeature();
                   }
                 }}
                 className={inlineInputClass}
-                placeholder="Ej: Silicona 100% segura"
+                placeholder="Ej. Libre de BPA"
               />
+
               <button
                 type="button"
                 onClick={addFeature}
-                className="bg-brown-dark text-white w-10 rounded-lg flex items-center justify-center shrink-0"
+                className="w-11 h-11 bg-brown-dark text-white rounded-xl flex items-center justify-center shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex flex-col gap-1.5">
-              {form.features.map((f, i) => (
-                <div key={i} className="flex items-center justify-between bg-panel-bg rounded-lg px-3 py-2 text-sm text-panel-ink">
-                  {f}
-                  <button type="button" onClick={() => removeFeature(i)} className="text-ink/30 hover:text-red-400">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+
+            {form.features.length >
+              0 && (
+              <div className="space-y-2 mt-3">
+                {form.features.map(
+                  (
+                    feature,
+                    index
+                  ) => (
+                    <div
+                      key={`${feature}-${index}`}
+                      className="flex items-center justify-between gap-3 bg-panel-bg rounded-xl px-3 py-2.5"
+                    >
+                      <span className="text-sm text-panel-ink">
+                        {feature}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeFeature(
+                            index
+                          )
+                        }
+                        className="text-panel-ink-soft hover:text-red-500"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </SectionCard>
 
-          <SectionCard icon={Palette} title="Colores disponibles">
-            <div className="flex gap-2 flex-wrap mb-3">
-              {[
-                { name: "Verde", hex: "#85BF35" },
-                { name: "Rosado", hex: "#F5A3C7" },
-                { name: "Celeste", hex: "#8FC7E8" },
-                { name: "Amarillo", hex: "#F5D547" },
-                { name: "Blanco", hex: "#F5F0E8" },
-                { name: "Gris", hex: "#B0AFA8" },
-              ].map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => update({ colors: [...form.colors, preset] })}
-                  className="flex items-center gap-1.5 bg-panel-surface border border-panel-border hover:border-brown-dark/30 rounded-full pl-1.5 pr-3 py-1 text-xs transition-colors"
-                >
-                  <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: preset.hex }} />
-                  {preset.name}
-                </button>
-              ))}
+          <SectionCard
+            icon={Palette}
+            title="Opciones de color"
+            description="Colores que el cliente puede encontrar en este producto."
+          >
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PRESETS.map(
+                (preset) => (
+                  <button
+                    key={
+                      preset.name
+                    }
+                    type="button"
+                    onClick={() =>
+                      addPresetColor(
+                        preset
+                      )
+                    }
+                    className="inline-flex items-center gap-2 border border-panel-border bg-panel-surface hover:bg-panel-bg px-3 py-1.5 rounded-full text-xs text-panel-ink"
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border border-black/10"
+                      style={{
+                        backgroundColor:
+                          preset.hex,
+                      }}
+                    />
+
+                    {preset.name}
+                  </button>
+                )
+              )}
             </div>
-            <div className="flex gap-2 mb-3 items-center">
+
+            <div className="flex gap-2 items-center mt-4">
               <input
                 value={colorName}
-                onChange={(e) => {
-                  setColorName(e.target.value);
-                  if (e.target.value.trim()) setDirty(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
+                onChange={(event) =>
+                  setColorName(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
                     addColor();
                   }
                 }}
                 className={inlineInputClass}
                 placeholder="Otro color..."
               />
+
               <input
                 type="color"
                 value={colorHex}
-                onChange={(e) => setColorHex(e.target.value)}
-                className="w-11 h-11 rounded-lg shrink-0"
+                onChange={(event) =>
+                  setColorHex(
+                    event.target.value
+                  )
+                }
+                className="w-11 h-11 rounded-xl border border-panel-border bg-panel-surface p-1 shrink-0"
               />
+
               <button
                 type="button"
                 onClick={addColor}
-                className="bg-brown-dark text-white w-10 h-11 rounded-lg flex items-center justify-center shrink-0"
+                className="w-11 h-11 bg-brown-dark text-white rounded-xl flex items-center justify-center shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {form.colors.map((c, i) => (
-                <div key={i} className="flex items-center gap-1.5 bg-panel-bg rounded-full pl-1 pr-2.5 py-1 text-sm text-panel-ink">
-                  <span className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
-                  {c.name}
-                  <button type="button" onClick={() => removeColor(i)} className="text-ink/30 hover:text-red-400 ml-1">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
+
+            {form.colors.length >
+              0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {form.colors.map(
+                  (
+                    color,
+                    index
+                  ) => (
+                    <div
+                      key={`${color.name}-${index}`}
+                      className="inline-flex items-center gap-2 bg-panel-bg border border-panel-border rounded-full pl-2 pr-2.5 py-1.5"
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full border border-black/10"
+                        style={{
+                          backgroundColor:
+                            color.hex,
+                        }}
+                      />
+
+                      <span className="text-xs font-medium text-panel-ink">
+                        {color.name}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeColor(
+                            index
+                          )
+                        }
+                        className="text-panel-ink-soft hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </SectionCard>
         </div>
 
-        {/* Barra lateral */}
-        <div className="w-full lg:w-72 shrink-0 flex flex-col gap-4">
-          <SectionCard icon={Layers} title="Estado y categoría">
-            <div className="flex flex-col gap-3">
-              <Select
-                label="Estado del producto"
-                value={status}
-                onChange={(value) => setStatus(value as StatusOption)}
-                options={STATUS_OPTIONS.map((opt) => ({
-                  value: opt.value,
-                  label: opt.emoji ? `${opt.emoji} ${opt.label}` : opt.label,
-                }))}
+        <aside className="flex flex-col gap-5 lg:sticky lg:top-5">
+          <SectionCard
+            icon={Layers}
+            title="Organización"
+          >
+            <Select
+              label="Categoría"
+              value={
+                form.category
+              }
+              onChange={(value) =>
+                update({
+                  category: value,
+                })
+              }
+              placeholder="Seleccionar categoría"
+              options={categories.map(
+                (category) => ({
+                  value:
+                    category.name,
+                  label:
+                    category.name,
+                })
+              )}
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                setCategoryModalOpen(
+                  true
+                )
+              }
+              className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-2"
+            >
+              Gestionar categorías
+            </button>
+          </SectionCard>
+
+          <SectionCard
+            icon={TrendingUp}
+            title="Etiquetas comerciales"
+            description="Pueden combinarse entre sí."
+          >
+            <div className="space-y-4">
+              <ToggleSwitch
+                checked={
+                  form.isNew
+                }
+                onChange={(value) =>
+                  update({
+                    isNew: value,
+                  })
+                }
+                label="Producto nuevo"
+                description="Muestra la etiqueta Nuevo en el catálogo."
               />
-              <div>
-                <Select
-                  label="Categoría"
-                  value={form.category}
-                  onChange={(value) => update({ category: value })}
-                  placeholder="Sin categorías"
-                  options={categories.map((c) => ({ value: c.name, label: c.name }))}
+
+              <div className="border-t border-panel-border" />
+
+              <ToggleSwitch
+                checked={
+                  form.isPromo
+                }
+                onChange={(value) =>
+                  update({
+                    isPromo:
+                      value,
+                  })
+                }
+                label="Producto en oferta"
+                description="Permite usar un precio promocional."
+              />
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={AlertTriangle}
+            title="Disponibilidad"
+          >
+            <div
+              className={`border rounded-xl p-3 ${inventoryStatus.className}`}
+            >
+              <p className="text-sm font-bold">
+                {
+                  inventoryStatus.label
+                }
+              </p>
+
+              <p className="text-[11px] mt-0.5 opacity-80">
+                {
+                  inventoryStatus.description
+                }
+              </p>
+            </div>
+
+            {stockValue > 0 && (
+              <div className="mt-4">
+                <ToggleSwitch
+                  checked={
+                    form.inStock
+                  }
+                  onChange={(value) =>
+                    update({
+                      inStock:
+                        value,
+                    })
+                  }
+                  label="Disponible para venta"
+                  description="Puedes pausarlo temporalmente sin cambiar el stock."
                 />
-                <button
-                  type="button"
-                  onClick={() => setCategoryModalOpen(true)}
-                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
-                >
-                  Gestionar categorías
-                </button>
+              </div>
+            )}
+
+            {stockValue <=
+              0 && (
+              <p className="text-[11px] text-panel-ink-soft mt-3">
+                Con stock 0 el producto se marca automáticamente como agotado.
+              </p>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            icon={Info}
+            title="Resumen"
+          >
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between gap-3">
+                <span className="text-panel-ink-soft">
+                  Precio
+                </span>
+
+                <span className="font-semibold text-panel-ink">
+                  {priceValue >
+                  0
+                    ? `Bs. ${priceValue.toFixed(
+                        2
+                      )}`
+                    : "Sin definir"}
+                </span>
+              </div>
+
+              {form.isPromo && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-panel-ink-soft">
+                    Oferta
+                  </span>
+
+                  <span className="font-semibold text-green-dark">
+                    {promoPriceValue >
+                    0
+                      ? `Bs. ${promoPriceValue.toFixed(
+                          2
+                        )}`
+                      : "Sin definir"}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between gap-3">
+                <span className="text-panel-ink-soft">
+                  Stock
+                </span>
+
+                <span className="font-semibold text-panel-ink">
+                  {
+                    stockValue
+                  }
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-panel-ink-soft">
+                  Imágenes
+                </span>
+
+                <span className="font-semibold text-panel-ink">
+                  {
+                    form.images
+                      .length
+                  }
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-panel-ink-soft">
+                  Colores
+                </span>
+
+                <span className="font-semibold text-panel-ink">
+                  {
+                    form.colors
+                      .length
+                  }
+                </span>
               </div>
             </div>
           </SectionCard>
 
-          <SectionCard icon={DollarSign} title="Precio">
-            <div className="flex flex-col gap-3">
-              {showPrices ? (
-                <FormInput
-                  label="Precio (BOB)"
-                  type="number"
-                  required
-                  value={form.price}
-                  onChange={(e) => update({ price: e.target.value })}
-                />
-              ) : (
-                <p className="text-[11px] text-ink/40">
-                  Los precios no se muestran en tu tienda. Actívalos en{" "}
-                  <Link href="/admin/configuracion" className="underline">
-                    Configuración → Precios
-                  </Link>{" "}
-                  para poder asignarle uno a este producto.
-                </p>
-              )}
-              {status === "oferta" && showPrices && (
-                <FormInput
-                  label="Precio de oferta (BOB)"
-                  type="number"
-                  value={form.promoPrice}
-                  onChange={(e) => update({ promoPrice: e.target.value })}
-                />
-              )}
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={TrendingUp} title="Costo y ganancia">
-            <FormInput
-              label="Costo (BOB)"
-              type="number"
-              hint="opcional"
-              value={form.cost}
-              onChange={(e) => update({ cost: e.target.value })}
-            />
-            {form.cost && form.price && showPrices ? (
-              <p className="text-[11px] text-panel-ink-soft mt-2">
-                Ganancia estimada:{" "}
-                <span className="font-semibold text-green-dark">
-                  Bs. {(Number(form.price) - Number(form.cost)).toFixed(2)}
-                </span>{" "}
-                por unidad
-              </p>
-            ) : (
-              <p className="text-[11px] text-ink/40 mt-2">
-                Se usa para calcular tu ganancia real en Contabilidad.
-              </p>
-            )}
-          </SectionCard>
-
-
-          <SectionCard icon={Barcode} title="Código de barras">
-            <FormInput
-              label="Código"
-              icon={Barcode}
-              hint="opcional"
-              placeholder="Escanealo o escribilo"
-              value={form.barcode}
-              onChange={(e) => update({ barcode: e.target.value })}
-            />
-            <button
-              type="button"
-              onClick={() => update({ barcode: `BEB-${Date.now().toString().slice(-6)}` })}
-              className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-1"
-            >
-              Generar código interno
-            </button>
-            <p className="text-[11px] text-ink/40 mt-2">
-              Si el producto ya trae código de fábrica, escaneálo con el lector (escribe solo). Si no tiene, generá uno propio.
-            </p>
-          </SectionCard>
-        </div>
-
-        <div className="h-16 w-full" />
-        <div className="fixed bottom-0 left-0 right-0 sm:left-56 bg-white border-t border-brown/10 p-3 z-30">
-          <div className="max-w-5xl mx-auto flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={saving || uploading}
-              className="flex-1 sm:flex-none sm:px-10 bg-green hover:bg-green-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-60"
-            >
-              {saving ? "Guardando..." : "Guardar producto"}
-            </button>
-            {form.id && (
+          {isEditing &&
+            canRemove && (
               <button
                 type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 text-red-400 hover:text-red-500 text-sm font-medium shrink-0"
+                onClick={() =>
+                  setConfirmDelete(
+                    true
+                  )
+                }
+                className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 border border-red-100 bg-panel-surface rounded-xl py-2.5 text-sm font-semibold transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Borrar
+                Eliminar producto
               </button>
             )}
-          </div>
-        </div>
+        </aside>
       </form>
+
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-panel-border p-3">
+        <button
+          type="submit"
+          form="product-form"
+          disabled={
+            saving ||
+            uploading
+          }
+          className="w-full flex items-center justify-center gap-2 bg-green hover:bg-green-dark disabled:opacity-60 text-white font-semibold py-3 rounded-xl"
+        >
+          <Save className="w-4 h-4" />
+
+          {saving
+            ? "Guardando..."
+            : isEditing
+              ? "Guardar cambios"
+              : "Crear producto"}
+        </button>
+      </div>
 
       <ConfirmModal
         open={confirmDelete}
-        title="¿Borrar este producto?"
-        message="Esta acción no se puede deshacer."
+        title="¿Eliminar producto?"
+        message="Esta acción eliminará el producto permanentemente."
         onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() =>
+          setConfirmDelete(false)
+        }
       />
 
       <CategoryManagerModal
-        open={categoryModalOpen}
-        categories={categories}
-        setCategories={setCategories}
+        open={
+          categoryModalOpen
+        }
+        categories={
+          categories
+        }
+        setCategories={
+          setCategories
+        }
         onSelect={(name) => {
-          update({ category: name });
-          setCategoryModalOpen(false);
+          update({
+            category: name,
+          });
+
+          setCategoryModalOpen(
+            false
+          );
         }}
-        onClose={() => setCategoryModalOpen(false)}
+        onClose={() =>
+          setCategoryModalOpen(
+            false
+          )
+        }
       />
 
       <ConfirmModal
-        open={unsavedWarning}
+        open={
+          unsavedWarning
+        }
         title="Cambios sin guardar"
         message="Tienes cambios sin guardar. Si sales ahora, se perderán."
         confirmLabel="Salir sin guardar"
         danger={false}
-        onConfirm={() => router.push("/admin/productos")}
-        onCancel={() => setUnsavedWarning(false)}
+        onConfirm={() =>
+          router.push(
+            "/admin/productos"
+          )
+        }
+        onCancel={() =>
+          setUnsavedWarning(
+            false
+          )
+        }
       />
-    </>
+    </div>
   );
 }

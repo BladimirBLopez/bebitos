@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
-import { validateProduct } from "@/lib/validation";
 import { requireWriteAccess } from "@/lib/permissions";
+import {
+  parseInventoryInput,
+  parseProductInput,
+} from "@/lib/product-input";
 
 export async function GET() {
   try {
@@ -13,6 +17,7 @@ export async function GET() {
         name: true,
         category: true,
         stock: true,
+        lowStockThreshold: true,
         inStock: true,
         price: true,
         isPromo: true,
@@ -25,25 +30,55 @@ export async function GET() {
     });
 
     return NextResponse.json(products, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      headers: {
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate",
+      },
     });
-  } catch (err) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Error interno" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
   const user = await requireWriteAccess();
+
   if (!user) {
-    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+    return NextResponse.json(
+      {
+        error:
+          "No tienes permiso para esta acción",
+      },
+      { status: 403 }
+    );
   }
 
-  const data = await req.json();
+  const body = await req.json();
 
-  const validation = validateProduct(data);
-  if (!validation.valid) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
+  const productResult = parseProductInput(body);
+
+  if (!productResult.ok) {
+    return NextResponse.json(
+      { error: productResult.error },
+      { status: 400 }
+    );
   }
+
+  const inventoryResult =
+    parseInventoryInput(body);
+
+  if (!inventoryResult.ok) {
+    return NextResponse.json(
+      { error: inventoryResult.error },
+      { status: 400 }
+    );
+  }
+
+  const data = productResult.value;
+  const inventory = inventoryResult.value;
 
   try {
     const product = await prisma.product.create({
@@ -52,16 +87,24 @@ export async function POST(req: NextRequest) {
         name: data.name,
         description: data.description,
         features: data.features,
-        price: parseFloat(data.price),
+        price: data.price,
+        cost: data.cost,
         category: data.category,
         colors: data.colors,
         images: data.images,
-        inStock: data.inStock,
+
+        stock: inventory.stock,
+        lowStockThreshold:
+          inventory.lowStockThreshold,
+
+        inStock:
+          inventory.stock > 0 &&
+          data.inStock,
+
         isPromo: data.isPromo,
-        isNew: data.isNew || false,
-        promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
-        barcode: data.barcode && data.barcode.trim() ? data.barcode.trim() : null,
-        cost: data.cost !== undefined && data.cost !== null && data.cost !== "" ? parseFloat(data.cost) : null,
+        promoPrice: data.promoPrice,
+        isNew: data.isNew,
+        barcode: data.barcode,
       },
     });
 
@@ -69,10 +112,17 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     if (err?.code === "P2002") {
       return NextResponse.json(
-        { error: "Ese código de barras ya está en uso por otro producto" },
+        {
+          error:
+            "Ya existe otro producto con ese identificador o código de barras",
+        },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Error interno" },
+      { status: 500 }
+    );
   }
 }
