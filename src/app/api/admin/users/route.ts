@@ -1,60 +1,192 @@
 import { NextResponse } from "next/server";
+
 export const dynamic = "force-dynamic";
 
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+
+import { prisma } from "@/lib/prisma";
 import { requireAdminOnly } from "@/lib/permissions";
+import { usuarioSchema } from "@/lib/schemas/usuario";
 
 export async function GET() {
-  const user = await requireAdminOnly();
-  if (!user) {
-    return NextResponse.json({ error: "No tienes permiso para ver esta sección" }, { status: 403 });
+  const currentUser =
+    await requireAdminOnly();
+
+  if (!currentUser) {
+    return NextResponse.json(
+      {
+        error:
+          "No tienes permiso para ver esta sección",
+      },
+      { status: 403 }
+    );
   }
 
   try {
-    const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
-    });
+    const users =
+      await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          active: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
 
-    return NextResponse.json(users, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    });
+    return NextResponse.json(
+      users,
+      {
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error:
+          "No se pudieron cargar los usuarios",
+      },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request) {
-  const currentUser = await requireAdminOnly();
+export async function POST(
+  req: Request
+) {
+  const currentUser =
+    await requireAdminOnly();
+
   if (!currentUser) {
-    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+    return NextResponse.json(
+      {
+        error:
+          "No tienes permiso para esta acción",
+      },
+      { status: 403 }
+    );
   }
 
   try {
-    const { name, email, password, role } = await req.json();
+    const body =
+      await req.json();
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Nombre, email y password requeridos" }, { status: 400 });
+    const validation =
+      usuarioSchema(
+        false
+      ).safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error:
+            validation.error.issues[0]
+              ?.message ||
+            "Datos inválidos",
+        },
+        { status: 400 }
+      );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const {
+      name,
+      email,
+      password,
+      role,
+      active,
+    } = validation.data;
+
+    const existing =
+      await prisma.user.findUnique({
+        where: {
+          email,
+        },
+        select: {
+          id: true,
+        },
+      });
+
     if (existing) {
-      return NextResponse.json({ error: "Email ya existente" }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "Ya existe un usuario con ese email",
+        },
+        { status: 409 }
+      );
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    if (!password) {
+      return NextResponse.json(
+        {
+          error:
+            "La contraseña es obligatoria",
+        },
+        { status: 400 }
+      );
+    }
 
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: passwordHash,
-        role: role || "VIEWER",
+    const passwordHash =
+      await bcrypt.hash(
+        password,
+        12
+      );
+
+    const user =
+      await prisma.user.create({
+        data: {
+          name,
+          email,
+          password:
+            passwordHash,
+
+          role:
+            role ||
+            "VIEWER",
+
+          active,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          active: true,
+          createdAt: true,
+        },
+      });
+
+    return NextResponse.json(
+      user,
+      { status: 201 }
+    );
+  } catch (error: any) {
+    if (
+      error?.code === "P2002"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Ya existe un usuario con ese email",
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          "No se pudo crear el usuario",
       },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+      { status: 500 }
+    );
   }
 }
