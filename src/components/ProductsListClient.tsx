@@ -24,6 +24,8 @@ type ProductRow = {
   isNew: boolean;
   inStock: boolean;
   images: string[];
+  stock: number;
+  lowStockThreshold: number;
 };
 
 type Category = { id: string; name: string };
@@ -74,26 +76,58 @@ export default function ProductsListClient({
 
   async function runBulk(action: "activar" | "desactivar" | "eliminar") {
     const ids = Array.from(selected);
-    const res = await fetch("/api/admin/products/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids, action }),
-    });
+    try {
+      const res = await fetch("/api/admin/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, action }),
+      });
 
-    setBulkAction(null);
-    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+
+      setBulkAction(null);
+
+      if (!res.ok) {
+        showToast(data.error || "No se pudo completar la acción", "error");
+        return;
+      }
+
       if (action === "eliminar") {
-        setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
+        setProducts((prev) =>
+          prev.filter((p) => !ids.includes(p.id))
+        );
+      } else if (action === "activar") {
+        setProducts((prev) =>
+          prev.map((p) =>
+            ids.includes(p.id) && p.stock > 0
+              ? { ...p, inStock: true }
+              : p
+          )
+        );
+
+        if (data.skipped > 0) {
+          showToast(
+            `${data.updated} activado(s). ${data.skipped} agotado(s) permanecen desactivados`,
+            "success"
+          );
+        } else {
+          showToast(`${data.updated} producto(s) activado(s)`, "success");
+        }
       } else {
         setProducts((prev) =>
-          prev.map((p) => (ids.includes(p.id) ? { ...p, inStock: action === "activar" } : p))
+          prev.map((p) =>
+            ids.includes(p.id) ? { ...p, inStock: false } : p
+          )
         );
+
+        showToast(`${data.updated} producto(s) desactivado(s)`, "success");
       }
-      showToast(`${ids.length} producto(s) actualizado(s)`, "success");
+
       setSelected(new Set());
       router.refresh();
-    } else {
-      showToast("No se pudo completar la acción", "error");
+    } catch {
+      setBulkAction(null);
+      showToast("Error de conexión al completar la acción", "error");
     }
   }
 
@@ -116,31 +150,75 @@ export default function ProductsListClient({
 
   async function toggleActive(product: ProductRow) {
     const newValue = !product.inStock;
+
+    if (newValue && product.stock <= 0) {
+      showToast("No puedes activar un producto con stock 0", "error");
+      return;
+    }
+
     setProducts((prev) =>
-      prev.map((p) => (p.id === product.id ? { ...p, inStock: newValue } : p))
+      prev.map((p) =>
+        p.id === product.id ? { ...p, inStock: newValue } : p
+      )
     );
 
-    await fetch("/api/admin/products/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [product.id], action: newValue ? "activar" : "desactivar" }),
-    });
+    try {
+      const res = await fetch("/api/admin/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: [product.id],
+          action: newValue ? "activar" : "desactivar",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error();
+      }
+    } catch {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === product.id ? { ...p, inStock: product.inStock } : p
+        )
+      );
+
+      showToast("No se pudo cambiar la disponibilidad", "error");
+    }
   }
 
   async function move(index: number, direction: -1 | 1) {
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= products.length) return;
 
+    const previous = [...products];
     const reordered = [...products];
-    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+
+    [reordered[index], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[index],
+    ];
+
     setProducts(reordered);
 
-    const items = reordered.map((p, i) => ({ id: p.id, order: i }));
-    await fetch("/api/admin/products/reorder", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
+    const items = reordered.map((p, i) => ({
+      id: p.id,
+      order: i,
+    }));
+
+    try {
+      const res = await fetch("/api/admin/products/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+
+      if (!res.ok) {
+        throw new Error();
+      }
+    } catch {
+      setProducts(previous);
+      showToast("No se pudo guardar el nuevo orden", "error");
+    }
   }
 
   return (
@@ -304,7 +382,30 @@ export default function ProductsListClient({
                   )}
                 </Link>
 
-                <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="shrink-0 flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span
+                    className={`hidden md:inline-flex text-[10px] font-semibold px-2 py-1 rounded-full ${
+                      p.stock <= 0
+                        ? "bg-red-50 text-red-500"
+                        : !p.inStock
+                          ? "bg-panel-bg text-panel-ink-soft"
+                          : p.stock <= (p.lowStockThreshold ?? 5)
+                            ? "bg-amber-soft text-amber"
+                            : "bg-green-soft text-green-dark"
+                    }`}
+                  >
+                    {p.stock <= 0
+                      ? "Agotado"
+                      : !p.inStock
+                        ? "Pausado"
+                        : p.stock <= (p.lowStockThreshold ?? 5)
+                          ? `Stock bajo · ${p.stock}`
+                          : `Stock · ${p.stock}`}
+                  </span>
+
                   <ToggleSwitch
                     checked={p.inStock}
                     onChange={() => toggleActive(p)}
