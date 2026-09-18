@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Download, Search } from "lucide-react";
+import { jsPDF } from "jspdf";
 import PageHeader from "./PageHeader";
 import { useToast } from "@/lib/toast-context";
 
@@ -96,115 +97,268 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
     }
 
     setExporting(true);
-    showToast("Generando PDF...", "success");
 
     try {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      script.onload = () => {
-        try {
-          // @ts-ignore
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF("p", "mm", "a4");
-          const pageWidth = 210;
-          const margin = 14;
-          const colorVerde = [46, 125, 50];
-          const colorMarron = [121, 85, 72];
-          const colorCrema = [255, 248, 225];
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
-          doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-          doc.rect(0, 0, pageWidth, 8, "F");
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 14;
 
-          const logoUrl = "https://res.cloudinary.com/dkq95jus0/image/upload/v1788792338/1000608308_1_cdjcwt.png";
-          doc.addImage(logoUrl, "PNG", margin, 11, 16, 16);
+      function shortText(value: unknown, max: number) {
+        const text = String(value ?? "");
+        return text.length > max
+          ? text.slice(0, max - 1) + "…"
+          : text;
+      }
 
-          doc.setFontSize(20);
-          doc.setTextColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-          doc.text("Bebitos", margin + 20, 24);
-          doc.setFontSize(10);
-          doc.setTextColor(100, 100, 100);
-          doc.text("Reporte de Ventas", margin + 20, 31);
+      function drawHeader() {
+        doc.setFillColor(46, 125, 50);
+        doc.rect(0, 0, pageWidth, 8, "F");
 
-          doc.setFontSize(8);
-          doc.setTextColor(80, 80, 80);
-          const fecha = new Date().toLocaleDateString("es-BO", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          doc.text(`Generado: ${fecha}`, margin, 44);
-          doc.text(`Total de ventas: ${filtered.length}`, margin, 50);
-          doc.text(`Total vendido (sin anuladas): Bs. ${totalVendido.toFixed(2)}`, margin, 55);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.setTextColor(121, 85, 72);
+        doc.text("Bebitos", margin, 22);
 
-          const headers = ["#", "Fecha", "Cliente", "Origen", "Pago", "Total", "Estado"];
-          const rows = filtered.map((s, index) => [
-            String(index + 1),
-            new Date(s.createdAt).toLocaleDateString("es-BO"),
-            String(s.customer || ""),
-            s.origin === "manual" ? "Mostrador" : "Online",
-            paymentLabel(s),
-            `Bs. ${s.total.toFixed(2)}`,
-            s.anulado ? "Anulado" : "Válida",
-          ]);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(90, 90, 90);
+        doc.text("Reporte de Ventas", margin, 29);
+      }
 
-          let y = 62;
-          const colWidths = [8, 22, 45, 24, 28, 26, 22];
+      function drawTableHeader(y: number) {
+        doc.setFillColor(46, 125, 50);
+        doc.roundedRect(
+          margin,
+          y,
+          pageWidth - margin * 2,
+          8,
+          1,
+          1,
+          "F"
+        );
 
-          doc.setFillColor(colorVerde[0], colorVerde[1], colorVerde[2]);
-          doc.roundedRect(margin, y, pageWidth - margin * 2, 7, 1, 1, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(8);
-          let x = margin + 2;
-          headers.forEach((h, i) => {
-            doc.text(h, x, y + 5);
-            x += colWidths[i];
-          });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(255, 255, 255);
 
-          doc.setFontSize(7);
-          rows.forEach((row, i) => {
-            y += 7;
-            if (y > 280) {
-              doc.addPage();
-              y = 20;
-            }
-            if (i % 2 === 0) {
-              doc.setFillColor(colorCrema[0], colorCrema[1], colorCrema[2]);
-              doc.rect(margin, y, pageWidth - margin * 2, 6, "F");
-            }
-            doc.setTextColor(row[6] === "Anulado" ? 200 : 50, row[6] === "Anulado" ? 60 : 50, row[6] === "Anulado" ? 60 : 50);
-            let xPos = margin + 2;
-            row.forEach((cell, ci) => {
-              doc.text(String(cell), xPos, y + 4.5);
-              xPos += colWidths[ci];
-            });
-          });
+        doc.text("#", margin + 2, y + 5.2);
+        doc.text("Fecha", margin + 11, y + 5.2);
+        doc.text("Cliente", margin + 35, y + 5.2);
+        doc.text("Origen", margin + 87, y + 5.2);
+        doc.text("Pago", margin + 113, y + 5.2);
+        doc.text("Total", margin + 142, y + 5.2);
+        doc.text("Estado", margin + 166, y + 5.2);
+      }
 
-          const finalY = y + 12;
-          doc.setDrawColor(colorMarron[0], colorMarron[1], colorMarron[2]);
-          doc.setLineWidth(0.5);
-          doc.line(margin, finalY, pageWidth - margin, finalY);
+      drawHeader();
 
-          doc.setFontSize(7);
-          doc.setTextColor(150, 150, 150);
-          doc.text("Bebitos.online - Todos los derechos reservados", margin, finalY + 6);
-          doc.text("Este reporte es confidencial y de uso interno.", margin, finalY + 11);
+      const fecha = new Date().toLocaleDateString("es-BO", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
 
-          doc.save("reporte-ventas-bebitos.pdf");
-          showToast("PDF exportado correctamente", "success");
-        } catch (error) {
-          console.error("Error al generar PDF:", error);
-          showToast("Error al generar el PDF", "error");
-        } finally {
-          setExporting(false);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+
+      doc.text(`Generado: ${fecha}`, margin, 40);
+      doc.text(
+        `Ventas encontradas: ${filtered.length}`,
+        margin,
+        46
+      );
+      doc.text(
+        `Ventas válidas: ${valid.length}`,
+        margin,
+        51
+      );
+
+      doc.setFillColor(250, 247, 243);
+      doc.roundedRect(margin, 56, 58, 20, 2, 2, "F");
+      doc.roundedRect(margin + 62, 56, 52, 20, 2, 2, "F");
+      doc.roundedRect(margin + 118, 56, 64, 20, 2, 2, "F");
+
+      doc.setFontSize(7);
+      doc.setTextColor(110, 110, 110);
+      doc.text("TOTAL VENDIDO", margin + 4, 63);
+      doc.text("EFECTIVO", margin + 66, 63);
+      doc.text("QR + TRANSFERENCIA", margin + 122, 63);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+
+      doc.text(
+        `Bs. ${totalVendido.toFixed(2)}`,
+        margin + 4,
+        71
+      );
+      doc.text(
+        `Bs. ${totalEfectivo.toFixed(2)}`,
+        margin + 66,
+        71
+      );
+      doc.text(
+        `Bs. ${totalDigital.toFixed(2)}`,
+        margin + 122,
+        71
+      );
+
+      let y = 83;
+
+      drawTableHeader(y);
+      y += 8;
+
+      filtered.forEach((sale, index) => {
+        if (y > pageHeight - 24) {
+          doc.addPage();
+          drawHeader();
+
+          y = 36;
+          drawTableHeader(y);
+          y += 8;
         }
-      };
-      script.onerror = () => {
-        showToast("Error al cargar la librería PDF", "error");
-        setExporting(false);
-      };
-      document.body.appendChild(script);
+
+        if (index % 2 === 0) {
+          doc.setFillColor(255, 248, 238);
+          doc.rect(
+            margin,
+            y,
+            pageWidth - margin * 2,
+            7,
+            "F"
+          );
+        }
+
+        const fechaVenta = new Date(
+          sale.createdAt
+        ).toLocaleDateString("es-BO");
+
+        const origen =
+          sale.origin === "manual"
+            ? "Mostrador"
+            : "Online";
+
+        const estado = sale.anulado
+          ? "Anulado"
+          : "Válida";
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+
+        if (sale.anulado) {
+          doc.setTextColor(190, 55, 55);
+        } else {
+          doc.setTextColor(55, 55, 55);
+        }
+
+        doc.text(
+          String(index + 1),
+          margin + 2,
+          y + 4.8
+        );
+
+        doc.text(
+          fechaVenta,
+          margin + 11,
+          y + 4.8
+        );
+
+        doc.text(
+          shortText(sale.customer, 25),
+          margin + 35,
+          y + 4.8
+        );
+
+        doc.text(
+          origen,
+          margin + 87,
+          y + 4.8
+        );
+
+        doc.text(
+          shortText(paymentLabel(sale), 14),
+          margin + 113,
+          y + 4.8
+        );
+
+        doc.text(
+          `Bs. ${sale.total.toFixed(2)}`,
+          margin + 142,
+          y + 4.8
+        );
+
+        doc.text(
+          estado,
+          margin + 166,
+          y + 4.8
+        );
+
+        y += 7;
+      });
+
+      if (y > pageHeight - 25) {
+        doc.addPage();
+        y = 25;
+      }
+
+      y += 7;
+
+      doc.setDrawColor(121, 85, 72);
+      doc.setLineWidth(0.3);
+      doc.line(
+        margin,
+        y,
+        pageWidth - margin,
+        y
+      );
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(140, 140, 140);
+
+      doc.text(
+        "Bebitos.online · Reporte administrativo",
+        margin,
+        y + 6
+      );
+
+      doc.text(
+        "Documento de uso interno.",
+        margin,
+        y + 11
+      );
+
+      const fileDate = new Date()
+        .toISOString()
+        .slice(0, 10);
+
+      doc.save(
+        `reporte-ventas-bebitos-${fileDate}.pdf`
+      );
+
+      showToast(
+        "PDF generado correctamente",
+        "success"
+      );
     } catch (error) {
-      showToast("Error al generar el PDF", "error");
+      console.error(
+        "Error generando PDF:",
+        error
+      );
+
+      showToast(
+        "No se pudo generar el PDF",
+        "error"
+      );
+    } finally {
       setExporting(false);
     }
   }
