@@ -180,7 +180,7 @@ export default function HelpButton() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Ayuda del panel"
-        className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-40 w-14 h-14 rounded-full bg-brown-dark hover:bg-ink text-cream flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-5 left-5 sm:bottom-7 sm:left-7 z-40 w-14 h-14 rounded-full bg-brown-dark hover:bg-ink text-cream flex items-center justify-center transition-all hover:scale-105 active:scale-95"
         style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
       >
         <HelpCircle className="w-6 h-6" />
