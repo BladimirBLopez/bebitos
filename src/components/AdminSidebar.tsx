@@ -29,10 +29,15 @@ const groups = [
     links: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false }],
   },
   {
-    label: "Finanzas",
+    label: "Operaciones",
     links: [
       { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart, adminOnly: false },
       { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardCheck, adminOnly: false },
+    ],
+  },
+  {
+    label: "Finanzas",
+    links: [
       { href: "/admin/contabilidad", label: "Contabilidad", icon: Wallet, adminOnly: true },
     ],
   },

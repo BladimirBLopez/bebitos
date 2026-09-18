@@ -2,10 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Download, Search } from "lucide-react";
+import {
+  Plus,
+  Download,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Store,
+  Globe2,
+} from "lucide-react";
 import { jsPDF } from "jspdf";
 import PageHeader from "./PageHeader";
+import AnularModal from "./AnularModal";
 import { useToast } from "@/lib/toast-context";
+import { useCurrentUser } from "@/lib/user-context";
+import { canWrite } from "@/lib/roles";
 
 type OrderItem = {
   id: string;
@@ -18,11 +29,14 @@ type Sale = {
   id: string;
   customer: string;
   phone: string;
+  email: string | null;
   total: number;
   status: string;
   origin: string;
   paymentMethod: string | null;
   anulado: boolean;
+  anuladoEn: string | Date | null;
+  motivoAnulacion: string | null;
   items: OrderItem[];
   createdAt: string | Date;
 };
@@ -38,6 +52,7 @@ const PAYMENT_OPTIONS = [
   { value: "efectivo", label: "Efectivo" },
   { value: "qr", label: "QR" },
   { value: "transferencia", label: "Transferencia" },
+  { value: "sin_registrar", label: "Sin registrar" },
 ];
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -47,52 +62,182 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 function paymentLabel(sale: Sale) {
-  if (sale.paymentMethod) return PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod;
-  return sale.origin === "online" ? "Online" : "—";
+  if (!sale.paymentMethod) return "No registrado";
+  return PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod;
 }
 
-export default function VentasReportClient({ sales }: { sales: Sale[] }) {
+function reference(id: string) {
+  return id.slice(-6).toUpperCase();
+}
+
+export default function VentasReportClient({
+  sales,
+}: {
+  sales: Sale[];
+}) {
   const { showToast } = useToast();
+  const { role } = useCurrentUser();
+  const canEdit = canWrite(role);
+
+  const [localSales, setLocalSales] = useState(sales);
   const [search, setSearch] = useState("");
   const [originFilter, setOriginFilter] = useState("Todos");
   const [paymentFilter, setPaymentFilter] = useState("Todos");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [toAnular, setToAnular] = useState<Sale | null>(null);
   const [page, setPage] = useState(1);
+
   const PAGE_SIZE = 20;
 
   const filtered = useMemo(() => {
-    return sales.filter((s) => {
-      const matchesOrigin = originFilter === "Todos" || s.origin === originFilter;
-      const matchesPayment = paymentFilter === "Todos" || s.paymentMethod === paymentFilter;
+    return localSales.filter((sale) => {
+      const matchesOrigin =
+        originFilter === "Todos" || sale.origin === originFilter;
+
+      const matchesPayment =
+        paymentFilter === "Todos"
+          ? true
+          : paymentFilter === "sin_registrar"
+            ? !sale.paymentMethod
+            : sale.paymentMethod === paymentFilter;
+
       const q = search.trim().toLowerCase();
+
       const matchesSearch =
-        q === "" || s.customer.toLowerCase().includes(q) || s.phone.includes(q);
-      const created = new Date(s.createdAt);
-      const matchesDesde = !desde || created >= new Date(desde + "T00:00:00");
-      const matchesHasta = !hasta || created <= new Date(hasta + "T23:59:59");
-      return matchesOrigin && matchesPayment && matchesSearch && matchesDesde && matchesHasta;
+        q === "" ||
+        sale.customer.toLowerCase().includes(q) ||
+        sale.phone.includes(q) ||
+        reference(sale.id).toLowerCase().includes(q);
+
+      const created = new Date(sale.createdAt);
+
+      const matchesDesde =
+        !desde || created >= new Date(desde + "T00:00:00");
+
+      const matchesHasta =
+        !hasta || created <= new Date(hasta + "T23:59:59");
+
+      return (
+        matchesOrigin &&
+        matchesPayment &&
+        matchesSearch &&
+        matchesDesde &&
+        matchesHasta
+      );
     });
-  }, [sales, originFilter, paymentFilter, search, desde, hasta]);
+  }, [
+    localSales,
+    originFilter,
+    paymentFilter,
+    search,
+    desde,
+    hasta,
+  ]);
 
-  const valid = filtered.filter((s) => !s.anulado);
+  const valid = filtered.filter((sale) => !sale.anulado);
 
-  const totalVendido = valid.reduce((sum, s) => sum + s.total, 0);
+  const totalVendido = valid.reduce(
+    (sum, sale) => sum + sale.total,
+    0
+  );
+
   const totalEfectivo = valid
-    .filter((s) => s.paymentMethod === "efectivo")
-    .reduce((sum, s) => sum + s.total, 0);
-  const totalDigital = valid
-    .filter((s) => s.paymentMethod === "qr" || s.paymentMethod === "transferencia")
-    .reduce((sum, s) => sum + s.total, 0);
+    .filter((sale) => sale.paymentMethod === "efectivo")
+    .reduce((sum, sale) => sum + sale.total, 0);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalDigital = valid
+    .filter(
+      (sale) =>
+        sale.paymentMethod === "qr" ||
+        sale.paymentMethod === "transferencia"
+    )
+    .reduce((sum, sale) => sum + sale.total, 0);
+
+  const totalSinMetodo = valid
+    .filter((sale) => !sale.paymentMethod)
+    .reduce((sum, sale) => sum + sale.total, 0);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / PAGE_SIZE)
+  );
+
   const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const paginated = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  function toggleExpanded(id: string) {
+    setExpanded((previous) => {
+      const next = new Set(previous);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  }
+
+  async function handleAnular(motivo: string) {
+    if (!toAnular) return;
+
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${toAnular.id}/anular`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ motivo }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(
+          data.error || "No se pudo anular la venta",
+          "error"
+        );
+        return;
+      }
+
+      setLocalSales((current) =>
+        current.map((sale) =>
+          sale.id === toAnular.id
+            ? {
+                ...sale,
+                anulado: true,
+                anuladoEn: data.anuladoEn,
+                motivoAnulacion: data.motivoAnulacion,
+              }
+            : sale
+        )
+      );
+
+      showToast(
+        "Venta anulada y stock devuelto",
+        "success"
+      );
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setToAnular(null);
+    }
+  }
 
   function exportPDF() {
     if (filtered.length === 0) {
-      showToast("No hay ventas para exportar con estos filtros", "error");
+      showToast(
+        "No hay ventas para exportar con estos filtros",
+        "error"
+      );
       return;
     }
 
@@ -144,16 +289,16 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
         );
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.5);
+        doc.setFontSize(7);
         doc.setTextColor(255, 255, 255);
 
-        doc.text("#", margin + 2, y + 5.2);
-        doc.text("Fecha", margin + 11, y + 5.2);
-        doc.text("Cliente", margin + 35, y + 5.2);
-        doc.text("Origen", margin + 87, y + 5.2);
-        doc.text("Pago", margin + 113, y + 5.2);
-        doc.text("Total", margin + 142, y + 5.2);
-        doc.text("Estado", margin + 166, y + 5.2);
+        doc.text("Ref.", margin + 2, y + 5);
+        doc.text("Fecha", margin + 19, y + 5);
+        doc.text("Cliente", margin + 43, y + 5);
+        doc.text("Canal", margin + 94, y + 5);
+        doc.text("Pago", margin + 121, y + 5);
+        doc.text("Total", margin + 150, y + 5);
+        doc.text("Estado", margin + 171, y + 5);
       }
 
       drawHeader();
@@ -164,63 +309,30 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
         year: "numeric",
       });
 
-      doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(80, 80, 80);
 
       doc.text(`Generado: ${fecha}`, margin, 40);
       doc.text(
-        `Ventas encontradas: ${filtered.length}`,
+        `Ventas válidas: ${valid.length}`,
         margin,
         46
       );
       doc.text(
-        `Ventas válidas: ${valid.length}`,
+        `Total vendido: Bs. ${totalVendido.toFixed(2)}`,
         margin,
-        51
+        52
       );
 
-      doc.setFillColor(250, 247, 243);
-      doc.roundedRect(margin, 56, 58, 20, 2, 2, "F");
-      doc.roundedRect(margin + 62, 56, 52, 20, 2, 2, "F");
-      doc.roundedRect(margin + 118, 56, 64, 20, 2, 2, "F");
-
-      doc.setFontSize(7);
-      doc.setTextColor(110, 110, 110);
-      doc.text("TOTAL VENDIDO", margin + 4, 63);
-      doc.text("EFECTIVO", margin + 66, 63);
-      doc.text("QR + TRANSFERENCIA", margin + 122, 63);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(60, 60, 60);
-
-      doc.text(
-        `Bs. ${totalVendido.toFixed(2)}`,
-        margin + 4,
-        71
-      );
-      doc.text(
-        `Bs. ${totalEfectivo.toFixed(2)}`,
-        margin + 66,
-        71
-      );
-      doc.text(
-        `Bs. ${totalDigital.toFixed(2)}`,
-        margin + 122,
-        71
-      );
-
-      let y = 83;
+      let y = 62;
 
       drawTableHeader(y);
       y += 8;
 
       filtered.forEach((sale, index) => {
-        if (y > pageHeight - 24) {
+        if (y > pageHeight - 22) {
           doc.addPage();
           drawHeader();
-
           y = 36;
           drawTableHeader(y);
           y += 8;
@@ -237,21 +349,8 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
           );
         }
 
-        const fechaVenta = new Date(
-          sale.createdAt
-        ).toLocaleDateString("es-BO");
-
-        const origen =
-          sale.origin === "manual"
-            ? "Mostrador"
-            : "Online";
-
-        const estado = sale.anulado
-          ? "Anulado"
-          : "Válida";
-
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
+        doc.setFontSize(6.8);
 
         if (sale.anulado) {
           doc.setTextColor(190, 55, 55);
@@ -259,82 +358,42 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
           doc.setTextColor(55, 55, 55);
         }
 
+        doc.text(reference(sale.id), margin + 2, y + 4.8);
         doc.text(
-          String(index + 1),
-          margin + 2,
+          new Date(sale.createdAt).toLocaleDateString("es-BO"),
+          margin + 19,
           y + 4.8
         );
-
         doc.text(
-          fechaVenta,
-          margin + 11,
+          shortText(sale.customer, 22),
+          margin + 43,
           y + 4.8
         );
-
         doc.text(
-          shortText(sale.customer, 25),
-          margin + 35,
+          sale.origin === "manual"
+            ? "Mostrador"
+            : "Online",
+          margin + 94,
           y + 4.8
         );
-
-        doc.text(
-          origen,
-          margin + 87,
-          y + 4.8
-        );
-
         doc.text(
           shortText(paymentLabel(sale), 14),
-          margin + 113,
+          margin + 121,
           y + 4.8
         );
-
         doc.text(
           `Bs. ${sale.total.toFixed(2)}`,
-          margin + 142,
+          margin + 150,
           y + 4.8
         );
-
         doc.text(
-          estado,
-          margin + 166,
+          sale.anulado ? "Anulada" : "Válida",
+          margin + 171,
           y + 4.8
         );
 
         y += 7;
       });
-
-      if (y > pageHeight - 25) {
-        doc.addPage();
-        y = 25;
-      }
-
-      y += 7;
-
-      doc.setDrawColor(121, 85, 72);
-      doc.setLineWidth(0.3);
-      doc.line(
-        margin,
-        y,
-        pageWidth - margin,
-        y
-      );
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      doc.setTextColor(140, 140, 140);
-
-      doc.text(
-        "Bebitos.online · Reporte administrativo",
-        margin,
-        y + 6
-      );
-
-      doc.text(
-        "Documento de uso interno.",
-        margin,
-        y + 11
-      );
 
       const fileDate = new Date()
         .toISOString()
@@ -349,11 +408,7 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
         "success"
       );
     } catch (error) {
-      console.error(
-        "Error generando PDF:",
-        error
-      );
-
+      console.error("Error generando PDF:", error);
       showToast(
         "No se pudo generar el PDF",
         "error"
@@ -373,14 +428,15 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
             <button
               onClick={exportPDF}
               disabled={exporting}
-              className="flex items-center gap-1.5 bg-panel-surface border border-panel-border hover:bg-panel-bg text-panel-ink text-sm font-medium px-3 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-panel-surface border border-panel-border hover:bg-panel-bg text-panel-ink text-sm font-medium px-3 py-2.5 rounded-lg disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              PDF
+              {exporting ? "Generando..." : "PDF"}
             </button>
+
             <Link
               href="/admin/ventas/nueva"
-              className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-lg"
             >
               <Plus className="w-4 h-4" />
               Nueva venta
@@ -389,32 +445,54 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
         }
       />
 
-      {/* Resumen */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">Total vendido</p>
-          <p className="text-base font-bold text-brown-dark">Bs. {totalVendido.toFixed(2)}</p>
+          <p className="text-[11px] text-panel-ink-soft">
+            Total vendido
+          </p>
+          <p className="text-base font-bold text-brown-dark">
+            Bs. {totalVendido.toFixed(2)}
+          </p>
         </div>
+
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">Efectivo</p>
-          <p className="text-base font-bold text-panel-ink">Bs. {totalEfectivo.toFixed(2)}</p>
+          <p className="text-[11px] text-panel-ink-soft">
+            Efectivo
+          </p>
+          <p className="text-base font-bold text-panel-ink">
+            Bs. {totalEfectivo.toFixed(2)}
+          </p>
         </div>
+
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">QR + Transf.</p>
-          <p className="text-base font-bold text-panel-ink">Bs. {totalDigital.toFixed(2)}</p>
+          <p className="text-[11px] text-panel-ink-soft">
+            QR + Transferencia
+          </p>
+          <p className="text-base font-bold text-panel-ink">
+            Bs. {totalDigital.toFixed(2)}
+          </p>
+        </div>
+
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
+          <p className="text-[11px] text-panel-ink-soft">
+            Pago sin registrar
+          </p>
+          <p className="text-base font-bold text-amber">
+            Bs. {totalSinMetodo.toFixed(2)}
+          </p>
         </div>
       </div>
 
-      {/* Filtros */}
       <div className="relative mb-3">
         <Search className="w-4 h-4 text-panel-ink-soft absolute left-3 top-1/2 -translate-y-1/2" />
+
         <input
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
             setPage(1);
           }}
-          placeholder="Buscar por cliente o teléfono..."
+          placeholder="Buscar cliente, teléfono o referencia..."
           className="w-full bg-panel-surface border border-panel-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
         />
       </div>
@@ -427,8 +505,9 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
             setDesde(e.target.value);
             setPage(1);
           }}
-          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none focus:border-brown-dark/40"
+          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none"
         />
+
         <input
           type="date"
           value={hasta}
@@ -436,112 +515,284 @@ export default function VentasReportClient({ sales }: { sales: Sale[] }) {
             setHasta(e.target.value);
             setPage(1);
           }}
-          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none focus:border-brown-dark/40"
+          className="flex-1 bg-panel-surface border border-panel-border rounded-xl px-3 py-2 text-xs outline-none"
         />
       </div>
 
       <div className="flex gap-2 flex-wrap mb-2">
-        {ORIGIN_OPTIONS.map((o) => (
+        {ORIGIN_OPTIONS.map((option) => (
           <button
-            key={o.value}
+            key={option.value}
             onClick={() => {
-              setOriginFilter(o.value);
+              setOriginFilter(option.value);
               setPage(1);
             }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              originFilter === o.value
+            className={`text-xs font-medium px-3 py-1.5 rounded-full ${
+              originFilter === option.value
                 ? "bg-panel-ink text-white"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border hover:bg-panel-bg"
+                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
             }`}
           >
-            {o.label}
+            {option.label}
           </button>
         ))}
       </div>
 
       <div className="flex gap-2 flex-wrap mb-4">
-        {PAYMENT_OPTIONS.map((p) => (
+        {PAYMENT_OPTIONS.map((option) => (
           <button
-            key={p.value}
+            key={option.value}
             onClick={() => {
-              setPaymentFilter(p.value);
+              setPaymentFilter(option.value);
               setPage(1);
             }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              paymentFilter === p.value
+            className={`text-xs font-medium px-3 py-1.5 rounded-full ${
+              paymentFilter === option.value
                 ? "bg-brown-dark text-cream"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border hover:bg-panel-bg"
+                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
             }`}
           >
-            {p.label}
+            {option.label}
           </button>
         ))}
       </div>
 
-      {/* Tabla */}
       {filtered.length === 0 ? (
         <p className="text-sm text-panel-ink-soft text-center py-10">
           No hay ventas con estos filtros.
         </p>
       ) : (
-        <div className="space-y-2">
-          {paginated.map((sale) => (
-            <div
-              key={sale.id}
-              className={`bg-panel-surface border rounded-xl p-3.5 flex items-center gap-3 ${
-                sale.anulado ? "border-red-200 opacity-70" : "border-panel-border"
-              }`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-sm font-semibold text-panel-ink truncate">{sale.customer}</p>
-                  {sale.anulado && (
-                    <span className="text-[10px] font-semibold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
-                      Anulado
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-panel-ink-soft">
-                  {new Date(sale.createdAt).toLocaleDateString("es-BO", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}{" "}
-                  · {sale.origin === "manual" ? "🏪 Mostrador" : "🌐 Online"} · {paymentLabel(sale)} ·{" "}
-                  {sale.items.length} prod.
-                </p>
-              </div>
-              <p
-                className={`text-sm font-bold shrink-0 ${sale.anulado ? "line-through text-panel-ink-soft" : "text-brown-dark"}`}
+        <div className="space-y-3">
+          {paginated.map((sale) => {
+            const isOpen = expanded.has(sale.id);
+
+            return (
+              <div
+                key={sale.id}
+                className={`bg-panel-surface border rounded-xl overflow-hidden ${
+                  sale.anulado
+                    ? "border-red-200"
+                    : "border-panel-border"
+                }`}
               >
-                Bs. {sale.total.toFixed(2)}
-              </p>
-            </div>
-          ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    toggleExpanded(sale.id)
+                  }
+                  className="w-full p-4 flex items-center gap-3 text-left"
+                >
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                      sale.origin === "manual"
+                        ? "bg-green/10 text-green-dark"
+                        : "bg-blue-50 text-blue-600"
+                    }`}
+                  >
+                    {sale.origin === "manual" ? (
+                      <Store className="w-4 h-4" />
+                    ) : (
+                      <Globe2 className="w-4 h-4" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <p className="text-sm font-semibold text-panel-ink truncate">
+                        {sale.customer}
+                      </p>
+
+                      {sale.anulado && (
+                        <span className="text-[9px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                          ANULADA
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-panel-ink-soft mt-0.5">
+                      Ref. {reference(sale.id)} ·{" "}
+                      {new Date(
+                        sale.createdAt
+                      ).toLocaleDateString("es-BO", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      · {paymentLabel(sale)}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p
+                      className={`text-sm font-bold ${
+                        sale.anulado
+                          ? "line-through text-panel-ink-soft"
+                          : "text-brown-dark"
+                      }`}
+                    >
+                      Bs. {sale.total.toFixed(2)}
+                    </p>
+
+                    <p className="text-[10px] text-panel-ink-soft">
+                      {sale.origin === "manual"
+                        ? "Mostrador"
+                        : "Online"}
+                    </p>
+                  </div>
+
+                  {isOpen ? (
+                    <ChevronUp className="w-4 h-4 text-panel-ink-soft" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-panel-ink-soft" />
+                  )}
+                </button>
+
+                {isOpen && (
+                  <div className="border-t border-panel-border p-4">
+                    <div className="grid sm:grid-cols-2 gap-3 mb-4 text-xs">
+                      <div>
+                        <p className="text-panel-ink-soft">
+                          Cliente
+                        </p>
+                        <p className="font-semibold text-panel-ink">
+                          {sale.customer}
+                        </p>
+                        <p className="text-panel-ink-soft">
+                          {sale.phone}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-panel-ink-soft">
+                          Operación
+                        </p>
+                        <p className="font-semibold text-panel-ink">
+                          {sale.origin === "manual"
+                            ? "Venta de mostrador"
+                            : "Pedido online entregado"}
+                        </p>
+                        <p className="text-panel-ink-soft">
+                          Pago: {paymentLabel(sale)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-panel-bg rounded-lg p-3 space-y-2">
+                      {sale.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex justify-between gap-3 text-sm"
+                        >
+                          <span className="text-panel-ink">
+                            {item.quantity} ×{" "}
+                            {item.productName}
+                          </span>
+
+                          <span className="text-panel-ink-soft shrink-0">
+                            Bs.{" "}
+                            {(
+                              item.price *
+                              item.quantity
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+
+                      <div className="border-t border-panel-border pt-2 flex justify-between">
+                        <span className="font-semibold text-panel-ink">
+                          Total
+                        </span>
+                        <span className="font-bold text-brown-dark">
+                          Bs. {sale.total.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {sale.anulado ? (
+                      <div className="mt-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-xs text-red-600">
+                        <p className="font-semibold">
+                          Venta anulada
+                          {sale.anuladoEn &&
+                            ` · ${new Date(
+                              sale.anuladoEn
+                            ).toLocaleDateString(
+                              "es-BO"
+                            )}`}
+                        </p>
+
+                        {sale.motivoAnulacion && (
+                          <p className="mt-1">
+                            {sale.motivoAnulacion}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      canEdit && (
+                        <div className="flex justify-end mt-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setToAnular(sale)
+                            }
+                            className="text-xs font-semibold text-red-500 hover:text-red-600 px-3 py-2"
+                          >
+                            Anular venta
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 mt-4">
           <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() =>
+              setPage((p) =>
+                Math.max(1, p - 1)
+              )
+            }
             disabled={currentPage === 1}
             className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
           >
             Anterior
           </button>
+
           <span className="text-sm text-panel-ink-soft">
             Página {currentPage} de {totalPages}
           </span>
+
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
+            onClick={() =>
+              setPage((p) =>
+                Math.min(totalPages, p + 1)
+              )
+            }
+            disabled={
+              currentPage === totalPages
+            }
             className="text-sm font-medium px-3 py-1.5 rounded-lg border border-panel-border text-panel-ink-soft disabled:opacity-40"
           >
             Siguiente
           </button>
         </div>
       )}
+
+      <AnularModal
+        open={!!toAnular}
+        orderLabel={
+          toAnular
+            ? `${toAnular.customer} · Bs. ${toAnular.total.toFixed(2)}`
+            : ""
+        }
+        onConfirm={handleAnular}
+        onCancel={() => setToAnular(null)}
+      />
     </div>
   );
 }

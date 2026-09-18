@@ -11,12 +11,10 @@ export type ContabilidadStats = {
   gastosByCategory: { name: string; value: number }[];
 };
 
-// Estados que cuentan como venta real (confirmada o entregada).
-// "pendiente" queda afuera a propósito: todavía no es un ingreso seguro.
-// Un pedido "anulado=true" NUNCA cuenta como ingreso, sin importar su
-// estado — anular no cambia el estado (sigue diciendo "entregado" en el
-// historial), así que hay que filtrarlo aparte.
-const REVENUE_STATUSES: OrderStatus[] = ["confirmado", "enviado", "entregado"];
+// Solo una operación entregada cuenta como venta real.
+// Confirmado y enviado siguen siendo pedidos en proceso.
+// Una venta anulada permanece en el historial, pero nunca suma como ingreso.
+const REVENUE_STATUSES: OrderStatus[] = ["entregado"];
 const REVENUE_WHERE = { status: { in: REVENUE_STATUSES }, anulado: false };
 
 export async function getContabilidadStats(): Promise<ContabilidadStats> {

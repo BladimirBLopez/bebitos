@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, ChevronDown, ChevronUp, Trash2, MessageCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, MessageCircle } from "lucide-react";
 import PageHeader from "./PageHeader";
 import ConfirmModal from "./ConfirmModal";
 import AnularModal from "./AnularModal";
@@ -87,7 +86,6 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const canEdit = canWrite(role);
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("Todos");
-  const [originFilter, setOriginFilter] = useState("Todos");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<Order | null>(null);
@@ -96,16 +94,12 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  const manualCount = orders.filter((o) => o.origin === "manual").length;
-  const onlineCount = orders.filter((o) => o.origin === "online").length;
-
   const filtered = orders.filter((o) => {
     const matchesStatus = statusFilter === "Todos" || o.status === statusFilter;
-    const matchesOrigin = originFilter === "Todos" || o.origin === originFilter;
     const q = search.trim().toLowerCase();
     const matchesSearch =
       q === "" || o.customer.toLowerCase().includes(q) || o.phone.includes(q);
-    return matchesStatus && matchesOrigin && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -186,16 +180,7 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
     <div>
       <PageHeader
         title="Pedidos"
-        meta={`${orders.length} pedido${orders.length === 1 ? "" : "s"} · ${manualCount} en tienda, ${onlineCount} online`}
-        action={
-          <Link
-            href="/admin/ventas/nueva"
-            className="flex items-center gap-1.5 bg-green hover:bg-green-dark text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nueva venta
-          </Link>
-        }
+        meta={`${orders.length} pedido${orders.length === 1 ? "" : "s"} online · ${orders.filter((o) => o.status === "pendiente").length} pendiente${orders.filter((o) => o.status === "pendiente").length === 1 ? "" : "s"}`}
       />
 
       <div className="relative mb-3">
@@ -208,29 +193,6 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
           placeholder="Buscar por cliente o teléfono..."
           className="w-full bg-panel-surface border border-panel-border rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-brown-dark/40"
         />
-      </div>
-
-      <div className="flex gap-2 flex-wrap mb-2">
-        {[
-          { value: "Todos", label: "Todos" },
-          { value: "manual", label: "🏪 En tienda" },
-          { value: "online", label: "🌐 Online" },
-        ].map((o) => (
-          <button
-            key={o.value}
-            onClick={() => {
-              setOriginFilter(o.value);
-              setPage(1);
-            }}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              originFilter === o.value
-                ? "bg-panel-ink text-white"
-                : "bg-panel-surface text-panel-ink-soft border border-panel-border hover:bg-panel-bg"
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
       </div>
 
       <div className="flex gap-2 flex-wrap mb-4">
