@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { Plus, ChevronDown, ChevronUp, Trash2, MessageCircle } from "lucide-react";
 import PageHeader from "./PageHeader";
 import ConfirmModal from "./ConfirmModal";
+import AnularModal from "./AnularModal";
 import { useToast } from "@/lib/toast-context";
 import { useCurrentUser } from "@/lib/user-context";
-import { canDelete } from "@/lib/roles";
+import { canDelete, canWrite } from "@/lib/roles";
 
 type OrderItem = {
   id: string;
@@ -25,6 +26,9 @@ type Order = {
   total: number;
   status: string;
   origin: string;
+  anulado: boolean;
+  anuladoEn: string | Date | null;
+  motivoAnulacion: string | null;
   items: OrderItem[];
   createdAt: string | Date;
 };
@@ -80,12 +84,14 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
   const { showToast } = useToast();
   const { role } = useCurrentUser();
   const canRemove = canDelete(role);
+  const canEdit = canWrite(role);
   const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("Todos");
   const [originFilter, setOriginFilter] = useState("Todos");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<Order | null>(null);
+  const [toAnular, setToAnular] = useState<Order | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
@@ -131,6 +137,32 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
       router.refresh();
     } else {
       showToast(data.error || "No se pudo actualizar el estado", "error");
+    }
+  }
+
+  async function handleAnular(motivo: string) {
+    if (!toAnular) return;
+    const id = toAnular.id;
+    const res = await fetch(`/api/admin/orders/${id}/anular`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo }),
+    });
+    const data = await res.json();
+    setToAnular(null);
+
+    if (res.ok) {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, anulado: true, anuladoEn: data.anuladoEn, motivoAnulacion: data.motivoAnulacion }
+            : o
+        )
+      );
+      showToast("Anulado y stock devuelto", "success");
+      router.refresh();
+    } else {
+      showToast(data.error || "No se pudo anular", "error");
     }
   }
 
@@ -262,6 +294,11 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                     >
                       {order.status}
                     </span>
+                    {order.anulado && (
+                      <span className="text-[10px] font-semibold bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                        Anulado
+                      </span>
+                    )}
                     <span className="text-sm font-bold text-brown-dark">
                       Bs. {order.total.toFixed(2)}
                     </span>
@@ -288,6 +325,21 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                       ))}
                     </div>
 
+                    {order.anulado && (
+                      <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-xs text-red-600">
+                        <p className="font-semibold">
+                          Anulado el{" "}
+                          {order.anuladoEn &&
+                            new Date(order.anuladoEn).toLocaleDateString("es-BO", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                        </p>
+                        {order.motivoAnulacion && <p className="mt-0.5">{order.motivoAnulacion}</p>}
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-panel-border">
                       <a
                         href={`https://wa.me/${order.phone.replace(/\D/g, "")}`}
@@ -300,11 +352,24 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
                       </a>
 
                       <div className="flex items-center gap-2 flex-wrap justify-end">
-                        {actions.length === 0 && (
+                        {actions.length === 0 && order.status !== "entregado" && (
                           <span className="text-xs text-panel-ink-soft italic">
                             Pedido cerrado
                           </span>
                         )}
+                        {order.status === "entregado" &&
+                          (order.anulado ? (
+                            <span className="text-xs text-red-500 italic">Ya anulado</span>
+                          ) : canEdit ? (
+                            <button
+                              onClick={() => setToAnular(order)}
+                              className="text-xs font-semibold text-red-500 hover:text-red-600 px-2 py-1.5"
+                            >
+                              Anular
+                            </button>
+                          ) : (
+                            <span className="text-xs text-panel-ink-soft italic">Entregado</span>
+                          ))}
                         {actions.map((action) => (
                           <button
                             key={action.status}
@@ -365,6 +430,13 @@ export default function PedidosListClient({ orders: initialOrders }: { orders: O
         confirmLabel="Eliminar"
         onConfirm={handleDelete}
         onCancel={() => setToDelete(null)}
+      />
+
+      <AnularModal
+        open={!!toAnular}
+        orderLabel={toAnular?.customer || ""}
+        onConfirm={handleAnular}
+        onCancel={() => setToAnular(null)}
       />
     </div>
   );

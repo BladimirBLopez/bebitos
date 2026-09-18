@@ -4,28 +4,16 @@ import { requireWriteAccess, requireDeleteAccess } from "@/lib/permissions";
 
 const VALID_STATUSES = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
-// Las transiciones dependen del origen del pedido:
-// - "online" (tienda pública): una vez "entregado" queda cerrado, no se puede
-//   cancelar después — si se pudiera, el sistema devolvería stock de un
-//   producto que el cliente ya tiene en sus manos hace tiempo.
-// - "manual" (Venta de mostrador): sí se puede anular después de "entregado",
-//   porque ahí "anular" significa deshacer una venta recién registrada, y
-//   el producto realmente vuelve al inventario.
-function getAllowedTransitions(origin: string): Record<string, string[]> {
-  const base: Record<string, string[]> = {
-    pendiente: ["confirmado", "cancelado"],
-    confirmado: ["enviado", "entregado", "cancelado"],
-    enviado: ["entregado", "cancelado"],
-    entregado: [],
-    cancelado: ["pendiente"],
-  };
-
-  if (origin === "manual") {
-    base.entregado = ["cancelado"];
-  }
-
-  return base;
-}
+// Una sola regla, igual para Ventas y Pedidos: el estado nunca retrocede
+// desde "entregado". Para deshacer algo ya entregado existe la acción
+// separada "Anular" (ver /anular/route.ts), no un cambio de estado.
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  pendiente: ["confirmado", "cancelado"],
+  confirmado: ["enviado", "entregado", "cancelado"],
+  enviado: ["entregado", "cancelado"],
+  entregado: [],
+  cancelado: ["pendiente"],
+};
 
 export async function PATCH(
   req: NextRequest,
@@ -53,11 +41,15 @@ export async function PATCH(
         throw new Error("Pedido no encontrado");
       }
 
+      if (existing.anulado) {
+        throw new Error("Este pedido está anulado y no se puede modificar");
+      }
+
       if (existing.status === status) {
         return existing;
       }
 
-      const allowedNext = getAllowedTransitions(existing.origin)[existing.status] || [];
+      const allowedNext = ALLOWED_TRANSITIONS[existing.status] || [];
       if (!allowedNext.includes(status)) {
         throw new Error(
           `No se puede pasar de "${existing.status}" a "${status}" directamente`
