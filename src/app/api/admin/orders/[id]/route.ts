@@ -4,13 +4,28 @@ import { requireWriteAccess, requireDeleteAccess } from "@/lib/permissions";
 
 const VALID_STATUSES = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
 
-const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  pendiente: ["confirmado", "cancelado"],
-  confirmado: ["enviado", "entregado", "cancelado"],
-  enviado: ["entregado", "cancelado"],
-  entregado: ["cancelado"],
-  cancelado: ["pendiente"],
-};
+// Las transiciones dependen del origen del pedido:
+// - "online" (tienda pública): una vez "entregado" queda cerrado, no se puede
+//   cancelar después — si se pudiera, el sistema devolvería stock de un
+//   producto que el cliente ya tiene en sus manos hace tiempo.
+// - "manual" (Venta de mostrador): sí se puede anular después de "entregado",
+//   porque ahí "anular" significa deshacer una venta recién registrada, y
+//   el producto realmente vuelve al inventario.
+function getAllowedTransitions(origin: string): Record<string, string[]> {
+  const base: Record<string, string[]> = {
+    pendiente: ["confirmado", "cancelado"],
+    confirmado: ["enviado", "entregado", "cancelado"],
+    enviado: ["entregado", "cancelado"],
+    entregado: [],
+    cancelado: ["pendiente"],
+  };
+
+  if (origin === "manual") {
+    base.entregado = ["cancelado"];
+  }
+
+  return base;
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -42,7 +57,7 @@ export async function PATCH(
         return existing;
       }
 
-      const allowedNext = ALLOWED_TRANSITIONS[existing.status] || [];
+      const allowedNext = getAllowedTransitions(existing.origin)[existing.status] || [];
       if (!allowedNext.includes(status)) {
         throw new Error(
           `No se puede pasar de "${existing.status}" a "${status}" directamente`
