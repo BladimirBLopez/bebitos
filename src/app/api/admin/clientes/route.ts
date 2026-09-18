@@ -3,9 +3,18 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { validateCliente } from "@/lib/validation";
-import { requireWriteAccess } from "@/lib/permissions";
+import { requireReadAccess, requireWriteAccess } from "@/lib/permissions";
 
 export async function GET() {
+  const user = await requireReadAccess();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Sesión no válida o usuario inactivo" },
+      { status: 401 }
+    );
+  }
+
   try {
     const clientes = await prisma.cliente.findMany({
       orderBy: { createdAt: "desc" },

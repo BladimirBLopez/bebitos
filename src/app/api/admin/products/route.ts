@@ -3,13 +3,22 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
-import { requireWriteAccess } from "@/lib/permissions";
+import { requireReadAccess, requireWriteAccess } from "@/lib/permissions";
 import {
   parseInventoryInput,
   parseProductInput,
 } from "@/lib/product-input";
 
 export async function GET() {
+  const user = await requireReadAccess();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Sesión no válida o usuario inactivo" },
+      { status: 401 }
+    );
+  }
+
   try {
     const products = await prisma.product.findMany({
       select: {

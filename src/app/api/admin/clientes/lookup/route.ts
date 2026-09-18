@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
+import { requireReadAccess } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
+  const user = await requireReadAccess();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Sesión no válida o usuario inactivo" },
+      { status: 401 }
+    );
+  }
+
   try {
     const phone = req.nextUrl.searchParams.get("phone")?.trim();
 
