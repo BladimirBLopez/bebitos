@@ -48,96 +48,136 @@ export async function PATCH(
       );
     }
 
-    const existing = await prisma.order.findUnique({
-      where: { id },
-    });
+    const order = await prisma.$transaction(async (tx) => {
+      const existing = await tx.order.findUnique({
+        where: { id },
+      });
 
-    if (!existing) {
-      return NextResponse.json(
-        { error: "Pedido no encontrado" },
-        { status: 404 }
-      );
-    }
+      if (!existing) {
+        throw new Error("Pedido no encontrado");
+      }
 
-    if (existing.anulado) {
-      return NextResponse.json(
-        { error: "La venta está anulada" },
-        { status: 400 }
-      );
-    }
+      if (existing.anulado) {
+        throw new Error("La venta está anulada");
+      }
 
-    if (
-      existing.status === "cancelado" &&
-      paymentStatus === "pagado"
-    ) {
-      return NextResponse.json(
-        { error: "No se puede registrar un pago en un pedido cancelado" },
-        { status: 400 }
-      );
-    }
+      if (existing.paymentStatus === paymentStatus) {
+        if (paymentStatus === "pagado") {
+          if (!PAYMENT_METHODS.includes(paymentMethod)) {
+            throw new Error(
+              "Selecciona efectivo, QR o transferencia"
+            );
+          }
 
-    if (paymentStatus === "pagado") {
-      if (!PAYMENT_METHODS.includes(paymentMethod)) {
-        return NextResponse.json(
-          {
-            error:
-              "Selecciona efectivo, QR o transferencia",
+          const changed = await tx.order.updateMany({
+            where: {
+              id,
+              paymentStatus: "pagado",
+              anulado: false,
+              status: {
+                not: "cancelado",
+              },
+            },
+            data: {
+              paymentMethod,
+            },
+          });
+
+          if (changed.count !== 1) {
+            throw new Error(
+              "El pedido cambió mientras registrabas el pago. Actualiza la página e intenta nuevamente"
+            );
+          }
+        }
+
+        const same = await tx.order.findUnique({
+          where: { id },
+          include: { items: true },
+        });
+
+        if (!same) {
+          throw new Error("Pedido no encontrado");
+        }
+
+        return same;
+      }
+
+      /*
+       * Únicas transiciones financieras válidas:
+       *
+       * pendiente -> pagado
+       * pagado    -> reembolsado
+       *
+       * reembolsado -> pendiente solo ocurre cuando
+       * se reabre explícitamente un pedido cancelado.
+       */
+      if (
+        existing.paymentStatus === "pendiente" &&
+        paymentStatus === "pagado"
+      ) {
+        if (!PAYMENT_METHODS.includes(paymentMethod)) {
+          throw new Error(
+            "Selecciona efectivo, QR o transferencia"
+          );
+        }
+
+        const changed = await tx.order.updateMany({
+          where: {
+            id,
+            paymentStatus: "pendiente",
+            anulado: false,
+            status: {
+              not: "cancelado",
+            },
           },
-          { status: 400 }
+          data: {
+            paymentStatus: "pagado",
+            paymentMethod,
+            paidAt: existing.paidAt ?? new Date(),
+          },
+        });
+
+        if (changed.count !== 1) {
+          throw new Error(
+            "El pedido cambió mientras registrabas el pago. Actualiza la página e intenta nuevamente"
+          );
+        }
+      } else if (
+        existing.paymentStatus === "pagado" &&
+        paymentStatus === "reembolsado"
+      ) {
+        const changed = await tx.order.updateMany({
+          where: {
+            id,
+            paymentStatus: "pagado",
+            anulado: false,
+          },
+          data: {
+            paymentStatus: "reembolsado",
+          },
+        });
+
+        if (changed.count !== 1) {
+          throw new Error(
+            "El pedido cambió mientras registrabas el reembolso. Actualiza la página e intenta nuevamente"
+          );
+        }
+      } else {
+        throw new Error(
+          `No se puede cambiar el pago de "${existing.paymentStatus}" a "${paymentStatus}"`
         );
       }
 
-      const order = await prisma.order.update({
+      const updated = await tx.order.findUnique({
         where: { id },
-        data: {
-          paymentStatus: "pagado",
-          paymentMethod,
-          paidAt: existing.paidAt ?? new Date(),
-        },
         include: { items: true },
       });
 
-      return NextResponse.json(order);
-    }
-
-    if (paymentStatus === "reembolsado") {
-      if (existing.paymentStatus !== "pagado") {
-        return NextResponse.json(
-          {
-            error:
-              "Solo se puede reembolsar un pedido pagado",
-          },
-          { status: 400 }
-        );
+      if (!updated) {
+        throw new Error("Pedido no encontrado");
       }
 
-      const order = await prisma.order.update({
-        where: { id },
-        data: {
-          paymentStatus: "reembolsado",
-        },
-        include: { items: true },
-      });
-
-      return NextResponse.json(order);
-    }
-
-    if (existing.paymentStatus === "pagado") {
-      return NextResponse.json(
-        {
-          error:
-            "Un pago registrado no puede volver a pendiente. Usa reembolso.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const order = await prisma.order.update({
-      where: { id },
-      data: {
-        paymentStatus: "pendiente",
-      },
-      include: { items: true },
+      return updated;
     });
 
     return NextResponse.json(order);
