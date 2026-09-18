@@ -13,17 +13,21 @@ export type ContabilidadStats = {
 
 // Estados que cuentan como venta real (confirmada o entregada).
 // "pendiente" queda afuera a propósito: todavía no es un ingreso seguro.
+// Un pedido "anulado=true" NUNCA cuenta como ingreso, sin importar su
+// estado — anular no cambia el estado (sigue diciendo "entregado" en el
+// historial), así que hay que filtrarlo aparte.
 const REVENUE_STATUSES: OrderStatus[] = ["confirmado", "enviado", "entregado"];
+const REVENUE_WHERE = { status: { in: REVENUE_STATUSES }, anulado: false };
 
 export async function getContabilidadStats(): Promise<ContabilidadStats> {
   const [ingresosAgg, gastosAgg, revenueOrders] = await Promise.all([
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { status: { in: REVENUE_STATUSES } },
+      where: REVENUE_WHERE,
     }),
     prisma.gasto.aggregate({ _sum: { amount: true } }),
     prisma.order.findMany({
-      where: { status: { in: REVENUE_STATUSES } },
+      where: REVENUE_WHERE,
       select: {
         items: { select: { quantity: true, cost: true } },
       },
@@ -53,7 +57,7 @@ export async function getContabilidadStats(): Promise<ContabilidadStats> {
 
   const [monthlyOrders, monthlyGastos] = await Promise.all([
     prisma.order.findMany({
-      where: { createdAt: { gte: sixMonthsAgo }, status: { in: REVENUE_STATUSES } },
+      where: { createdAt: { gte: sixMonthsAgo }, ...REVENUE_WHERE },
       select: { total: true, createdAt: true },
     }),
     prisma.gasto.findMany({
