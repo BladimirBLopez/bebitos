@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         name,
         email,
         password: passwordHash,
-        role: role || "ADMIN",
+        role: role || "VIEWER",
       },
     });
 

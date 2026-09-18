@@ -3,8 +3,14 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { validateGasto } from "@/lib/validation";
+import { requireAdminOnly } from "@/lib/permissions";
 
 export async function GET() {
+  const user = await requireAdminOnly();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const gastos = await prisma.gasto.findMany({ orderBy: { date: "desc" } });
     return NextResponse.json(gastos, {
@@ -16,6 +22,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await requireAdminOnly();
+  if (!user) {
+    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+  }
+
   try {
     const data = await req.json();
 
