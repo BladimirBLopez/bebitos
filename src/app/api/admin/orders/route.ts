@@ -3,139 +3,323 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { validateOrder } from "@/lib/validation";
-import { requireReadAccess, requireWriteAccess } from "@/lib/permissions";
+import {
+  requireReadAccess,
+  requireWriteAccess,
+} from "@/lib/permissions";
+
+type OrderInputItem = {
+  productId: string;
+  quantity: number;
+};
+
+function aggregateQuantities(
+  items: OrderInputItem[]
+) {
+  const totals = new Map<string, number>();
+
+  for (const item of items) {
+    totals.set(
+      item.productId,
+      (totals.get(item.productId) ?? 0) +
+        item.quantity
+    );
+  }
+
+  return Array.from(totals, ([productId, quantity]) => ({
+    productId,
+    quantity,
+  }));
+}
 
 export async function GET() {
   const user = await requireReadAccess();
 
   if (!user) {
     return NextResponse.json(
-      { error: "Sesión no válida o usuario inactivo" },
+      {
+        error:
+          "Sesión no válida o usuario inactivo",
+      },
       { status: 401 }
     );
   }
 
   try {
     const orders = await prisma.order.findMany({
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     return NextResponse.json(orders, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      headers: {
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate",
+      },
     });
-  } catch (err) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Error interno" },
+      { status: 500 }
+    );
   }
 }
 
-// Esta ruta solo la usa el formulario de Ventas (venta directa/mostrador).
-// A diferencia de un pedido online, una venta directa ya está resuelta en
-// el momento: se entrega el producto ahí mismo, así que nace "entregada"
-// y con el stock ya descontado, sin pasar por "pendiente".
+// Venta directa / mostrador.
+// Nace entregada, pagada y con el stock descontado.
 export async function POST(req: NextRequest) {
   const user = await requireWriteAccess();
+
   if (!user) {
-    return NextResponse.json({ error: "No tienes permiso para esta acción" }, { status: 403 });
+    return NextResponse.json(
+      {
+        error:
+          "No tienes permiso para esta acción",
+      },
+      { status: 403 }
+    );
   }
 
-  const data = await req.json();
-
-  const validation = validateOrder(data);
-  if (!validation.valid) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
-  }
-
-  const items = data.items as { productId: string; quantity: number }[];
-  const productIds = items.map((i) => i.productId);
+  let data: unknown;
 
   try {
-    const order = await prisma.$transaction(async (tx) => {
-      const products = await tx.product.findMany({
-        where: { id: { in: productIds } },
-      });
+    data = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Datos inválidos" },
+      { status: 400 }
+    );
+  }
 
-      const productMap = new Map(products.map((p) => [p.id, p]));
+  const validation = validateOrder(data);
 
-      let total = 0;
-      const orderItemsData: {
-        productId: string;
-        productName: string;
-        quantity: number;
-        price: number;
-        cost: number | null;
-      }[] = [];
+  if (!validation.valid) {
+    return NextResponse.json(
+      { error: validation.error },
+      { status: 400 }
+    );
+  }
 
-      for (const item of items) {
-        const product = productMap.get(item.productId);
-        if (!product) {
-          throw new Error(`Producto no encontrado: ${item.productId}`);
-        }
-        if (product.stock < item.quantity) {
-          throw new Error(
-            `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`
+  const body = data as {
+    customer: string;
+    phone: string;
+    email?: string;
+    paymentMethod: string;
+    items: OrderInputItem[];
+  };
+
+  const items = body.items;
+  const aggregatedItems =
+    aggregateQuantities(items);
+
+  const productIds = aggregatedItems.map(
+    (item) => item.productId
+  );
+
+  try {
+    const order = await prisma.$transaction(
+      async (tx) => {
+        const products =
+          await tx.product.findMany({
+            where: {
+              id: {
+                in: productIds,
+              },
+            },
+          });
+
+        const productMap = new Map(
+          products.map((product) => [
+            product.id,
+            product,
+          ])
+        );
+
+        /*
+         * Validamos el TOTAL solicitado por producto.
+         * Esto evita que líneas duplicadas puedan
+         * superar el stock real.
+         */
+        for (const item of aggregatedItems) {
+          const product = productMap.get(
+            item.productId
           );
+
+          if (!product) {
+            throw new Error(
+              `Producto no encontrado: ${item.productId}`
+            );
+          }
+
+          if (product.stock < item.quantity) {
+            throw new Error(
+              `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`
+            );
+          }
         }
 
-        const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
-        total += price * item.quantity;
+        let total = 0;
 
-        orderItemsData.push({
-          productId: product.id,
-          productName: product.name,
-          quantity: item.quantity,
-          price,
-          cost: product.cost ?? null,
+        const orderItemsData: {
+          productId: string;
+          productName: string;
+          quantity: number;
+          price: number;
+          cost: number | null;
+        }[] = [];
+
+        for (const item of items) {
+          const product = productMap.get(
+            item.productId
+          );
+
+          if (!product) {
+            throw new Error(
+              `Producto no encontrado: ${item.productId}`
+            );
+          }
+
+          const price =
+            product.isPromo &&
+            product.promoPrice !== null
+              ? product.promoPrice
+              : product.price;
+
+          total += price * item.quantity;
+
+          orderItemsData.push({
+            productId: product.id,
+            productName: product.name,
+            quantity: item.quantity,
+            price,
+            cost: product.cost ?? null,
+          });
+        }
+
+        const phone = body.phone.trim();
+        const customerName =
+          body.customer.trim();
+        const email =
+          body.email?.trim() || null;
+
+        let cliente =
+          await tx.cliente.findFirst({
+            where: {
+              phone,
+            },
+          });
+
+        if (!cliente) {
+          cliente = await tx.cliente.create({
+            data: {
+              name: customerName,
+              phone,
+              email,
+            },
+          });
+        }
+
+        /*
+         * Descuento ATÓMICO.
+         *
+         * "stock >= cantidad" forma parte del UPDATE.
+         * Si otra venta consume stock entre la lectura
+         * y este punto, count será 0 y toda esta
+         * transacción se revierte.
+         */
+        for (const item of aggregatedItems) {
+          const product = productMap.get(
+            item.productId
+          )!;
+
+          const updated =
+            await tx.product.updateMany({
+              where: {
+                id: item.productId,
+                stock: {
+                  gte: item.quantity,
+                },
+              },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+
+          if (updated.count !== 1) {
+            throw new Error(
+              `El stock de "${product.name}" cambió mientras registrabas la venta. Revisa el inventario e intenta nuevamente`
+            );
+          }
+
+          const current =
+            await tx.product.findUnique({
+              where: {
+                id: item.productId,
+              },
+              select: {
+                stock: true,
+              },
+            });
+
+          if (
+            current &&
+            current.stock <= 0
+          ) {
+            await tx.product.update({
+              where: {
+                id: item.productId,
+              },
+              data: {
+                inStock: false,
+              },
+            });
+          }
+        }
+
+        const now = new Date();
+
+        return tx.order.create({
+          data: {
+            customer: customerName,
+            email,
+            phone,
+            total,
+            status: "entregado",
+            origin: "manual",
+            paymentMethod:
+              body.paymentMethod,
+            paymentStatus: "pagado",
+            paidAt: now,
+            deliveredAt: now,
+            stockDeducted: true,
+            clienteId: cliente.id,
+            items: {
+              create: orderItemsData,
+            },
+          },
+          include: {
+            items: true,
+          },
         });
       }
-
-      const phone = data.phone.trim();
-      const customerName = data.customer.trim();
-      const email = data.email?.trim() || null;
-
-      let cliente = await tx.cliente.findFirst({ where: { phone } });
-      if (!cliente) {
-        cliente = await tx.cliente.create({
-          data: { name: customerName, phone, email },
-        });
-      }
-
-      const now = new Date();
-
-      const newOrder = await tx.order.create({
-        data: {
-          customer: customerName,
-          email,
-          phone,
-          total,
-          status: "entregado",
-          origin: "manual",
-          paymentMethod: data.paymentMethod,
-          paymentStatus: "pagado",
-          paidAt: now,
-          deliveredAt: now,
-          stockDeducted: true,
-          clienteId: cliente.id,
-          items: { create: orderItemsData },
-        },
-        include: { items: true },
-      });
-
-      for (const item of items) {
-        const product = productMap.get(item.productId)!;
-        const newStock = product.stock - item.quantity;
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: newStock, inStock: newStock > 0 },
-        });
-      }
-
-      return newOrder;
-    });
+    );
 
     return NextResponse.json(order);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Error interno";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Error interno";
+
+    return NextResponse.json(
+      { error: message },
+      { status: 400 }
+    );
   }
 }
