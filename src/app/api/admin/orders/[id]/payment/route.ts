@@ -61,6 +61,22 @@ export async function PATCH(
         throw new Error("La venta está anulada");
       }
 
+      // Un pedido online debe tener un cliente real asignado
+      // antes de poder registrar cualquier pago.
+      if (
+        existing.origin === "online" &&
+        paymentStatus === "pagado" &&
+        (
+          !existing.clienteId ||
+          !existing.phone.trim() ||
+          existing.customer === "Sin cliente asignado"
+        )
+      ) {
+        throw new Error(
+          "Asigna un cliente al pedido antes de registrar el pago"
+        );
+      }
+
       if (existing.paymentStatus === paymentStatus) {
         if (paymentStatus === "pagado") {
           if (!PAYMENT_METHODS.includes(paymentMethod)) {
