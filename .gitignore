@@ -42,3 +42,6 @@ next-env.d.ts
 
 .npmrc
 _scripts/
+
+# local backups
+.backups/
