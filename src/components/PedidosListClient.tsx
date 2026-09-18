@@ -9,6 +9,9 @@ import {
   MessageCircle,
   CreditCard,
   RotateCcw,
+  UserPlus,
+  Search,
+  X,
 } from "lucide-react";
 import PageHeader from "./PageHeader";
 import ConfirmModal from "./ConfirmModal";
@@ -30,6 +33,7 @@ type Order = {
   customer: string;
   email: string | null;
   phone: string;
+  clienteId: string | null;
   total: number;
   status: string;
   origin: string;
@@ -178,6 +182,30 @@ export default function PedidosListClient({
 
   const [toRefund, setToRefund] =
     useState<Order | null>(null);
+
+  const [toAssignCustomer, setToAssignCustomer] =
+    useState<Order | null>(null);
+
+  const [customerName, setCustomerName] =
+    useState("");
+
+  const [customerPhone, setCustomerPhone] =
+    useState("");
+
+  const [customerEmail, setCustomerEmail] =
+    useState("");
+
+  const [customerFound, setCustomerFound] =
+    useState(false);
+
+  const [customerChecking, setCustomerChecking] =
+    useState(false);
+
+  const [customerSaving, setCustomerSaving] =
+    useState(false);
+
+  const [customerError, setCustomerError] =
+    useState("");
 
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
@@ -388,6 +416,170 @@ export default function PedidosListClient({
     }
   }
 
+  function openCustomerAssignment(order: Order) {
+    setToAssignCustomer(order);
+    setCustomerName(
+      order.clienteId ? order.customer : ""
+    );
+    setCustomerPhone(
+      order.clienteId ? order.phone : ""
+    );
+    setCustomerEmail(
+      order.clienteId ? order.email || "" : ""
+    );
+    setCustomerFound(!!order.clienteId);
+    setCustomerError("");
+  }
+
+  function closeCustomerAssignment() {
+    if (customerSaving) return;
+
+    setToAssignCustomer(null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setCustomerFound(false);
+    setCustomerError("");
+  }
+
+  async function lookupCustomer() {
+    const phone = customerPhone.trim();
+
+    if (!/^\d{6,15}$/.test(phone)) {
+      setCustomerError(
+        "Ingresa un WhatsApp válido de 6 a 15 dígitos"
+      );
+      return;
+    }
+
+    setCustomerChecking(true);
+    setCustomerError("");
+    setCustomerFound(false);
+
+    try {
+      const res = await fetch(
+        `/api/admin/clientes/lookup?phone=${phone}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCustomerError(
+          data.error ||
+            "No se pudo buscar el cliente"
+        );
+        return;
+      }
+
+      if (data.found) {
+        setCustomerName(
+          data.cliente.name || ""
+        );
+        setCustomerEmail(
+          data.cliente.email || ""
+        );
+        setCustomerFound(true);
+      } else {
+        setCustomerFound(false);
+        setCustomerName("");
+        setCustomerEmail("");
+      }
+    } catch {
+      setCustomerError(
+        "Error de conexión al buscar el cliente"
+      );
+    } finally {
+      setCustomerChecking(false);
+    }
+  }
+
+  async function saveAssignedCustomer(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
+
+    if (!toAssignCustomer) return;
+
+    const name = customerName.trim();
+    const phone = customerPhone.trim();
+    const email = customerEmail.trim();
+
+    if (!name) {
+      setCustomerError(
+        "Escribe el nombre del cliente"
+      );
+      return;
+    }
+
+    if (!/^\d{6,15}$/.test(phone)) {
+      setCustomerError(
+        "Ingresa un WhatsApp válido de 6 a 15 dígitos"
+      );
+      return;
+    }
+
+    setCustomerSaving(true);
+    setCustomerError("");
+
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${toAssignCustomer.id}/customer`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            phone,
+            email: email || undefined,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCustomerError(
+          data.error ||
+            "No se pudo asignar el cliente"
+        );
+        return;
+      }
+
+      setOrders((current) =>
+        current.map((order) =>
+          order.id === toAssignCustomer.id
+            ? {
+                ...order,
+                customer: data.customer,
+                phone: data.phone,
+                email: data.email,
+                clienteId: data.clienteId,
+              }
+            : order
+        )
+      );
+
+      showToast(
+        "Cliente asignado correctamente",
+        "success"
+      );
+
+      closeCustomerAssignment();
+      router.refresh();
+    } catch {
+      setCustomerError(
+        "Error de conexión. Intenta nuevamente"
+      );
+    } finally {
+      setCustomerSaving(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -487,8 +679,16 @@ export default function PedidosListClient({
                       </span>
                     </div>
 
-                    <p className="text-sm text-panel-ink mt-1 truncate">
-                      {order.customer}
+                    <p
+                      className={`text-sm mt-1 truncate ${
+                        order.clienteId
+                          ? "text-panel-ink"
+                          : "text-amber font-semibold"
+                      }`}
+                    >
+                      {order.clienteId
+                        ? order.customer
+                        : "Sin cliente asignado"}
                     </p>
 
                     <p className="text-xs text-panel-ink-soft mt-0.5">
@@ -534,6 +734,35 @@ export default function PedidosListClient({
 
                 {isOpen && (
                   <div className="border-t border-panel-border p-4 space-y-4">
+                    {!order.clienteId &&
+                      order.status === "pendiente" && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-soft/60 border border-amber/20 rounded-xl px-4 py-3">
+                          <div>
+                            <p className="text-sm font-semibold text-panel-ink">
+                              Cliente pendiente de asignación
+                            </p>
+                            <p className="text-xs text-panel-ink-soft mt-0.5">
+                              Registra el nombre y WhatsApp antes de confirmar este pedido.
+                            </p>
+                          </div>
+
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openCustomerAssignment(
+                                  order
+                                )
+                              }
+                              className="shrink-0 inline-flex items-center justify-center gap-1.5 bg-brown-dark hover:bg-ink text-cream text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              Asignar cliente
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                     <div className="grid sm:grid-cols-2 gap-3 text-xs">
                       <div>
                         <p className="text-panel-ink-soft">
@@ -624,21 +853,30 @@ export default function PedidosListClient({
                     )}
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-panel-border">
-                      <a
-                        href={`https://wa.me/${order.phone.replace(
-                          /\D/g,
-                          ""
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-panel-ink-soft hover:text-panel-ink"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        {order.phone}
-                      </a>
+                      {order.clienteId &&
+                      order.phone ? (
+                        <a
+                          href={`https://wa.me/${order.phone.replace(
+                            /\D/g,
+                            ""
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-panel-ink-soft hover:text-panel-ink"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          {order.phone}
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs text-amber">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          WhatsApp pendiente
+                        </span>
+                      )}
 
                       <div className="flex items-center gap-2 flex-wrap justify-end">
                         {canEdit &&
+                          !!order.clienteId &&
                           order.paymentStatus ===
                             "pendiente" &&
                           order.status !==
@@ -677,6 +915,14 @@ export default function PedidosListClient({
                           )}
 
                         {actions.map((action) => {
+                          if (
+                            action.status ===
+                              "confirmado" &&
+                            !order.clienteId
+                          ) {
+                            return null;
+                          }
+
                           if (
                             action.status ===
                               "cancelado" &&
@@ -775,6 +1021,175 @@ export default function PedidosListClient({
           >
             Siguiente
           </button>
+        </div>
+      )}
+
+      {toAssignCustomer && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={closeCustomerAssignment}
+            className="absolute inset-0 bg-black/45"
+          />
+
+          <form
+            onSubmit={saveAssignedCustomer}
+            className="relative z-10 w-full max-w-md bg-panel-surface border border-panel-border rounded-2xl shadow-2xl overflow-hidden"
+          >
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-panel-border">
+              <div>
+                <h2 className="font-display font-bold text-lg text-panel-ink">
+                  Asignar cliente
+                </h2>
+                <p className="text-xs text-panel-ink-soft mt-1">
+                  Pedido{" "}
+                  {operationLabel(
+                    toAssignCustomer.operationNumber
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCustomerAssignment}
+                disabled={customerSaving}
+                className="p-1.5 rounded-lg text-panel-ink-soft hover:text-panel-ink hover:bg-panel-bg disabled:opacity-40"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-panel-ink-soft block mb-1.5">
+                  WhatsApp *
+                </label>
+
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={customerPhone}
+                    onChange={(event) => {
+                      setCustomerPhone(
+                        event.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 15)
+                      );
+                      setCustomerFound(false);
+                      setCustomerError("");
+                    }}
+                    placeholder="Ej. 70123456"
+                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink outline-none focus:ring-2 focus:ring-brown-dark/20"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={lookupCustomer}
+                    disabled={customerChecking}
+                    className="shrink-0 inline-flex items-center gap-1.5 bg-panel-bg border border-panel-border hover:bg-panel-border/40 text-panel-ink text-xs font-semibold px-3 rounded-lg disabled:opacity-50"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    {customerChecking
+                      ? "Buscando..."
+                      : "Buscar"}
+                  </button>
+                </div>
+
+                {customerFound && (
+                  <p className="text-xs text-green-dark mt-1.5">
+                    Cliente existente encontrado. Sus datos fueron cargados.
+                  </p>
+                )}
+
+                {!customerFound &&
+                  /^\d{6,15}$/.test(
+                    customerPhone
+                  ) && (
+                    <p className="text-xs text-panel-ink-soft mt-1.5">
+                      Si el número no existe, se creará un nuevo cliente al guardar.
+                    </p>
+                  )}
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-panel-ink-soft block mb-1.5">
+                  Nombre *
+                </label>
+
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(event) =>
+                    setCustomerName(
+                      event.target.value
+                    )
+                  }
+                  maxLength={150}
+                  placeholder="Nombre del cliente"
+                  className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink outline-none focus:ring-2 focus:ring-brown-dark/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-panel-ink-soft block mb-1.5">
+                  Email
+                  <span className="font-normal">
+                    {" "}
+                    (opcional)
+                  </span>
+                </label>
+
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(event) =>
+                    setCustomerEmail(
+                      event.target.value
+                    )
+                  }
+                  placeholder="cliente@correo.com"
+                  className="w-full px-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink outline-none focus:ring-2 focus:ring-brown-dark/20"
+                />
+              </div>
+
+              {customerError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {customerError}
+                </p>
+              )}
+
+              <div className="bg-panel-bg rounded-xl px-3 py-2.5">
+                <p className="text-xs text-panel-ink-soft">
+                  El pedido no podrá confirmarse hasta que tenga un cliente asignado.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 px-5 py-4 border-t border-panel-border">
+              <button
+                type="button"
+                onClick={closeCustomerAssignment}
+                disabled={customerSaving}
+                className="flex-1 text-sm font-semibold text-panel-ink-soft hover:text-panel-ink py-2.5 rounded-lg"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                disabled={customerSaving}
+                className="flex-[2] bg-green hover:bg-green-dark disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                {customerSaving
+                  ? "Guardando..."
+                  : customerFound
+                  ? "Asignar cliente"
+                  : "Guardar y asignar"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

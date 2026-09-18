@@ -118,6 +118,16 @@ export async function PATCH(
         existing.status === "pendiente" &&
         status === "confirmado"
       ) {
+        if (
+          !existing.clienteId ||
+          !existing.phone.trim() ||
+          existing.customer === "Sin cliente asignado"
+        ) {
+          throw new Error(
+            "Asigna un cliente al pedido antes de confirmarlo"
+          );
+        }
+
         const claimed = await tx.order.updateMany({
           where: {
             id,

@@ -133,19 +133,10 @@ export async function POST(req: NextRequest) {
     (item) => item.productId
   );
 
-  const body = data as Record<string, unknown>;
-
-  const customerName =
-    typeof body.customer === "string" &&
-    body.customer.trim()
-      ? body.customer.trim().slice(0, 150)
-      : "Cliente de WhatsApp";
-
-  const customerPhone =
-    typeof body.phone === "string" &&
-    /^\d{6,15}$/.test(body.phone.trim())
-      ? body.phone.trim()
-      : "00000000";
+  // El pedido online se registra sin solicitar datos personales.
+  // La vendedora asignará el cliente desde el panel antes de confirmarlo.
+  const customerName = "Sin cliente asignado";
+  const customerPhone = "";
 
   try {
     const order = await prisma.$transaction(
@@ -258,6 +249,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       orderId: order.id,
+      operationNumber: order.operationNumber,
     });
   } catch (err) {
     const message =
