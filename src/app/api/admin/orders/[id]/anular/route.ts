@@ -50,6 +50,10 @@ export async function POST(
           anulado: true,
           anuladoEn: new Date(),
           motivoAnulacion: motivo || null,
+          paymentStatus:
+            existing.paymentStatus === "pagado"
+              ? "reembolsado"
+              : existing.paymentStatus,
           stockDeducted: false,
         },
         include: { items: true },

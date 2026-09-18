@@ -14,6 +14,7 @@ import {
 import { jsPDF } from "jspdf";
 import PageHeader from "./PageHeader";
 import AnularModal from "./AnularModal";
+import PaymentModal from "./PaymentModal";
 import { useToast } from "@/lib/toast-context";
 import { useCurrentUser } from "@/lib/user-context";
 import { canWrite } from "@/lib/roles";
@@ -27,6 +28,7 @@ type OrderItem = {
 
 type Sale = {
   id: string;
+  operationNumber: number;
   customer: string;
   phone: string;
   email: string | null;
@@ -34,6 +36,9 @@ type Sale = {
   status: string;
   origin: string;
   paymentMethod: string | null;
+  paymentStatus: string;
+  paidAt: string | Date | null;
+  deliveredAt: string | Date | null;
   anulado: boolean;
   anuladoEn: string | Date | null;
   motivoAnulacion: string | null;
@@ -66,9 +71,19 @@ function paymentLabel(sale: Sale) {
   return PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod;
 }
 
-function reference(id: string) {
-  return id.slice(-6).toUpperCase();
+function reference(operationNumber: number) {
+  return String(operationNumber).padStart(6, "0");
 }
+
+function saleDate(sale: Sale) {
+  return new Date(sale.deliveredAt ?? sale.createdAt);
+}
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pendiente: "Pendiente",
+  pagado: "Pagado",
+  reembolsado: "Reembolsado",
+};
 
 export default function VentasReportClient({
   sales,
@@ -88,6 +103,9 @@ export default function VentasReportClient({
   const [exporting, setExporting] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toAnular, setToAnular] = useState<Sale | null>(null);
+  const [toPay, setToPay] = useState<Sale | null>(null);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("Todos");
   const [page, setPage] = useState(1);
 
   const PAGE_SIZE = 20;
@@ -110,19 +128,24 @@ export default function VentasReportClient({
         q === "" ||
         sale.customer.toLowerCase().includes(q) ||
         sale.phone.includes(q) ||
-        reference(sale.id).toLowerCase().includes(q);
+        reference(sale.operationNumber).includes(q.replace("#", ""));
 
-      const created = new Date(sale.createdAt);
+      const date = saleDate(sale);
 
       const matchesDesde =
-        !desde || created >= new Date(desde + "T00:00:00");
+        !desde || date >= new Date(desde + "T00:00:00");
 
       const matchesHasta =
-        !hasta || created <= new Date(hasta + "T23:59:59");
+        !hasta || date <= new Date(hasta + "T23:59:59");
+
+      const matchesPaymentStatus =
+        paymentStatusFilter === "Todos" ||
+        sale.paymentStatus === paymentStatusFilter;
 
       return (
         matchesOrigin &&
         matchesPayment &&
+        matchesPaymentStatus &&
         matchesSearch &&
         matchesDesde &&
         matchesHasta
@@ -135,6 +158,7 @@ export default function VentasReportClient({
     search,
     desde,
     hasta,
+    paymentStatusFilter,
   ]);
 
   const valid = filtered.filter((sale) => !sale.anulado);
@@ -143,6 +167,18 @@ export default function VentasReportClient({
     (sum, sale) => sum + sale.total,
     0
   );
+
+  const totalCobrado = valid
+    .filter((sale) => sale.paymentStatus === "pagado")
+    .reduce((sum, sale) => sum + sale.total, 0);
+
+  const totalPendiente = valid
+    .filter((sale) => sale.paymentStatus === "pendiente")
+    .reduce((sum, sale) => sum + sale.total, 0);
+
+  const totalAnulado = filtered
+    .filter((sale) => sale.anulado)
+    .reduce((sum, sale) => sum + sale.total, 0);
 
   const totalEfectivo = valid
     .filter((sale) => sale.paymentMethod === "efectivo")
@@ -216,6 +252,8 @@ export default function VentasReportClient({
                 anulado: true,
                 anuladoEn: data.anuladoEn,
                 motivoAnulacion: data.motivoAnulacion,
+                paymentStatus: data.paymentStatus,
+                paidAt: data.paidAt,
               }
             : sale
         )
@@ -229,6 +267,56 @@ export default function VentasReportClient({
       showToast("Error de conexión", "error");
     } finally {
       setToAnular(null);
+    }
+  }
+
+  async function registerPayment(method: string) {
+    if (!toPay) return;
+
+    setPaymentSaving(true);
+
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${toPay.id}/payment`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentStatus: "pagado",
+            paymentMethod: method,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(
+          data.error || "No se pudo registrar el pago",
+          "error"
+        );
+        return;
+      }
+
+      setLocalSales((current) =>
+        current.map((sale) =>
+          sale.id === toPay.id
+            ? {
+                ...sale,
+                paymentStatus: data.paymentStatus,
+                paymentMethod: data.paymentMethod,
+                paidAt: data.paidAt,
+              }
+            : sale
+        )
+      );
+
+      setToPay(null);
+      showToast("Pago registrado correctamente", "success");
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setPaymentSaving(false);
     }
   }
 
@@ -358,9 +446,9 @@ export default function VentasReportClient({
           doc.setTextColor(55, 55, 55);
         }
 
-        doc.text(reference(sale.id), margin + 2, y + 4.8);
+        doc.text(reference(sale.operationNumber), margin + 2, y + 4.8);
         doc.text(
-          new Date(sale.createdAt).toLocaleDateString("es-BO"),
+          saleDate(sale).toLocaleDateString("es-BO"),
           margin + 19,
           y + 4.8
         );
@@ -448,7 +536,7 @@ export default function VentasReportClient({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
           <p className="text-[11px] text-panel-ink-soft">
-            Total vendido
+            Ventas
           </p>
           <p className="text-base font-bold text-brown-dark">
             Bs. {totalVendido.toFixed(2)}
@@ -457,28 +545,31 @@ export default function VentasReportClient({
 
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
           <p className="text-[11px] text-panel-ink-soft">
-            Efectivo
+            Cobrado
           </p>
-          <p className="text-base font-bold text-panel-ink">
-            Bs. {totalEfectivo.toFixed(2)}
+          <p className="text-base font-bold text-green-dark">
+            Bs. {totalCobrado.toFixed(2)}
           </p>
-        </div>
-
-        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
-          <p className="text-[11px] text-panel-ink-soft">
-            QR + Transferencia
-          </p>
-          <p className="text-base font-bold text-panel-ink">
-            Bs. {totalDigital.toFixed(2)}
+          <p className="text-[9px] text-panel-ink-soft mt-1">
+            Efectivo {totalEfectivo.toFixed(2)} · Digital {totalDigital.toFixed(2)}
           </p>
         </div>
 
         <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
           <p className="text-[11px] text-panel-ink-soft">
-            Pago sin registrar
+            Por cobrar
           </p>
           <p className="text-base font-bold text-amber">
-            Bs. {totalSinMetodo.toFixed(2)}
+            Bs. {totalPendiente.toFixed(2)}
+          </p>
+        </div>
+
+        <div className="bg-panel-surface border border-panel-border rounded-xl p-3">
+          <p className="text-[11px] text-panel-ink-soft">
+            Anulado
+          </p>
+          <p className="text-base font-bold text-red-500">
+            Bs. {totalAnulado.toFixed(2)}
           </p>
         </div>
       </div>
@@ -534,6 +625,25 @@ export default function VentasReportClient({
             }`}
           >
             {option.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 flex-wrap mb-2">
+        {["Todos", "pagado", "pendiente", "reembolsado"].map((status) => (
+          <button
+            key={status}
+            onClick={() => {
+              setPaymentStatusFilter(status);
+              setPage(1);
+            }}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full capitalize ${
+              paymentStatusFilter === status
+                ? "bg-green-dark text-white"
+                : "bg-panel-surface text-panel-ink-soft border border-panel-border"
+            }`}
+          >
+            {status === "Todos" ? "Todos los pagos" : status}
           </button>
         ))}
       </div>
@@ -610,9 +720,9 @@ export default function VentasReportClient({
                     </div>
 
                     <p className="text-[11px] text-panel-ink-soft mt-0.5">
-                      Ref. {reference(sale.id)} ·{" "}
-                      {new Date(
-                        sale.createdAt
+                      Venta #{reference(sale.operationNumber)} ·{" "}
+                      {saleDate(
+                        sale
                       ).toLocaleDateString("es-BO", {
                         day: "2-digit",
                         month: "short",
@@ -672,8 +782,17 @@ export default function VentasReportClient({
                             : "Pedido online entregado"}
                         </p>
                         <p className="text-panel-ink-soft">
-                          Pago: {paymentLabel(sale)}
+                          Pago: {PAYMENT_STATUS_LABELS[sale.paymentStatus] || sale.paymentStatus}
+                          {sale.paymentMethod ? ` · ${paymentLabel(sale)}` : ""}
                         </p>
+                        <p className="text-panel-ink-soft mt-0.5">
+                          Entregada: {saleDate(sale).toLocaleDateString("es-BO")}
+                        </p>
+                        {sale.paidAt && (
+                          <p className="text-panel-ink-soft mt-0.5">
+                            Cobrado: {new Date(sale.paidAt).toLocaleDateString("es-BO")}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -707,6 +826,20 @@ export default function VentasReportClient({
                         </span>
                       </div>
                     </div>
+
+                    {!sale.anulado &&
+                      sale.paymentStatus === "pendiente" &&
+                      canEdit && (
+                        <div className="flex justify-end mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setToPay(sale)}
+                            className="text-xs font-semibold bg-brown-dark text-cream px-3 py-2 rounded-lg"
+                          >
+                            Registrar cobro
+                          </button>
+                        </div>
+                      )}
 
                     {sale.anulado ? (
                       <div className="mt-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-xs text-red-600">
@@ -782,6 +915,19 @@ export default function VentasReportClient({
           </button>
         </div>
       )}
+
+      <PaymentModal
+        open={!!toPay}
+        orderLabel={
+          toPay
+            ? `Venta #${reference(toPay.operationNumber)} · ${toPay.customer}`
+            : ""
+        }
+        total={toPay?.total || 0}
+        saving={paymentSaving}
+        onConfirm={registerPayment}
+        onCancel={() => !paymentSaving && setToPay(null)}
+      />
 
       <AnularModal
         open={!!toAnular}

@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      const now = new Date();
+
       const newOrder = await tx.order.create({
         data: {
           customer: customerName,
@@ -100,6 +102,9 @@ export async function POST(req: NextRequest) {
           status: "entregado",
           origin: "manual",
           paymentMethod: data.paymentMethod,
+          paymentStatus: "pagado",
+          paidAt: now,
+          deliveredAt: now,
           stockDeducted: true,
           clienteId: cliente.id,
           items: { create: orderItemsData },

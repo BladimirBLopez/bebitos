@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus, PaymentStatus } from "@prisma/client";
 
 export type ContabilidadStats = {
   totalIngresos: number;
@@ -11,11 +11,17 @@ export type ContabilidadStats = {
   gastosByCategory: { name: string; value: number }[];
 };
 
-// Solo una operación entregada cuenta como venta real.
-// Confirmado y enviado siguen siendo pedidos en proceso.
-// Una venta anulada permanece en el historial, pero nunca suma como ingreso.
+// Contabilidad trabaja sobre dinero efectivamente cobrado.
+// Una venta puede estar entregada pero aún pendiente de cobro:
+// en ese caso aparece en Ventas, pero todavía no es ingreso de caja.
 const REVENUE_STATUSES: OrderStatus[] = ["entregado"];
-const REVENUE_WHERE = { status: { in: REVENUE_STATUSES }, anulado: false };
+const PAID_STATUS: PaymentStatus = "pagado";
+
+const REVENUE_WHERE = {
+  status: { in: REVENUE_STATUSES },
+  anulado: false,
+  paymentStatus: PAID_STATUS,
+};
 
 export async function getContabilidadStats(): Promise<ContabilidadStats> {
   const [ingresosAgg, gastosAgg, revenueOrders] = await Promise.all([
@@ -55,8 +61,14 @@ export async function getContabilidadStats(): Promise<ContabilidadStats> {
 
   const [monthlyOrders, monthlyGastos] = await Promise.all([
     prisma.order.findMany({
-      where: { createdAt: { gte: sixMonthsAgo }, ...REVENUE_WHERE },
-      select: { total: true, createdAt: true },
+      where: {
+        ...REVENUE_WHERE,
+        deliveredAt: { gte: sixMonthsAgo },
+      },
+      select: {
+        total: true,
+        deliveredAt: true,
+      },
     }),
     prisma.gasto.findMany({
       where: { date: { gte: sixMonthsAgo } },
@@ -72,8 +84,14 @@ export async function getContabilidadStats(): Promise<ContabilidadStats> {
 
   const ingresosByMonth: Record<string, number> = {};
   monthlyOrders.forEach((o) => {
-    const m = o.createdAt.toLocaleString("es", { month: "short" });
-    ingresosByMonth[m] = (ingresosByMonth[m] || 0) + o.total;
+    if (!o.deliveredAt) return;
+
+    const m = o.deliveredAt.toLocaleString("es", {
+      month: "short",
+    });
+
+    ingresosByMonth[m] =
+      (ingresosByMonth[m] || 0) + o.total;
   });
 
   const gastosByMonth: Record<string, number> = {};

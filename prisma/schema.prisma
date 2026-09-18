@@ -94,6 +94,10 @@ model Order {
   status          OrderStatus  @default(pendiente)
   origin          OrderOrigin  @default(manual)
   paymentMethod   String?
+  operationNumber Int           @unique @default(autoincrement())
+  paymentStatus   PaymentStatus @default(pendiente)
+  paidAt          DateTime?
+  deliveredAt     DateTime?
   stockDeducted   Boolean      @default(false)
   anulado         Boolean      @default(false)
   anuladoEn       DateTime?
@@ -103,6 +107,10 @@ model Order {
   cliente         Cliente?     @relation(fields: [clienteId], references: [id])
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([status, origin])
+  @@index([deliveredAt])
+  @@index([paymentStatus])
 }
 
 model OrderItem {
@@ -128,6 +136,12 @@ enum OrderStatus {
 enum OrderOrigin {
   online
   manual
+}
+
+enum PaymentStatus {
+  pendiente
+  pagado
+  reembolsado
 }
 
 model Cliente {

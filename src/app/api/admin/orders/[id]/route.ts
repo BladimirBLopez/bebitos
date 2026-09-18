@@ -80,6 +80,15 @@ export async function PATCH(
         newStockDeducted = true;
       }
 
+      if (
+        status === "cancelado" &&
+        existing.paymentStatus === "pagado"
+      ) {
+        throw new Error(
+          "El pedido está pagado. Registra el reembolso antes de cancelarlo"
+        );
+      }
+
       if (status === "cancelado" && existing.stockDeducted) {
         for (const item of existing.items) {
           await tx.product.update({
@@ -92,7 +101,26 @@ export async function PATCH(
 
       return tx.order.update({
         where: { id },
-        data: { status, stockDeducted: newStockDeducted },
+        data: {
+          status,
+          stockDeducted: newStockDeducted,
+
+          ...(status === "entregado"
+            ? {
+                deliveredAt:
+                  existing.deliveredAt ?? new Date(),
+              }
+            : {}),
+
+          ...(status === "pendiente" &&
+          existing.status === "cancelado" &&
+          existing.paymentStatus === "reembolsado"
+            ? {
+                paymentStatus: "pendiente",
+                paidAt: null,
+              }
+            : {}),
+        },
         include: { items: true },
       });
     });
@@ -123,6 +151,24 @@ export async function DELETE(
       });
       if (!existing) {
         throw new Error("Pedido no encontrado");
+      }
+
+      if (
+        existing.status !== "pendiente" &&
+        existing.status !== "cancelado"
+      ) {
+        throw new Error(
+          "Solo se pueden eliminar pedidos pendientes o cancelados"
+        );
+      }
+
+      if (
+        existing.paymentStatus !== "pendiente" ||
+        existing.anulado
+      ) {
+        throw new Error(
+          "Este pedido forma parte del historial financiero y no se puede eliminar"
+        );
       }
 
       if (existing.stockDeducted) {

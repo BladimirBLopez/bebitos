@@ -3,8 +3,6 @@ import VentasReportClient from "@/components/VentasReportClient";
 
 export const dynamic = "force-dynamic";
 
-// Una venta real es una operación que llegó a "entregado".
-// Las anuladas se conservan para auditoría, pero no suman a los totales.
 export default async function AdminVentasPage() {
   const sales = await prisma.order.findMany({
     where: {
@@ -14,7 +12,7 @@ export default async function AdminVentasPage() {
       items: true,
     },
     orderBy: {
-      createdAt: "desc",
+      deliveredAt: "desc",
     },
   });
 
