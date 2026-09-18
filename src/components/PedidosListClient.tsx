@@ -23,6 +23,7 @@ import { canWrite } from "@/lib/roles";
 type OrderItem = {
   id: string;
   productName: string;
+  color: string | null;
   quantity: number;
   price: number;
 };
@@ -808,6 +809,9 @@ export default function PedidosListClient({
                           <span className="text-panel-ink">
                             {item.quantity} ×{" "}
                             {item.productName}
+                            {item.color
+                              ? ` · ${item.color}`
+                              : ""}
                           </span>
 
                           <span className="text-panel-ink-soft shrink-0">

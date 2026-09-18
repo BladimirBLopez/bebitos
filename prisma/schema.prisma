@@ -119,6 +119,7 @@ model OrderItem {
   order       Order    @relation(fields: [orderId], references: [id])
   productId   String
   productName String
+  color       String?
   quantity    Int
   price       Float
   cost        Float?

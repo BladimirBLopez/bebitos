@@ -33,7 +33,11 @@ export default function CartDrawer({ whatsapp }: { whatsapp?: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({ productId: i.productId, quantity: i.qty })),
+          items: items.map((i) => ({
+            productId: i.productId,
+            quantity: i.qty,
+            color: i.color || undefined,
+          })),
         }),
       });
       const data = await res.json();

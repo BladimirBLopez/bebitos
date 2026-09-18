@@ -7,7 +7,27 @@ import { checkRateLimit } from "@/lib/rate-limit";
 type CartItemInput = {
   productId: string;
   quantity: number;
+  color?: string | null;
 };
+
+function getProductColorNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((raw) => {
+    if (!raw || typeof raw !== "object") return [];
+
+    const name = (raw as Record<string, unknown>).name;
+
+    if (
+      typeof name !== "string" ||
+      !name.trim()
+    ) {
+      return [];
+    }
+
+    return [name.trim()];
+  });
+}
 
 function validateCartItems(
   data: unknown
@@ -62,9 +82,30 @@ function validateCartItems(
       };
     }
 
+    let color: string | null = null;
+
+    if (it.color !== undefined && it.color !== null) {
+      if (typeof it.color !== "string") {
+        return {
+          valid: false,
+          error: "Color inválido",
+        };
+      }
+
+      color = it.color.trim() || null;
+
+      if (color && color.length > 80) {
+        return {
+          valid: false,
+          error: "El nombre del color es demasiado largo",
+        };
+      }
+    }
+
     items.push({
       productId: it.productId.trim(),
       quantity,
+      color,
     });
   }
 
@@ -194,6 +235,7 @@ export async function POST(req: NextRequest) {
         const orderItemsData: {
           productId: string;
           productName: string;
+          color: string | null;
           quantity: number;
           price: number;
           cost: number | null;
@@ -210,6 +252,31 @@ export async function POST(req: NextRequest) {
             );
           }
 
+          const availableColors =
+            getProductColorNames(product.colors);
+
+          let selectedColor: string | null = null;
+
+          if (availableColors.length > 0) {
+            const requestedColor =
+              item.color?.trim() || "";
+
+            const matchedColor =
+              availableColors.find(
+                (name) =>
+                  name.toLocaleLowerCase("es") ===
+                  requestedColor.toLocaleLowerCase("es")
+              );
+
+            if (!matchedColor) {
+              throw new Error(
+                `Selecciona un color válido para "${product.name}"`
+              );
+            }
+
+            selectedColor = matchedColor;
+          }
+
           const price =
             product.isPromo &&
             product.promoPrice !== null
@@ -221,6 +288,7 @@ export async function POST(req: NextRequest) {
           orderItemsData.push({
             productId: product.id,
             productName: product.name,
+            color: selectedColor,
             quantity: item.quantity,
             price,
             cost: product.cost ?? null,
