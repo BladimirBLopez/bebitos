@@ -37,6 +37,7 @@ export async function PUT(
         isNew: data.isNew || false,
         promoPrice: data.promoPrice ? parseFloat(data.promoPrice) : null,
         barcode: data.barcode && data.barcode.trim() ? data.barcode.trim() : null,
+        cost: data.cost !== undefined && data.cost !== null && data.cost !== "" ? parseFloat(data.cost) : null,
       },
     });
 

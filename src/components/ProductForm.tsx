@@ -14,6 +14,7 @@ import {
   Trash2,
   Barcode,
   Layers,
+  TrendingUp,
 } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
@@ -43,6 +44,7 @@ type ProductFormData = {
   isNew: boolean;
   promoPrice: string;
   barcode: string;
+  cost: string;
 };
 
 const empty: ProductFormData = {
@@ -59,6 +61,7 @@ const empty: ProductFormData = {
   isNew: false,
   promoPrice: "",
   barcode: "",
+  cost: "",
 };
 
 function getStatus(f: ProductFormData): StatusOption {
@@ -525,6 +528,30 @@ export default function ProductForm({
               )}
             </div>
           </SectionCard>
+
+          <SectionCard icon={TrendingUp} title="Costo y ganancia">
+            <FormInput
+              label="Costo (BOB)"
+              type="number"
+              hint="opcional"
+              value={form.cost}
+              onChange={(e) => update({ cost: e.target.value })}
+            />
+            {form.cost && form.price && showPrices ? (
+              <p className="text-[11px] text-panel-ink-soft mt-2">
+                Ganancia estimada:{" "}
+                <span className="font-semibold text-green-dark">
+                  Bs. {(Number(form.price) - Number(form.cost)).toFixed(2)}
+                </span>{" "}
+                por unidad
+              </p>
+            ) : (
+              <p className="text-[11px] text-ink/40 mt-2">
+                Se usa para calcular tu ganancia real en Contabilidad.
+              </p>
+            )}
+          </SectionCard>
+
 
           <SectionCard icon={Barcode} title="Código de barras">
             <FormInput

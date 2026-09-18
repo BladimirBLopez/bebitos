@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         productName: string;
         quantity: number;
         price: number;
+        cost: number | null;
       }[] = [];
 
       for (const item of items) {
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
           productName: product.name,
           quantity: item.quantity,
           price,
+          cost: product.cost ?? null,
         });
       }
 

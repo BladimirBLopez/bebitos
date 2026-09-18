@@ -39,6 +39,8 @@ type Gasto = {
 
 type Stats = {
   totalIngresos: number;
+  totalCosto: number;
+  gananciaBruta: number;
   totalGastos: number;
   balance: number;
   monthly: { month: string; ingresos: number; gastos: number }[];
@@ -181,7 +183,7 @@ export default function ContabilidadPage() {
         <p className="text-panel-ink-soft text-sm">Cargando...</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <MetricCard
               title="Ingresos"
               value={`Bs. ${stats.totalIngresos.toFixed(2)}`}
@@ -189,13 +191,19 @@ export default function ContabilidadPage() {
               color="green"
             />
             <MetricCard
+              title="Costo de venta"
+              value={`Bs. ${stats.totalCosto.toFixed(2)}`}
+              icon={TrendingDown}
+              color="amber"
+            />
+            <MetricCard
               title="Gastos"
               value={`Bs. ${stats.totalGastos.toFixed(2)}`}
-              icon={TrendingDown}
+              icon={Receipt}
               color="red"
             />
             <MetricCard
-              title="Balance"
+              title="Ganancia real"
               value={`Bs. ${stats.balance.toFixed(2)}`}
               icon={Wallet}
               color={stats.balance >= 0 ? "green" : "red"}

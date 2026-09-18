@@ -31,6 +31,7 @@ model Product {
   description String
   features    String[]
   price       Float
+  cost        Float?
   category    String
   colors      Json
   images      String[]
@@ -109,6 +110,7 @@ model OrderItem {
   productName String
   quantity    Int
   price       Float
+  cost        Float?
   createdAt   DateTime @default(now())
 }
 

@@ -1,32 +1,59 @@
 import { prisma } from "./prisma";
+import type { OrderStatus } from "@prisma/client";
 
 export type ContabilidadStats = {
   totalIngresos: number;
+  totalCosto: number;
+  gananciaBruta: number;
   totalGastos: number;
   balance: number;
   monthly: { month: string; ingresos: number; gastos: number }[];
   gastosByCategory: { name: string; value: number }[];
 };
 
+// Estados que cuentan como venta real (confirmada o entregada).
+// "pendiente" queda afuera a propósito: todavía no es un ingreso seguro.
+const REVENUE_STATUSES: OrderStatus[] = ["confirmado", "enviado", "entregado"];
+
 export async function getContabilidadStats(): Promise<ContabilidadStats> {
-  const [ingresosAgg, gastosAgg] = await Promise.all([
+  const [ingresosAgg, gastosAgg, revenueOrders] = await Promise.all([
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { status: { not: "cancelado" } },
+      where: { status: { in: REVENUE_STATUSES } },
     }),
     prisma.gasto.aggregate({ _sum: { amount: true } }),
+    prisma.order.findMany({
+      where: { status: { in: REVENUE_STATUSES } },
+      select: {
+        items: { select: { quantity: true, cost: true } },
+      },
+    }),
   ]);
 
-  const totalIngresos = ingresosAgg._sum.total || 0;
-  const totalGastos = gastosAgg._sum.amount || 0;
-  const balance = totalIngresos - totalGastos;
+  const totalIngresos = ingresosAgg._sum?.total || 0;
+  const totalGastos = gastosAgg._sum?.amount || 0;
+
+  // Costo de lo vendido: si un producto no tiene costo asignado, se cuenta
+  // como 0 (no resta), así que la ganancia real puede verse inflada hasta
+  // que se le asigne costo a todos los productos.
+  const totalCosto = revenueOrders.reduce((sum: number, order) => {
+    const orderCost = order.items.reduce(
+      (itemSum: number, item: { quantity: number; cost: number | null }) =>
+        itemSum + (item.cost || 0) * item.quantity,
+      0
+    );
+    return sum + orderCost;
+  }, 0);
+
+  const gananciaBruta = totalIngresos - totalCosto;
+  const balance = gananciaBruta - totalGastos;
 
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
   const [monthlyOrders, monthlyGastos] = await Promise.all([
     prisma.order.findMany({
-      where: { createdAt: { gte: sixMonthsAgo }, status: { not: "cancelado" } },
+      where: { createdAt: { gte: sixMonthsAgo }, status: { in: REVENUE_STATUSES } },
       select: { total: true, createdAt: true },
     }),
     prisma.gasto.findMany({
@@ -69,5 +96,13 @@ export async function getContabilidadStats(): Promise<ContabilidadStats> {
     value: g._sum.amount || 0,
   }));
 
-  return { totalIngresos, totalGastos, balance, monthly, gastosByCategory };
+  return {
+    totalIngresos,
+    totalCosto,
+    gananciaBruta,
+    totalGastos,
+    balance,
+    monthly,
+    gastosByCategory,
+  };
 }
