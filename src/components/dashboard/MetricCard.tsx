@@ -22,24 +22,30 @@ const colors = {
 export default function MetricCard({ title, value, icon: Icon, trend, trendUp, color, emphasis = false }: MetricCardProps) {
   return (
     <div
-      className={`bg-panel-surface p-4 rounded-xl flex items-center justify-between ${
+      className={`bg-panel-surface p-3.5 sm:p-4 rounded-xl min-w-0 ${
         emphasis
           ? "border-2 border-brown-dark/20 shadow-card"
           : "border border-panel-border shadow-panel"
       }`}
     >
-      <div>
-        <p className="text-sm text-panel-ink-soft">{title}</p>
-        <p className={`font-bold text-panel-ink ${emphasis ? "text-3xl" : "text-2xl"}`}>{value}</p>
-        {trend && (
-          <p className={`text-xs flex items-center gap-1 ${trendUp ? 'text-green-dark' : 'text-red-600'}`}>
-            {trendUp ? '↑' : '↓'} {trend}
-          </p>
-        )}
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <p className="text-xs sm:text-sm text-panel-ink-soft truncate">{title}</p>
+        <div className={`p-2 rounded-lg shrink-0 ${colors[color]}`}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+        </div>
       </div>
-      <div className={`p-3 rounded-lg ${colors[color]}`}>
-        <Icon className="w-6 h-6" />
-      </div>
+      <p
+        className={`font-bold text-panel-ink leading-tight whitespace-nowrap overflow-hidden text-ellipsis ${
+          emphasis ? "text-xl sm:text-3xl" : "text-lg sm:text-2xl"
+        }`}
+      >
+        {value}
+      </p>
+      {trend && (
+        <p className={`text-xs flex items-center gap-1 mt-1 ${trendUp ? 'text-green-dark' : 'text-red-600'}`}>
+          {trendUp ? '↑' : '↓'} {trend}
+        </p>
+      )}
     </div>
   );
 }
