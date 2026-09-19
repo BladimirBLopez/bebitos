@@ -21,6 +21,7 @@ import {
   Palette,
   Plus,
   Save,
+  ScanLine,
   Tag,
   Trash2,
   TrendingUp,
@@ -29,6 +30,7 @@ import {
 
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
+import BarcodeScanner from "./BarcodeScanner";
 import Select from "./ui/Select";
 import ToggleSwitch from "./ToggleSwitch";
 import {
@@ -240,6 +242,9 @@ export default function ProductForm({
     categoryModalOpen,
     setCategoryModalOpen,
   ] = useState(false);
+
+  const [scannerOpen, setScannerOpen] =
+    useState(false);
 
   const isEditing = Boolean(form.id);
 
@@ -1192,19 +1197,34 @@ export default function ProductForm({
                 }
               />
 
-              <button
-                type="button"
-                onClick={() =>
-                  update({
-                    barcode: `BEB-${Date.now()
-                      .toString()
-                      .slice(-6)}`,
-                  })
-                }
-                className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline mt-2"
-              >
-                Generar código interno
-              </button>
+              <div className="flex items-center gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScannerOpen(true)
+                  }
+                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline inline-flex items-center gap-1"
+                >
+                  <ScanLine className="w-3 h-3" />
+                  Escanear con cámara
+                </button>
+
+                <span className="text-panel-border">·</span>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    update({
+                      barcode: `BEB-${Date.now()
+                        .toString()
+                        .slice(-6)}`,
+                    })
+                  }
+                  className="text-[11px] text-brown-dark/70 hover:text-brown-dark underline"
+                >
+                  Generar código interno
+                </button>
+              </div>
             </div>
           </SectionCard>
 
@@ -1689,6 +1709,16 @@ export default function ProductForm({
             false
           )
         }
+      />
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onDetected={(code) => {
+          update({ barcode: code });
+          setScannerOpen(false);
+          showToast("Código detectado", "success");
+        }}
+        onClose={() => setScannerOpen(false)}
       />
     </div>
   );

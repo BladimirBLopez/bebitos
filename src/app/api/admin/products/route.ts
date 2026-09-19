@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         isPromo: data.isPromo,
         promoPrice: data.promoPrice,
         isNew: data.isNew,
-        barcode: data.barcode,
+        barcode: data.barcode?.trim() || null,
       },
     });
 
