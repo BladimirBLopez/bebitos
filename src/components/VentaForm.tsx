@@ -2,8 +2,9 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark, CheckCircle2, ArrowRight } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ImageOff, ShoppingCart, UserCheck, Banknote, QrCode, Landmark, CheckCircle2, ArrowRight, ScanLine } from "lucide-react";
 import PageHeader from "./PageHeader";
+import BarcodeScanner from "./BarcodeScanner";
 import { useToast } from "@/lib/toast-context";
 
 const CLOUD_NAME = "dkq95jus0";
@@ -27,6 +28,7 @@ type ProductOption = {
   promoPrice: number | null;
   isPromo: boolean;
   stock: number;
+  barcode: string | null;
   images: string[];
 };
 
@@ -60,6 +62,7 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
   const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [customer, setCustomer] = useState("");
   const [phone, setPhone] = useState("");
@@ -76,7 +79,13 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
     search.trim() === ""
       ? []
       : products
-          .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+          .filter(
+            (p) =>
+              p.name
+                .toLowerCase()
+                .includes(search.trim().toLowerCase()) ||
+              (p.barcode ?? "").includes(search.trim())
+          )
           .slice(0, 8);
 
   const total = useMemo(
@@ -134,6 +143,71 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
     });
     setSearch("");
     searchInputRef.current?.focus();
+  }
+
+  function handleBarcodeDetected(code: string) {
+    const cleanCode = code.trim();
+
+    const product = products.find(
+      (p) => p.barcode === cleanCode
+    );
+
+    setScannerOpen(false);
+
+    if (!product) {
+      showToast(
+        "No existe un producto con ese código de barras",
+        "error"
+      );
+      return;
+    }
+
+    const existing = cart.find(
+      (line) => line.productId === product.id
+    );
+
+    if (
+      existing &&
+      existing.quantity >= product.stock
+    ) {
+      showToast(
+        `No hay más stock disponible de ${product.name}`,
+        "error"
+      );
+      return;
+    }
+
+    addToCart(product);
+
+    showToast(
+      `${product.name} agregado a la venta`,
+      "success"
+    );
+  }
+
+  function handleSearchKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    const code = search.trim();
+
+    if (!code) {
+      return;
+    }
+
+    const product = products.find(
+      (p) => p.barcode === code
+    );
+
+    if (!product) {
+      return;
+    }
+
+    event.preventDefault();
+    handleBarcodeDetected(code);
   }
 
   function changeQty(productId: string, delta: number) {
@@ -288,10 +362,20 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
               placeholder="Buscar producto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               autoFocus
               className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-panel-border bg-panel-bg text-sm text-panel-ink focus:outline-none focus:ring-2 focus:ring-brown-dark/30"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            className="w-full mb-4 flex items-center justify-center gap-2 border border-brown-dark/20 bg-brown-dark/5 hover:bg-brown-dark/10 text-brown-dark font-semibold text-sm py-2.5 rounded-lg transition-colors"
+          >
+            <ScanLine className="w-4 h-4" />
+            Escanear código de barras
+          </button>
 
           <div className="space-y-2 max-h-[420px] overflow-y-auto">
             {search.trim() === "" && (
@@ -498,6 +582,12 @@ export default function VentaForm({ products }: { products: ProductOption[] }) {
           </form>
         </div>
       </div>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onDetected={handleBarcodeDetected}
+        onClose={() => setScannerOpen(false)}
+      />
     </div>
   );
 }

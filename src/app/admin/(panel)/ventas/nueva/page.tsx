@@ -14,6 +14,7 @@ export default async function AdminVentaNuevaPage() {
       promoPrice: true,
       isPromo: true,
       stock: true,
+      barcode: true,
       images: true,
     },
   });
