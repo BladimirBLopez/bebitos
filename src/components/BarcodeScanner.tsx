@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  Html5Qrcode,
-  Html5QrcodeSupportedFormats,
-} from "html5-qrcode";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, ScanLine, X } from "lucide-react";
+
+type ScannerInstance = {
+  start: (
+    camera: { facingMode: string },
+    config: {
+      fps: number;
+      qrbox: { width: number; height: number };
+    },
+    onSuccess: (text: string) => void,
+    onError: () => void
+  ) => Promise<unknown>;
+  stop: () => Promise<void>;
+  clear: () => void;
+};
 
 export default function BarcodeScanner({
   open,
@@ -18,9 +28,15 @@ export default function BarcodeScanner({
   onClose: () => void;
 }) {
   const rawId = useId();
-  const elementId = `scanner-${rawId.replace(/:/g, "")}`;
 
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const elementId =
+    `scanner-${rawId.replace(/:/g, "")}`;
+
+  const scannerRef =
+    useRef<ScannerInstance | null>(null);
+
+  const detectedRef = useRef(false);
+
   const onDetectedRef = useRef(onDetected);
   const onCloseRef = useRef(onClose);
 
@@ -35,101 +51,135 @@ export default function BarcodeScanner({
   }, [onClose]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
-    let disposed = false;
-    let started = false;
-    let detected = false;
+    let cancelled = false;
 
+    detectedRef.current = false;
     setError("");
 
-    const scanner = new Html5Qrcode(elementId, {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.ITF,
-      ],
-      verbose: false,
-    });
+    async function startScanner() {
+      try {
+        /*
+         * Importación dinámica:
+         * html5-qrcode solamente se carga
+         * cuando realmente abrimos la cámara.
+         */
+        const {
+          Html5Qrcode,
+          Html5QrcodeSupportedFormats,
+        } = await import("html5-qrcode");
 
-    scannerRef.current = scanner;
-
-    const startPromise = scanner
-      .start(
-        {
-          facingMode: "environment",
-        },
-        {
-          fps: 10,
-          qrbox: {
-            width: 260,
-            height: 140,
-          },
-          aspectRatio: 1.777778,
-        },
-        (decodedText) => {
-          if (disposed || detected) {
-            return;
-          }
-
-          const code = decodedText.trim();
-
-          if (!code) {
-            return;
-          }
-
-          detected = true;
-
-          onDetectedRef.current(code);
-        },
-        () => {
-          // Es normal que se ejecute mientras la cámara busca un código.
-        }
-      )
-      .then(() => {
-        started = true;
-      })
-      .catch((err) => {
-        if (disposed) {
+        if (cancelled) {
           return;
         }
 
+        const scanner =
+          new Html5Qrcode(elementId, {
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.ITF,
+            ],
+            verbose: false,
+          }) as ScannerInstance;
+
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          {
+            facingMode: "environment",
+          },
+          {
+            fps: 10,
+            qrbox: {
+              width: 260,
+              height: 140,
+            },
+          },
+          (decodedText) => {
+            if (
+              cancelled ||
+              detectedRef.current
+            ) {
+              return;
+            }
+
+            const code =
+              decodedText.trim();
+
+            if (!code) {
+              return;
+            }
+
+            detectedRef.current = true;
+
+            onDetectedRef.current(code);
+          },
+          () => {
+            /*
+             * html5-qrcode llama esto muchas
+             * veces mientras busca un código.
+             * No es un error real.
+             */
+          }
+        );
+
+        /*
+         * Si el modal se cerró mientras
+         * la cámara estaba arrancando.
+         */
+        if (cancelled) {
+          try {
+            await scanner.stop();
+          } catch {}
+
+          try {
+            scanner.clear();
+          } catch {}
+        }
+      } catch (err) {
         console.error(
-          "No se pudo iniciar el lector:",
+          "Error al iniciar lector:",
           err
         );
 
-        setError(
-          "No se pudo acceder a la cámara. Revisa que hayas permitido el acceso a la cámara en el navegador."
-        );
-      });
+        if (!cancelled) {
+          setError(
+            "No se pudo abrir la cámara. Verifica el permiso de cámara del navegador."
+          );
+        }
+      }
+    }
+
+    void startScanner();
 
     return () => {
-      disposed = true;
+      cancelled = true;
 
-      void startPromise.finally(async () => {
-        if (started) {
+      const scanner =
+        scannerRef.current;
+
+      scannerRef.current = null;
+
+      if (!scanner) {
+        return;
+      }
+
+      void scanner
+        .stop()
+        .catch(() => {})
+        .finally(() => {
           try {
-            await scanner.stop();
-          } catch {
-            // Puede estar detenido ya.
-          }
-        }
-
-        try {
-          scanner.clear();
-        } catch {
-          // Evita errores durante el desmontaje.
-        }
-
-        if (scannerRef.current === scanner) {
-          scannerRef.current = null;
-        }
-      });
+            scanner.clear();
+          } catch {}
+        });
     };
   }, [open, elementId]);
 
@@ -157,7 +207,9 @@ export default function BarcodeScanner({
 
             <button
               type="button"
-              onClick={() => onCloseRef.current()}
+              onClick={() =>
+                onCloseRef.current()
+              }
               className="text-panel-ink-soft hover:text-panel-ink rounded-lg p-1"
               aria-label="Cerrar lector"
             >
@@ -165,21 +217,10 @@ export default function BarcodeScanner({
             </button>
           </div>
 
-          {!error ? (
-            <>
-              <div
-                id={elementId}
-                className="w-full aspect-square rounded-xl overflow-hidden bg-black"
-              />
-
-              <p className="text-xs text-panel-ink-soft text-center mt-3">
-                Apunta la cámara al código de barras. Se detectará automáticamente.
-              </p>
-            </>
-          ) : (
+          {error ? (
             <div className="border border-amber-200 bg-amber-50 rounded-xl p-4">
               <div className="flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
 
                 <div>
                   <p className="text-sm font-semibold text-amber-800">
@@ -194,12 +235,26 @@ export default function BarcodeScanner({
 
               <button
                 type="button"
-                onClick={() => onCloseRef.current()}
+                onClick={() =>
+                  onCloseRef.current()
+                }
                 className="w-full mt-4 bg-brown-dark text-white text-sm font-semibold py-2.5 rounded-xl"
               >
                 Cerrar
               </button>
             </div>
+          ) : (
+            <>
+              <div
+                id={elementId}
+                className="w-full aspect-square rounded-xl overflow-hidden bg-black"
+              />
+
+              <p className="text-xs text-panel-ink-soft text-center mt-3">
+                Apunta la cámara al código de barras.
+                Se detectará automáticamente.
+              </p>
+            </>
           )}
         </Dialog.Content>
       </Dialog.Portal>
