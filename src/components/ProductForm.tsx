@@ -31,6 +31,7 @@ import {
 import ConfirmModal from "./ConfirmModal";
 import CategoryManagerModal from "./CategoryManagerModal";
 import BarcodeScanner from "./BarcodeScanner";
+import BarcodeDisplay from "./BarcodeDisplay";
 import Select from "./ui/Select";
 import ToggleSwitch from "./ToggleSwitch";
 import {
@@ -1225,6 +1226,16 @@ export default function ProductForm({
                   Generar código interno
                 </button>
               </div>
+
+              {form.barcode.trim() && (
+                <div className="mt-4">
+                  <p className="text-[11px] text-panel-ink-soft mb-2">
+                    Código listo para escanear
+                  </p>
+
+                  <BarcodeDisplay value={form.barcode} />
+                </div>
+              )}
             </div>
           </SectionCard>
 
